@@ -20,7 +20,7 @@ func NewImageKitService(cfg *config.Config) *ImageKitService {
 		option.WithPrivateKey(cfg.ImageKitPrivateKey),
 	)
 
-	return &ImageKitService{
+return &ImageKitService{
 		client: client,
 	}
 }
