@@ -1,16 +1,6 @@
 version: "3.8"
 
 services:
-  app:
-    build: .
-    ports:
-      - "${APP_PORT}:${APP_PORT}"
-    environment:
-      - DB_HOST=postgres
-    depends_on:
-      - postgres
-    restart: always
-
   postgres:
     image: postgres:15-alpine
     container_name: postgres_db
@@ -22,6 +12,8 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
+
   # minio:
   #   image: minio/minio:latest
   #   container_name: minio_storage
