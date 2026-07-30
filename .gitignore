@@ -1,0 +1,30 @@
+# Binary outputs
+bin/
+main
+*.exe
+*.exe*
+*.dll
+*.so
+*.dylib
+
+# Wire generated files
+# (opsional, beberapa tim memilih untuk mentrack wire_gen.go ke git)
+
+# Environment variables
+.env
+!.env.example
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS System Files
+.DS_Store
+Thumbs.db
+
+# Docker Data & Logs
+*.log
+
+*wire_gen.go
