@@ -1,0 +1,9 @@
+{
+  "typescript.autoClosingTags": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[sql]": {
+    "editor.defaultFormatter": "dbcode.dbcode"
+  },
+  "postman.settings.dotenv-detection-notification-visibility": false
+}

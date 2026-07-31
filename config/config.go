@@ -7,22 +7,49 @@ import (
 )
 
 type Config struct {
-	AppPort             string `mapstructure:"APP_PORT"`
-	DBHost              string `mapstructure:"DB_HOST"`
-	DBPort              string `mapstructure:"DB_PORT"`
-	DBUser              string `mapstructure:"DB_USER"`
-	DBPassword          string `mapstructure:"DB_PASSWORD"`
-	DBName              string `mapstructure:"DB_NAME"`
-	FirebaseCred        string `mapstructure:"FIREBASE_CREDENTIALS_FILE"`
+	// App
+	AppName string `mapstructure:"APP_NAME"`
+	AppEnv  string `mapstructure:"APP_ENV"`
+	AppPort string `mapstructure:"APP_PORT"`
+
+	// Database
+	DBHost     string `mapstructure:"DB_HOST"`
+	DBPort     string `mapstructure:"DB_PORT"`
+	DBUser     string `mapstructure:"DB_USER"`
+	DBPassword string `mapstructure:"DB_PASSWORD"`
+	DBName     string `mapstructure:"DB_NAME"`
+	DBSslMode  string `mapstructure:"DB_SSLMODE"`
+	DBTimeZone string `mapstructure:"DB_TIMEZONE"`
+
+	// JWT
+	JWTSecret string `mapstructure:"JWT_SECRET"`
+	JWTExpiry string `mapstructure:"JWT_EXPIRY"`
+
+	// Mail
+	MailHost     string `mapstructure:"MAIL_HOST"`
+	MailPort     string `mapstructure:"MAIL_PORT"`
+	MailUsername string `mapstructure:"MAIL_USERNAME"`
+	MailPassword string `mapstructure:"MAIL_PASSWORD"`
+
+	// Firebase
+	FirebaseCred string `mapstructure:"FIREBASE_CREDENTIALS_FILE"`
+
+	// ImageKit
 	ImageKitPublicKey   string `mapstructure:"IMAGEKIT_PUBLIC_KEY"`
 	ImageKitPrivateKey  string `mapstructure:"IMAGEKIT_PRIVATE_KEY"`
 	ImageKitUrlEndpoint string `mapstructure:"IMAGEKIT_URL_ENDPOINT"`
-	MinioEndpoint       string `mapstructure:"MINIO_ENDPOINT"`
-	MinioAccessKey      string `mapstructure:"MINIO_ACCESS_KEY"`
-	MinioSecretKey      string `mapstructure:"MINIO_SECRET_KEY"`
-	MinioBucketName     string `mapstructure:"MINIO_BUCKET_NAME"`
-	MinioUseSSL         bool   `mapstructure:"MINIO_USE_SSL"`
+
+	// MinIO
+	MinioEndpoint   string `mapstructure:"MINIO_ENDPOINT"`
+	MinioAccessKey  string `mapstructure:"MINIO_ACCESS_KEY"`
+	MinioSecretKey  string `mapstructure:"MINIO_SECRET_KEY"`
+	MinioBucketName string `mapstructure:"MINIO_BUCKET_NAME"`
+	MinioUseSSL     bool   `mapstructure:"MINIO_USE_SSL"`
+
+	// Payment
 	PaymentServerKey    string `mapstructure:"PAYMENT_SERVER_KEY"`
+	PaymentClientKey    string `mapstructure:"PAYMENT_CLIENT_KEY"`
+	PaymentIsProduction bool   `mapstructure:"PAYMENT_IS_PRODUCTION"`
 }
 
 func LoadConfig() (*Config, error) {
