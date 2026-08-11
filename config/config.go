@@ -50,6 +50,16 @@ type Config struct {
 	PaymentServerKey    string `mapstructure:"PAYMENT_SERVER_KEY"`
 	PaymentClientKey    string `mapstructure:"PAYMENT_CLIENT_KEY"`
 	PaymentIsProduction bool   `mapstructure:"PAYMENT_IS_PRODUCTION"`
+
+	// Redis
+	RedisHost     string `mapstructure:"REDIS_HOST"`
+	RedisPort     string `mapstructure:"REDIS_PORT"`
+	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
+	RedisDB       int    `mapstructure:"REDIS_DB"`
+
+	// Geoapify
+	GeoapifyAPIKey  string `mapstructure:"GEOAPIFY_API_KEY"`
+	GeoapifyBaseURL string `mapstructure:"GEOAPIFY_BASE_URL"`
 }
 
 func LoadConfig() (*Config, error) {
