@@ -1,4 +1,4 @@
-#:schema https://json.schemastore.org/any.json
+# schema https://json.schemastore.org/any.json
 
 env_files = []
 root = "."
@@ -7,10 +7,10 @@ tmp_dir = "tmp"
 
 [build]
 args_bin = []
-bin = "./tmp/main"
-cmd = "go build -o ./tmp/main ./cmd/api"
+bin = "./tmp/main.exe"
+cmd = "go build -o ./tmp/main.exe ./cmd/api"
 delay = 1000
-entrypoint = ["./tmp/main"]
+entrypoint = ["./tmp/main.exe"]
 exclude_dir = ["assets", "tmp", "vendor", "migrations"]
 exclude_file = []
 exclude_regex = ["_test.go"]

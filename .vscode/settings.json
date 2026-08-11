@@ -5,5 +5,8 @@
   "[sql]": {
     "editor.defaultFormatter": "dbcode.dbcode"
   },
-  "postman.settings.dotenv-detection-notification-visibility": false
+  "postman.settings.dotenv-detection-notification-visibility": false,
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
+  }
 }
