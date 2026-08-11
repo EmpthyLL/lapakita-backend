@@ -1,21 +1,32 @@
 package dto
 
+// Request dari Frontend
 type GetAreaRequest struct {
-	Categories string  `form:"categories" binding:"required"`
-	Lat        float64 `form:"lat" binding:"required"`
-	Lon        float64 `form:"lon" binding:"required"`
-	Radius     int     `form:"radius" binding:"required,min=100,max=10000"`
+	Text string `form:"text" binding:"required"`
 }
 
+// Respon khusus ke Frontend (Ringkas & UI-Friendly)
 type AreaResponse struct {
-	Name           string  `json:"name"`
-	Country        string  `json:"country"`
-	City           string  `json:"city"`
-	Street         string  `json:"street"`
-	Lon            float64 `json:"lon"`
-	Lat            float64 `json:"lat"`
-	Formatted      string  `json:"formatted"`
-	AreaID         string  `json:"area_id"`
-	GoogleMapURL   string  `json:"google_map_url"`
-	GoogleEmbedURL string  `json:"google_embed_url"`
+	Formatted      string `json:"formatted"`        // Alamat lengkap untuk ditampilkan di opsi dropdown
+	AddressLine1   string `json:"address_line1"`    // Nama Jalan / Tempat
+	AddressLine2   string `json:"address_line2"`    // Kota, Provinsi, Kode Pos
+	GoogleMapURL   string `json:"google_map_url"`   // Link ke app/web Google Maps
+	GoogleEmbedURL string `json:"google_embed_url"` // Link untuk iframe embed map
+}
+
+// Struct internal khusus memetakan JSON dari Geoapify API
+type GeoapifyProperties struct {
+	Formatted    string  `json:"formatted"`
+	AddressLine1 string  `json:"address_line1"`
+	AddressLine2 string  `json:"address_line2"`
+	Lat          float64 `json:"lat"`
+	Lon          float64 `json:"lon"`
+}
+
+type GeoapifyFeature struct {
+	Properties GeoapifyProperties `json:"properties"`
+}
+
+type GeoapifyResponse struct {
+	Features []GeoapifyFeature `json:"features"`
 }

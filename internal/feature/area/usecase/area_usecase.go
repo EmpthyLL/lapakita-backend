@@ -2,12 +2,13 @@ package usecase
 
 import (
 	"context"
+
 	"lapakita-backend/internal/feature/area/client"
 	"lapakita-backend/internal/feature/area/dto"
 )
 
 type AreaUsecase interface {
-	GetNearbyPlaces(ctx context.Context, req dto.GetAreaRequest) ([]dto.AreaResponse, error)
+	SearchArea(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponse, error)
 }
 
 type areaUsecase struct {
@@ -20,7 +21,6 @@ func NewAreaUsecase(geoClient client.GeoapifyClient) AreaUsecase {
 	}
 }
 
-func (u *areaUsecase) GetNearbyPlaces(ctx context.Context, req dto.GetAreaRequest) ([]dto.AreaResponse, error) {
-	// Di layer ini kamu bisa menyelipkan business logic opsional jika ada
-	return u.geoClient.FetchPlaces(ctx, req)
+func (u *areaUsecase) SearchArea(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponse, error) {
+	return u.geoClient.SearchAutocomplete(ctx, req, lang)
 }

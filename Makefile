@@ -23,3 +23,6 @@ docker-down:
 
 run:
 	go run ./cmd/api
+
+dev:
+	go run ./cmd/dev

@@ -20,19 +20,37 @@ func NewAreaHandler(usecase usecase.AreaUsecase) *AreaHandler {
 	}
 }
 
-func (h *AreaHandler) GetNearbyPlaces(c *gin.Context) {
+func (h *AreaHandler) SearchArea(c *gin.Context) {
 	var req dto.GetAreaRequest
 
+	lang := c.GetHeader("lang")
+	if lang == "" {
+		lang = "id"
+	}
+
 	if err := c.ShouldBindQuery(&req); err != nil {
-		api.ErrorResponse(c, http.StatusBadRequest, "Parameter query tidak valid", err.Error())
+		msg := "Query parameter invalid"
+		if lang == "id" {
+			msg = "Parameter query tidak valid"
+		}
+		api.ErrorResponse(c, http.StatusBadRequest, msg, err.Error())
 		return
 	}
 
-	places, err := h.usecase.GetNearbyPlaces(c.Request.Context(), req)
+	areas, err := h.usecase.SearchArea(c.Request.Context(), req, lang)
 	if err != nil {
-		api.ErrorResponse(c, http.StatusInternalServerError, "Gagal mendapatkan data area lokasi", err.Error())
+		msg := "Failed to search area"
+		if lang == "id" {
+			msg = "Gagal mencari data area"
+		}
+		api.ErrorResponse(c, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
 
-	api.SuccessResponse(c, http.StatusOK, "Berhasil mendapatkan data tempat terdekat", places)
+	successMsg := "Successfully retrieved area autocomplete results"
+	if lang == "id" {
+		successMsg = "Berhasil mendapatkan hasil pencarian area"
+	}
+
+	api.SuccessResponse(c, http.StatusOK, successMsg, areas)
 }

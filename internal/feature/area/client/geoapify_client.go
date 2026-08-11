@@ -15,14 +15,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type GeoapifyRawResponse struct {
-	Features []struct {
-		Properties dto.AreaResponse `json:"properties"`
-	} `json:"features"`
-}
-
 type GeoapifyClient interface {
-	FetchPlaces(ctx context.Context, req dto.GetAreaRequest) ([]dto.AreaResponse, error)
+	SearchAutocomplete(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponse, error)
 }
 
 type geoapifyClient struct {
@@ -39,34 +33,39 @@ func NewGeoapifyClient(cfg *config.Config, rdb *redis.Client) GeoapifyClient {
 	}
 }
 
-func (c *geoapifyClient) FetchPlaces(ctx context.Context, req dto.GetAreaRequest) ([]dto.AreaResponse, error) {
+func (c *geoapifyClient) SearchAutocomplete(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponse, error) {
+	if lang == "" {
+		lang = "en"
+	}
+
 	// 1. Check Redis Cache
-	cacheKey := fmt.Sprintf("geoapify:places:%s:%.4f:%.4f:%d", req.Categories, req.Lat, req.Lon, req.Radius)
+	cacheKey := fmt.Sprintf("geoapify:autocomplete:%s:%s", lang, req.Text)
 	cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
 	if err == nil && cachedData != "" {
-		var cachedPlaces []dto.AreaResponse
-		if err := json.Unmarshal([]byte(cachedData), &cachedPlaces); err == nil {
-			return cachedPlaces, nil // Cache Hit
+		var cachedAreas []dto.AreaResponse
+		if err := json.Unmarshal([]byte(cachedData), &cachedAreas); err == nil {
+			return cachedAreas, nil
 		}
 	}
 
-	// 2. Cache Miss: Query External Geoapify API
-	reqURL, err := url.Parse(c.cfg.GeoapifyBaseURL)
+	// 2. Query External API Geoapify
+	apiURL := "https://api.geoapify.com/v1/geocode/autocomplete"
+	reqURL, err := url.Parse(apiURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid base url: %w", err)
+		return nil, fmt.Errorf("invalid url: %w", err)
 	}
 
 	query := reqURL.Query()
-	query.Set("categories", req.Categories)
-	query.Set("filter", fmt.Sprintf("circle:%f,%f,%d", req.Lon, req.Lat, req.Radius))
-	query.Set("bias", fmt.Sprintf("proximity:%f,%f", req.Lon, req.Lat))
-	query.Set("limit", "20")
+	query.Set("text", req.Text)
+	query.Set("limit", "10")
+	query.Set("filter", "countrycode:id")
+	query.Set("lang", lang)
 	query.Set("apiKey", c.cfg.GeoapifyAPIKey)
 	reqURL.RawQuery = query.Encode()
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("gagal membuat http request: %w", err)
+		return nil, fmt.Errorf("gagal membuat request: %w", err)
 	}
 
 	resp, err := c.httpClient.Do(httpReq)
@@ -80,25 +79,31 @@ func (c *geoapifyClient) FetchPlaces(ctx context.Context, req dto.GetAreaRequest
 		return nil, fmt.Errorf("geoapify error status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var geoResp GeoapifyRawResponse
+	var geoResp dto.GeoapifyResponse
 	if err := json.NewDecoder(resp.Body).Decode(&geoResp); err != nil {
 		return nil, fmt.Errorf("gagal decode response json: %w", err)
 	}
 
-	var places []dto.AreaResponse
+	// 3. Transformasi dari Geoapify ke DTO FE (Hanya ambil yang perlu)
+	var areas []dto.AreaResponse
 	for _, feature := range geoResp.Features {
-		item := feature.Properties
+		props := feature.Properties
 
-		item.GoogleMapURL = fmt.Sprintf("https://www.google.com/maps/search/?api=1&query=%f,%f", item.Lat, item.Lon)
-		item.GoogleEmbedURL = fmt.Sprintf("https://maps.google.com/maps?q=%f,%f&hl=id&z=16&output=embed", item.Lat, item.Lon)
+		area := dto.AreaResponse{
+			Formatted:      props.Formatted,
+			AddressLine1:   props.AddressLine1,
+			AddressLine2:   props.AddressLine2,
+			GoogleMapURL:   fmt.Sprintf("https://www.google.com/maps/search/?api=1&query=%f,%f", props.Lat, props.Lon),
+			GoogleEmbedURL: fmt.Sprintf("https://maps.google.com/maps?q=%f,%f&hl=%s&z=16&output=embed", props.Lat, props.Lon, lang),
+		}
 
-		places = append(places, item)
+		areas = append(areas, area)
 	}
 
-	// 3. Save to Redis with 24 Hours TTL
-	if marshalled, err := json.Marshal(places); err == nil {
+	// 4. Save to Cache (24 Hours TTL)
+	if marshalled, err := json.Marshal(areas); err == nil {
 		c.rdb.Set(ctx, cacheKey, string(marshalled), 24*time.Hour)
 	}
 
-	return places, nil
+	return areas, nil
 }

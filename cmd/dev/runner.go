@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 func RunDev() error {
-	config := AirConfig()
+	config := ".air.toml"
+
+	if runtime.GOOS == "windows" {
+		config = ".air.windows.toml"
+	}
 
 	fmt.Printf("Starting Lapakita backend...\n")
+	fmt.Printf("OS: %s\n", runtime.GOOS)
 	fmt.Printf("Using Air config: %s\n\n", config)
 
 	if _, err := os.Stat(config); err != nil {
@@ -19,7 +25,8 @@ func RunDev() error {
 	air, err := exec.LookPath("air")
 	if err != nil {
 		return fmt.Errorf(
-			"Air is not installed or not available in PATH; install with: go install github.com/air-verse/air@latest",
+			"Air is not installed or not available in PATH: %w",
+			err,
 		)
 	}
 
