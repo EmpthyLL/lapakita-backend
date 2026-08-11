@@ -25,7 +25,7 @@ func (h *AreaHandler) SearchArea(c *gin.Context) {
 
 	lang := c.GetHeader("lang")
 	if lang == "" {
-		lang = "id"
+		lang = "en"
 	}
 
 	if err := c.ShouldBindQuery(&req); err != nil {
