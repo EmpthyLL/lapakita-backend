@@ -1,20 +1,27 @@
 package dto
 
-// Request dari Frontend
+import "lapakita-backend/pkg/api"
+
+// Request dari Frontend (meng-embed BasePaginationRequest)
 type GetAreaRequest struct {
-	Text string `form:"text" binding:"required"`
+	api.BasePaginationRequest
+	Search string `form:"search" binding:"required"`
 }
 
-// Respon khusus ke Frontend (Ringkas & UI-Friendly)
-type AreaResponse struct {
-	Formatted      string `json:"formatted"`        // Alamat lengkap untuk ditampilkan di opsi dropdown
-	AddressLine1   string `json:"address_line1"`    // Nama Jalan / Tempat
-	AddressLine2   string `json:"address_line2"`    // Kota, Provinsi, Kode Pos
-	GoogleMapURL   string `json:"google_map_url"`   // Link ke app/web Google Maps
-	GoogleEmbedURL string `json:"google_embed_url"` // Link untuk iframe embed map
+// Item Data Respon untuk Frontend
+type AreaResponseData struct {
+	Formatted      string `json:"formatted"`
+	AddressLine1   string `json:"address_line1"`
+	AddressLine2   string `json:"address_line2"`
+	GoogleMapURL   string `json:"google_map_url"`
+	GoogleEmbedURL string `json:"google_embed_url"`
 }
 
-// Struct internal khusus memetakan JSON dari Geoapify API
+// Alias Type Response terstruktur menggunakan Generic
+type GetAreaResponse = api.PaginatedResponse[[]AreaResponseData]
+
+// --- Struct Internal khusus decode Geoapify API ---
+
 type GeoapifyProperties struct {
 	Formatted    string  `json:"formatted"`
 	AddressLine1 string  `json:"address_line1"`

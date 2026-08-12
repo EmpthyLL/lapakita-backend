@@ -5,10 +5,11 @@ import (
 
 	"lapakita-backend/internal/feature/area/client"
 	"lapakita-backend/internal/feature/area/dto"
+	"lapakita-backend/pkg/api"
 )
 
 type AreaUsecase interface {
-	SearchArea(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponse, error)
+	SearchArea(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponseData, api.PaginationMeta, error)
 }
 
 type areaUsecase struct {
@@ -21,6 +22,6 @@ func NewAreaUsecase(geoClient client.GeoapifyClient) AreaUsecase {
 	}
 }
 
-func (u *areaUsecase) SearchArea(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponse, error) {
+func (u *areaUsecase) SearchArea(ctx context.Context, req dto.GetAreaRequest, lang string) ([]dto.AreaResponseData, api.PaginationMeta, error) {
 	return u.geoClient.SearchAutocomplete(ctx, req, lang)
 }

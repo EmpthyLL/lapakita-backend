@@ -1,42 +1,71 @@
 package api
 
 import (
+	"encoding/json"
+
 	"github.com/gin-gonic/gin"
 )
 
-type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-	Errors  interface{} `json:"errors,omitempty"`
+// Standar Response Sukses / Generik
+type Response[T any] struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    T      `json:"data,omitempty"`
 }
 
+// Standar Metadata Pagination
 type PaginationMeta struct {
-	TotalItems  int  `json:"totalItems"`
-	TotalPages  int  `json:"totalPages"`
+	TotalItems  int  `json:"totalItems,omitempty"`
+	TotalPages  int  `json:"totalPages,omitempty"`
 	CurrentPage int  `json:"currentPage"`
 	PerPage     int  `json:"perPage"`
 	HasNextPage bool `json:"hasNextPage"`
 	HasPrevPage bool `json:"hasPrevPage"`
 }
 
-type PageResponse struct {
+// Standar Response Khusus Pagination (Generic)
+type PaginatedResponse[T any] struct {
 	Success bool           `json:"success"`
 	Message string         `json:"message"`
-	Data    interface{}    `json:"data"`
+	Data    T              `json:"data"`
 	Meta    PaginationMeta `json:"meta"`
 }
 
-func SuccessResponse(c *gin.Context, statusCode int, message string, data interface{}) {
-	c.JSON(statusCode, Response{
+// Struct Khusus Detail Error Per-Field (Validation Error)
+type FieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+// Standar Response Error
+type ErrorResponse struct {
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	Errors  []FieldError `json:"errors,omitempty"`
+}
+
+// --- Helper Functions ---
+
+// Success mengirim respon sukses tanpa pagination
+func Success[T any](c *gin.Context, status int, message string, data T) {
+	c.Header("Content-Type", "application/json")
+	c.Status(status)
+	encoder := json.NewEncoder(c.Writer)
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(Response[T]{
 		Success: true,
 		Message: message,
 		Data:    data,
 	})
 }
 
-func SuccessWithPagination(c *gin.Context, statusCode int, message string, data interface{}, meta PaginationMeta) {
-	c.JSON(statusCode, PageResponse{
+// SuccessWithPagination mengirim respon data ber-halaman
+func SuccessWithPagination[T any](c *gin.Context, status int, message string, data T, meta PaginationMeta) {
+	c.Header("Content-Type", "application/json")
+	c.Status(status)
+	encoder := json.NewEncoder(c.Writer)
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(PaginatedResponse[T]{
 		Success: true,
 		Message: message,
 		Data:    data,
@@ -44,10 +73,20 @@ func SuccessWithPagination(c *gin.Context, statusCode int, message string, data 
 	})
 }
 
-func ErrorResponse(c *gin.Context, statusCode int, message string, errs interface{}) {
-	c.JSON(statusCode, Response{
+// Error mengirim respon error umum
+func Error(c *gin.Context, status int, message string) {
+	ErrorWithFields(c, status, message, nil)
+}
+
+// ErrorWithFields mengirim respon error beserta detail validation error per field
+func ErrorWithFields(c *gin.Context, status int, message string, fields []FieldError) {
+	c.Header("Content-Type", "application/json")
+	c.Status(status)
+	encoder := json.NewEncoder(c.Writer)
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(ErrorResponse{
 		Success: false,
 		Message: message,
-		Errors:  errs,
+		Errors:  fields,
 	})
 }

@@ -33,17 +33,18 @@ func (h *AreaHandler) SearchArea(c *gin.Context) {
 		if lang == "id" {
 			msg = "Parameter query tidak valid"
 		}
-		api.ErrorResponse(c, http.StatusBadRequest, msg, err.Error())
+		// Kirim ErrorResponse dengan helper api.Error
+		api.Error(c, http.StatusBadRequest, msg)
 		return
 	}
 
-	areas, err := h.usecase.SearchArea(c.Request.Context(), req, lang)
+	areas, meta, err := h.usecase.SearchArea(c.Request.Context(), req, lang)
 	if err != nil {
 		msg := "Failed to search area"
 		if lang == "id" {
 			msg = "Gagal mencari data area"
 		}
-		api.ErrorResponse(c, http.StatusInternalServerError, msg, err.Error())
+		api.Error(c, http.StatusInternalServerError, msg)
 		return
 	}
 
@@ -52,5 +53,6 @@ func (h *AreaHandler) SearchArea(c *gin.Context) {
 		successMsg = "Berhasil mendapatkan hasil pencarian area"
 	}
 
-	api.SuccessResponse(c, http.StatusOK, successMsg, areas)
+	// Kirim PaginatedResponse menggunakan helper api.SuccessWithPagination
+	api.SuccessWithPagination(c, http.StatusOK, successMsg, areas, meta)
 }

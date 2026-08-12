@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"sync"
 
+	"lapakita-backend/pkg/api"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )
@@ -53,10 +55,17 @@ func RateLimiterMiddleware(r rate.Limit, b int) gin.HandlerFunc {
 		ipLimiter := limiter.GetLimiter(ip)
 
 		if !ipLimiter.Allow() {
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"code":    http.StatusTooManyRequests,
-				"message": "Too many requests. Please slow down.",
-			})
+			lang := c.GetHeader("lang")
+			if lang == "" {
+				lang = "en"
+			}
+
+			msg := "Too many requests. Please slow down."
+			if lang == "id" {
+				msg = "Terlalu banyak permintaan. Mohon pelan-pelan."
+			}
+
+			api.Error(c, http.StatusTooManyRequests, msg)
 			c.Abort()
 			return
 		}
