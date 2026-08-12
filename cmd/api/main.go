@@ -1,8 +1,12 @@
 package main
 
-import "log"
+import (
+	"lapakita-backend/pkg/i18n"
+	"log"
+)
 
 func main() {
+	i18n.Init()
 	server, err := InitializeServer()
 	if err != nil {
 		log.Fatalf("Failed to initialize server: %v", err)

@@ -6,6 +6,7 @@ import (
 	"lapakita-backend/internal/feature/area/dto"
 	"lapakita-backend/internal/feature/area/usecase"
 	"lapakita-backend/pkg/api"
+	"lapakita-backend/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,36 +24,17 @@ func NewAreaHandler(usecase usecase.AreaUsecase) *AreaHandler {
 func (h *AreaHandler) SearchArea(c *gin.Context) {
 	var req dto.GetAreaRequest
 
-	lang := c.GetHeader("lang")
-	if lang == "" {
-		lang = "en"
-	}
-
 	if err := c.ShouldBindQuery(&req); err != nil {
-		msg := "Query parameter invalid"
-		if lang == "id" {
-			msg = "Parameter query tidak valid"
-		}
-		// Kirim ErrorResponse dengan helper api.Error
-		api.Error(c, http.StatusBadRequest, msg)
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
 		return
 	}
 
+	lang := i18n.GetLang(c)
 	areas, meta, err := h.usecase.SearchArea(c.Request.Context(), req, lang)
 	if err != nil {
-		msg := "Failed to search area"
-		if lang == "id" {
-			msg = "Gagal mencari data area"
-		}
-		api.Error(c, http.StatusInternalServerError, msg)
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
 		return
 	}
 
-	successMsg := "Successfully retrieved area autocomplete results"
-	if lang == "id" {
-		successMsg = "Berhasil mendapatkan hasil pencarian area"
-	}
-
-	// Kirim PaginatedResponse menggunakan helper api.SuccessWithPagination
-	api.SuccessWithPagination(c, http.StatusOK, successMsg, areas, meta)
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyAreaSearchSuccess), areas, meta)
 }
