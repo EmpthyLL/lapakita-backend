@@ -3,7 +3,7 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[sql]": {
-    "editor.defaultFormatter": "dbcode.dbcode"
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
   },
   "postman.settings.dotenv-detection-notification-visibility": false,
   "[toml]": {

@@ -21,20 +21,38 @@ func NewAreaHandler(usecase usecase.AreaUsecase) *AreaHandler {
 	}
 }
 
-func (h *AreaHandler) SearchArea(c *gin.Context) {
-	var req dto.GetAreaRequest
+// GET /api/v1/areas (Search Bar UI Dropdown)
+func (h *AreaHandler) SearchGeneral(c *gin.Context) {
+	var req dto.GetAreaGeneralRequest
 
 	if err := c.ShouldBindQuery(&req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
 		return
 	}
 
-	lang := i18n.GetLang(c)
-	areas, meta, err := h.usecase.SearchArea(c.Request.Context(), req, lang)
+	areas, meta, err := h.usecase.SearchGeneral(c.Request.Context(), req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
 		return
 	}
 
 	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyAreaSearchSuccess), areas, meta)
+}
+
+// GET /api/v1/areas/detail (Auto-fill Form Input Owner)
+func (h *AreaHandler) SearchDetail(c *gin.Context) {
+	var req dto.GetAreaDetailRequest
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
+		return
+	}
+
+	details, meta, err := h.usecase.SearchDetail(c.Request.Context(), req)
+	if err != nil {
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
+		return
+	}
+
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyAreaSearchSuccess), details, meta)
 }

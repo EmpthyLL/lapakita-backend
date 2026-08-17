@@ -1,0 +1,1 @@
+TRUNCATE TABLE cms_legal_documents CASCADE;

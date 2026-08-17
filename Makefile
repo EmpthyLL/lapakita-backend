@@ -1,3 +1,5 @@
+MIGRATIONS_DIR=db/migrations
+
 include .env
 export
 
@@ -7,13 +9,16 @@ wire:
 	cd cmd/api && wire
 
 migrate-create:
-	migrate create -ext sql -dir migrations -seq $(name)
+	migrate create -ext sql -dir $(MIGRATIONS_DIR) $(name)
 
 migrate-up:
-	migrate -path migrations -database "$(DB_URL)" -verbose up
+	migrate -database "$(DB_URL)" -path $(MIGRATIONS_DIR) up
 
 migrate-down:
-	migrate -path migrations -database "$(DB_URL)" -verbose down
+	migrate -database "$(DB_URL)" -path $(MIGRATIONS_DIR) down 1
+
+migrate-force:
+	migrate -database "$(DB_URL)" -path $(MIGRATIONS_DIR) force $(version)
 
 docker-up:
 	docker-compose up -d --build
