@@ -90,8 +90,8 @@ CREATE TABLE business_types (
     
     -- Label & Group Name Multi-Bahasa (I18n)
     -- Format JSONB: {"en": "Full-Service Restaurant", "id": "Restoran Layanan Penuh"}
-    label_i18n JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
-    group_name_i18n JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
+    label_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
+    group_name_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     
     -- Financial Benchmarks
     default_bep_months INT NOT NULL DEFAULT 6,
@@ -504,3 +504,32 @@ CREATE TABLE cms_legal_documents (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(doc_type, lang)
 );
+
+-- =============================================================================
+-- 10. GENERATED REPORTS (Multi-Role Analysis History)
+-- =============================================================================
+
+CREATE TABLE generated_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Role Context & Jenis Laporan
+    role_type VARCHAR(32) NOT NULL,             -- 'tenant', 'stall_owner', 'supplier'
+    report_type VARCHAR(64) NOT NULL,           -- 'multi_timeline_forecast', 'vacancy_loss_analysis', 'opportunity_gap_analysis'
+    
+    -- Entity Reference (Opsional: terikat ke Bisnis atau Lapak spesifik)
+    business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
+    stall_id UUID REFERENCES stalls(id) ON DELETE SET NULL,
+    
+    title VARCHAR(255) NOT NULL,                -- e.g. "Forecast Q3 2026 - Coffee Shop A"
+    
+    -- Flexible JSON Payload
+    -- Menampung snapshot input (Preset/Excel summary) & hasil keluaran AI/Forecast
+    input_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    result_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_generated_reports_user_role ON generated_reports(user_id, role_type);
+CREATE INDEX idx_generated_reports_created_at ON generated_reports(created_at DESC);
