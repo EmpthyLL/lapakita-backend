@@ -1,16 +1,39 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =============================================================================
--- 1. USERS, IDENTITIES & BANK ACCOUNTS
+-- ENUM DEFINITIONS (Core Types)
+-- =============================================================================
+
+-- Level Kontrol Operasional & Dependensi Lapak
+CREATE TYPE stall_permanence_type AS ENUM (
+    'permanent',        -- Independent / Standalone (Mandiri, 24/7 Access, Tanpa Induk)
+    'semi-permanent',   -- Managed Complex (Terikat Jam Buka/Tutup Pengelola Induk: Mall, Pasar, Foodcourt)
+    'temporary'         -- Temporary & Event Spots (Bazaar Pop-Up, Kakilima, Food Truck)
+);
+
+CREATE TYPE stall_placement_type AS ENUM (
+    'indoor',
+    'semi-outdoor',
+    'outdoor'
+);
+
+-- =============================================================================
+-- 1. USERS, IDENTITIES & MULTI-ROLE PROFILES
 -- =============================================================================
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(32) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL, -- Primary Identity & Login ID
     password_hash VARCHAR(255) NOT NULL,
-    avatar_url TEXT,
+    default_avatar_url TEXT,
+    
+    -- Telepon Kontak (Multi-Nomor: Primary, Secondary, WhatsApp)
+    phone_numbers JSONB NOT NULL DEFAULT '[{"type": "primary", "number": "", "is_whatsapp": true}]'::jsonb,
+    
+    -- Profil Kustom Per Role (Avatar & Display Name Independen Per Role)
+    -- Format JSON: { "tenant": { "name": "...", "avatar_url": "..." }, "stall_owner": { ... }, "supplier": { ... } }
+    role_profiles JSONB DEFAULT '{}'::jsonb,
     
     -- Active Context & Platform Subscription
     active_role VARCHAR(32) DEFAULT 'tenant', -- tenant, stall_owner, supplier
@@ -22,9 +45,8 @@ CREATE TABLE users (
 );
 
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_phone ON users(phone);
 
--- Data Identitas Resmi User (Tenant & Stall Owner)
+-- Data Identitas Resmi User (KYC untuk Tenant & Stall Owner)
 CREATE TABLE user_identity_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -32,7 +54,7 @@ CREATE TABLE user_identity_profiles (
     full_name_ktp VARCHAR(255) NOT NULL,
     nik VARCHAR(16) UNIQUE NOT NULL,
     ktp_photo_url TEXT NOT NULL, -- Foto KTP Ber-watermark
-    domicile_city VARCHAR(128),  -- Opsional (Cukup Kota)
+    domicile_city VARCHAR(128),
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -40,7 +62,7 @@ CREATE TABLE user_identity_profiles (
 
 CREATE INDEX idx_user_identity_profiles_user_id ON user_identity_profiles(user_id);
 
--- Rekening Bank User (Dapat dihapus permanen / Hard Delete)
+-- Rekening Bank User (Penarikan Dana Escrow / Payout)
 CREATE TABLE bank_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -59,28 +81,29 @@ CREATE TABLE bank_accounts (
 CREATE INDEX idx_bank_accounts_user_id ON bank_accounts(user_id);
 
 -- =============================================================================
--- 2. BUSINESS TYPES & TENANT BUSINESS PROFILES
+-- 2. BUSINESS TYPES (WITH I18N SUPPORT) & TENANT BUSINESS PROFILES
 -- =============================================================================
 
 CREATE TABLE business_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    group_name VARCHAR(128) NOT NULL, -- e.g. "F&B", "Retail & Commerce", "Services"
-    label VARCHAR(255) NOT NULL,
+    slug VARCHAR(128) UNIQUE NOT NULL,    -- e.g. "full-service-restaurant", "coffee-shop-cafe"
     
-    -- Baseline Financial Parameters
+    -- Label & Group Name Multi-Bahasa (I18n)
+    -- Format JSONB: {"en": "Full-Service Restaurant", "id": "Restoran Layanan Penuh"}
+    label_i18n JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
+    group_name_i18n JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
+    
+    -- Financial Benchmarks
     default_bep_months INT NOT NULL DEFAULT 6,
     default_capital NUMERIC(15, 2) NOT NULL DEFAULT 35000000.00,
+    avg_gross_margin_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.5000,
+    industry_rent_to_revenue_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.1500,
     
-    -- Physical Property Presets
-    recommended_property_types JSONB DEFAULT '[]'::jsonb,
-    recommended_placement VARCHAR(32) NOT NULL DEFAULT 'indoor',
-    min_size_sqm NUMERIC(6, 2) NOT NULL DEFAULT 12.00,
-    max_size_sqm NUMERIC(6, 2) NOT NULL DEFAULT 40.00,
-    min_floors INT NOT NULL DEFAULT 1,
-    max_floors INT NOT NULL DEFAULT 1,
+    -- Presets Per Permanence Tab (Permanent/Independent, Semi-Permanent/Managed, Temporary)
+    -- Menyimpan JSONB struktur permanencePresets dari TypeScript
+    permanence_presets JSONB NOT NULL DEFAULT '{}'::jsonb,
     
-    -- Facilities & Landmark Tags
-    recommended_facilities JSONB DEFAULT '[]'::jsonb,
+    -- Target Landmark Tags
     recommended_landmarks JSONB DEFAULT '[]'::jsonb,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -88,9 +111,11 @@ CREATE TABLE business_types (
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
+CREATE INDEX idx_business_types_slug ON business_types(slug);
+
 CREATE TABLE businesses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Menggunakan user_id (Bukan owner_id)
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     business_type_id UUID NOT NULL REFERENCES business_types(id) ON DELETE RESTRICT,
     name VARCHAR(255) NOT NULL,
     logo_url TEXT,
@@ -103,22 +128,20 @@ CREATE INDEX idx_businesses_user_id ON businesses(user_id);
 CREATE INDEX idx_businesses_deleted_at ON businesses(deleted_at);
 
 -- =============================================================================
--- 3. SUPPLIER PROFILES & REGULARS (FOLLOWERS)
+-- 3. SUPPLIER PROFILES & REGULARS
 -- =============================================================================
 
 CREATE TABLE supplier_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    supplier_code VARCHAR(32) UNIQUE NOT NULL, -- Kode Unik Supplier (e.g. "SUP-88291")
+    supplier_code VARCHAR(32) UNIQUE NOT NULL, -- e.g. "SUP-88291"
     company_name VARCHAR(255) NOT NULL,
     description TEXT,
     logo_url TEXT,
     
-    -- Dokumen Legal Usaha Supplier
-    owner_ktp_photo_url TEXT NOT NULL, -- Foto KTP PJ Ber-watermark
-    business_document_photo_url TEXT,  -- NIB / NPWP / Surat Izin Usaha Ber-watermark (Opsional)
+    owner_ktp_photo_url TEXT NOT NULL,
+    business_document_photo_url TEXT,
     
-    -- Verifikasi Admin & Target Market
     is_verified_by_admin BOOLEAN DEFAULT FALSE,
     verified_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     target_business_type_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -130,7 +153,6 @@ CREATE TABLE supplier_profiles (
 CREATE INDEX idx_supplier_profiles_user_id ON supplier_profiles(user_id);
 CREATE INDEX idx_supplier_profiles_supplier_code ON supplier_profiles(supplier_code);
 
--- Sistem Pelanggan Supplier (Tenant Follows Supplier)
 CREATE TABLE supplier_regulars (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -144,24 +166,28 @@ CREATE INDEX idx_supplier_regulars_tenant_user_id ON supplier_regulars(tenant_us
 CREATE INDEX idx_supplier_regulars_supplier_user_id ON supplier_regulars(supplier_user_id);
 
 -- =============================================================================
--- 4. STALLS (PHYSICAL PROPERTIES LISTED BY STALL OWNERS)
+-- 4. PHYSICAL STALLS (PROPERTY LISTINGS)
 -- =============================================================================
 
 CREATE TABLE stalls (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    stall_owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Istilah Spesifik Pemilik Lapak
+    stall_owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     
-    -- Specs & Placement
-    property_type VARCHAR(64) NOT NULL,
-    placement VARCHAR(32) NOT NULL,
+    -- Physical Property Classification
+    property_type VARCHAR(64) NOT NULL,                  -- e.g., 'shophouse', 'mall-shop', 'open-market-stall'
+    permanence_type stall_permanence_type NOT NULL DEFAULT 'permanent',
+    placement stall_placement_type NOT NULL DEFAULT 'indoor',
+    
+    -- Physical Specs
     size_sqm NUMERIC(8, 2) NOT NULL,
     length_meters NUMERIC(6, 2),
     width_meters NUMERIC(6, 2),
+    floor_level INT DEFAULT 1,
     electricity_capacity_va INT DEFAULT 1300,
 
-    -- Location Data (Geoapify Clean Components)
+    -- Location Data
     street_address TEXT NOT NULL,
     suburb VARCHAR(128),
     district VARCHAR(128),
@@ -176,7 +202,7 @@ CREATE TABLE stalls (
     embedded_map_url TEXT,
     nearby_landmarks JSONB DEFAULT '[]'::jsonb,
 
-    -- Multi-Period Rates & Financials
+    -- Rates & Payment Cycles
     allowed_payment_cycles JSONB NOT NULL DEFAULT '["month"]'::jsonb,
     monthly_rate NUMERIC(15, 2),
     quarterly_rate NUMERIC(15, 2),
@@ -184,17 +210,18 @@ CREATE TABLE stalls (
     yearly_rate NUMERIC(15, 2),
     security_deposit NUMERIC(15, 2) NOT NULL,
 
-    -- Rules & Media Separation
+    -- Terms & Contextual Facilities
     minimum_lease_months INT DEFAULT 1,
     start_date_options JSONB NOT NULL DEFAULT '["1", "15", "eom"]'::jsonb,
     utility_terms TEXT,
-    facility_values JSONB DEFAULT '[]'::jsonb,
+    facility_values JSONB DEFAULT '[]'::jsonb,           -- e.g. ["power", "water", "wifi"]
+    allowed_business_type_ids JSONB DEFAULT '[]'::jsonb, -- Matchmaking filter
     house_rules JSONB DEFAULT '[]'::jsonb,
     
-    display_media JSONB NOT NULL,    -- { mainImage, facilityImages: [], virtualTour360Url }
-    legal_documents JSONB DEFAULT '[]'::jsonb, -- { certificateType, documentPhotos: [] }
+    display_media JSONB NOT NULL,
+    legal_documents JSONB DEFAULT '[]'::jsonb,
 
-    -- Ratings & State
+    -- Rating & State
     rating_avg NUMERIC(3, 2) DEFAULT 0.00,
     review_count INT DEFAULT 0,
     is_published BOOLEAN DEFAULT FALSE,
@@ -206,13 +233,71 @@ CREATE TABLE stalls (
 );
 
 CREATE INDEX idx_stalls_city ON stalls(city);
-CREATE INDEX idx_stalls_province ON stalls(province);
+CREATE INDEX idx_stalls_permanence ON stalls(permanence_type);
+CREATE INDEX idx_stalls_property_type ON stalls(property_type);
 CREATE INDEX idx_stalls_is_published ON stalls(is_published);
 CREATE INDEX idx_stalls_lat_lon ON stalls(latitude, longitude);
 CREATE INDEX idx_stalls_deleted_at ON stalls(deleted_at);
 
 -- =============================================================================
--- 5. LEASE CONTRACTS & REVIEWS
+-- 5. BAZAARS & POP-UP EVENTS (SHORT-TERM EVENT DOMAIN)
+-- =============================================================================
+
+CREATE TABLE bazaars (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organizer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    
+    -- Event Schedule & Registration Window
+    registration_start_date DATE NOT NULL,
+    registration_end_date DATE NOT NULL,
+    event_start_date DATE NOT NULL,
+    event_end_date DATE NOT NULL,
+    
+    -- Event Location
+    venue_name VARCHAR(255) NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(128) NOT NULL,
+    latitude NUMERIC(10, 8),
+    longitude NUMERIC(11, 8),
+    
+    -- Allowed Business Types
+    allowed_business_type_ids JSONB DEFAULT '[]'::jsonb,
+    
+    banner_url TEXT,
+    layout_map_url TEXT,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_bazaars_event_dates ON bazaars(event_start_date, event_end_date);
+
+-- Booth Slots inside Event Bazaar
+CREATE TABLE bazaar_booths (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bazaar_id UUID NOT NULL REFERENCES bazaars(id) ON DELETE CASCADE,
+    booth_code VARCHAR(32) NOT NULL,          -- e.g. "A-01", "VIP-03"
+    size_sqm NUMERIC(6, 2) NOT NULL,
+    placement stall_placement_type DEFAULT 'indoor',
+    
+    -- Financials (Full Event Duration Package Rate)
+    total_price_amount NUMERIC(15, 2) NOT NULL,
+    included_facilities JSONB DEFAULT '["power", "trash-area"]'::jsonb,
+    
+    -- Status
+    status VARCHAR(32) DEFAULT 'available',    -- 'available', 'booked', 'occupied'
+    booked_by_user_id UUID REFERENCES users(id),
+    booked_business_id UUID REFERENCES businesses(id),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_bazaar_booths_bazaar_status ON bazaar_booths(bazaar_id, status);
+
+-- =============================================================================
+-- 6. LEASE CONTRACTS & REVIEWS
 -- =============================================================================
 
 CREATE TABLE lease_contracts (
@@ -222,7 +307,6 @@ CREATE TABLE lease_contracts (
     stall_owner_id UUID NOT NULL REFERENCES users(id),
     business_id UUID REFERENCES businesses(id),
     
-    -- Terms Lock
     selected_period VARCHAR(32) NOT NULL,
     agreed_rent_rate NUMERIC(15, 2) NOT NULL,
     agreed_security_deposit NUMERIC(15, 2) NOT NULL,
@@ -230,7 +314,6 @@ CREATE TABLE lease_contracts (
     end_date DATE NOT NULL,
     billing_cycle VARCHAR(32) NOT NULL,
     
-    -- Status & Escrow
     status VARCHAR(32) DEFAULT 'pending_approval',
     escrow_deposit_status VARCHAR(32) DEFAULT 'held',
     deposit_claimed_amount NUMERIC(15, 2) DEFAULT 0.00,
@@ -242,7 +325,6 @@ CREATE TABLE lease_contracts (
 CREATE INDEX idx_lease_contracts_tenant_user_id ON lease_contracts(tenant_user_id);
 CREATE INDEX idx_lease_contracts_stall_owner_id ON lease_contracts(stall_owner_id);
 CREATE INDEX idx_lease_contracts_stall_id ON lease_contracts(stall_id);
-CREATE INDEX idx_lease_contracts_status ON lease_contracts(status);
 
 CREATE TABLE stall_reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -259,7 +341,7 @@ CREATE TABLE stall_reviews (
 CREATE INDEX idx_stall_reviews_stall_id ON stall_reviews(stall_id);
 
 -- =============================================================================
--- 6. POS CASHIER SYSTEM (WITH PROMO & FAVORITE FEATURES)
+-- 7. POS CASHIER SYSTEM
 -- =============================================================================
 
 CREATE TABLE pos_staff_accounts (
@@ -288,16 +370,14 @@ CREATE TABLE pos_items (
     name VARCHAR(255) NOT NULL,
     sku VARCHAR(64),
     
-    -- Financials & Promo Support
     price NUMERIC(15, 2) NOT NULL,
-    discount_price NUMERIC(15, 2) DEFAULT NULL, -- Harga Promo / Diskon (Opsional)
+    discount_price NUMERIC(15, 2) DEFAULT NULL,
     cost_price NUMERIC(15, 2) DEFAULT 0.00,
     
-    -- Inventory & Tags
     stock_quantity INT DEFAULT 0,
     track_stock BOOLEAN DEFAULT TRUE,
-    is_favorite BOOLEAN DEFAULT FALSE,  -- Ditandai cepat di kasir
-    is_bestseller BOOLEAN DEFAULT FALSE, -- Ditandai produk terlaris
+    is_favorite BOOLEAN DEFAULT FALSE,
+    is_bestseller BOOLEAN DEFAULT FALSE,
     
     image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -306,7 +386,6 @@ CREATE TABLE pos_items (
 );
 
 CREATE INDEX idx_pos_items_business_id ON pos_items(business_id);
-CREATE INDEX idx_pos_items_deleted_at ON pos_items(deleted_at);
 
 CREATE TABLE pos_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -323,7 +402,7 @@ CREATE TABLE pos_transactions (
 CREATE INDEX idx_pos_transactions_business_id ON pos_transactions(business_id);
 
 -- =============================================================================
--- 7. SUPPLIER B2B MARKETPLACE
+-- 8. SUPPLIER B2B MARKETPLACE
 -- =============================================================================
 
 CREATE TABLE supplier_catalogs (
@@ -338,14 +417,13 @@ CREATE TABLE supplier_catalogs (
     tiered_pricing JSONB,
     is_available BOOLEAN DEFAULT TRUE,
     image_url TEXT,
-    favorited_by_user_ids JSONB DEFAULT '[]'::jsonb, -- Favorit Produk Supplier
+    favorited_by_user_ids JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX idx_supplier_catalogs_supplier_user_id ON supplier_catalogs(supplier_user_id);
-CREATE INDEX idx_supplier_catalogs_deleted_at ON supplier_catalogs(deleted_at);
 
 CREATE TABLE supplier_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -364,13 +442,11 @@ CREATE TABLE supplier_orders (
 
 CREATE INDEX idx_supplier_orders_tenant_user_id ON supplier_orders(tenant_user_id);
 CREATE INDEX idx_supplier_orders_supplier_user_id ON supplier_orders(supplier_user_id);
-CREATE INDEX idx_supplier_orders_deleted_at ON supplier_orders(deleted_at);
 
 -- =============================================================================
--- 8. NOTIFICATIONS & CMS
+-- 9. NOTIFICATIONS & CMS
 -- =============================================================================
 
--- Notifikasi Menggunakan Hard Delete
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -390,7 +466,6 @@ CREATE TABLE notifications (
 );
 
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 
 CREATE TABLE contact_inquiries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -404,7 +479,7 @@ CREATE TABLE contact_inquiries (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Public FAQ Menggunakan Hard Delete
+-- FAQ Publik (Bahasa Indonesia & Inggris via lang)
 CREATE TABLE cms_public_faqs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     lang VARCHAR(8) NOT NULL DEFAULT 'en',
@@ -418,6 +493,7 @@ CREATE TABLE cms_public_faqs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Dokumen Legal Publik (Sektor Bahasa Menggunakan lang)
 CREATE TABLE cms_legal_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     doc_type VARCHAR(32) NOT NULL,
