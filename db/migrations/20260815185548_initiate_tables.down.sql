@@ -45,3 +45,11 @@ DROP TABLE IF EXISTS bank_accounts CASCADE;
 DROP TABLE IF EXISTS user_identity_profiles CASCADE;
 
 DROP TABLE IF EXISTS users CASCADE;
+
+-- 8. Drop Generated Reports
+DROP TABLE IF EXISTS generated_reports CASCADE;
+
+-- 9. Drop Custom Enum Types
+DROP TYPE IF EXISTS stall_permanence_type CASCADE;
+
+DROP TYPE IF EXISTS stall_placement_type CASCADE;
