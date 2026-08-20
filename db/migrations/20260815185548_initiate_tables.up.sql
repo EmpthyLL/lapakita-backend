@@ -204,6 +204,7 @@ CREATE TABLE stalls (
 
     -- Rates & Payment Cycles
     allowed_payment_cycles JSONB NOT NULL DEFAULT '["month"]'::jsonb,
+    daily_rate NUMERIC(15, 2),
     monthly_rate NUMERIC(15, 2),
     quarterly_rate NUMERIC(15, 2),
     semesterly_rate NUMERIC(15, 2),
