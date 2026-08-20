@@ -32,7 +32,6 @@ CREATE TABLE users (
     phone_numbers JSONB NOT NULL DEFAULT '[{"type": "primary", "number": "", "is_whatsapp": true}]'::jsonb,
     
     -- Profil Kustom Per Role (Avatar & Display Name Independen Per Role)
-    -- Format JSON: { "tenant": { "name": "...", "avatar_url": "..." }, "stall_owner": { ... }, "supplier": { ... } }
     role_profiles JSONB DEFAULT '{}'::jsonb,
     
     -- Active Context & Platform Subscription
@@ -81,15 +80,13 @@ CREATE TABLE bank_accounts (
 CREATE INDEX idx_bank_accounts_user_id ON bank_accounts(user_id);
 
 -- =============================================================================
--- 2. BUSINESS TYPES (WITH I18N SUPPORT) & TENANT BUSINESS PROFILES
+-- 2. BUSINESS TYPES & TENANT BUSINESS PROFILES
 -- =============================================================================
 
 CREATE TABLE business_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    slug VARCHAR(128) UNIQUE NOT NULL,    -- e.g. "full-service-restaurant", "coffee-shop-cafe"
     
     -- Label & Group Name Multi-Bahasa (I18n)
-    -- Format JSONB: {"en": "Full-Service Restaurant", "id": "Restoran Layanan Penuh"}
     label_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     group_name_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     
@@ -99,8 +96,7 @@ CREATE TABLE business_types (
     avg_gross_margin_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.5000,
     industry_rent_to_revenue_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.1500,
     
-    -- Presets Per Permanence Tab (Permanent/Independent, Semi-Permanent/Managed, Temporary)
-    -- Menyimpan JSONB struktur permanencePresets dari TypeScript
+    -- Presets Per Permanence Tab (Permanent, Semi-Permanent, Temporary)
     permanence_presets JSONB NOT NULL DEFAULT '{}'::jsonb,
     
     -- Target Landmark Tags
@@ -110,8 +106,6 @@ CREATE TABLE business_types (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
-
-CREATE INDEX idx_business_types_slug ON business_types(slug);
 
 CREATE TABLE businesses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -143,7 +137,7 @@ CREATE TABLE supplier_profiles (
     business_document_photo_url TEXT,
     
     is_verified_by_admin BOOLEAN DEFAULT FALSE,
-    verified_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    verified_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     target_business_type_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -166,7 +160,7 @@ CREATE INDEX idx_supplier_regulars_tenant_user_id ON supplier_regulars(tenant_us
 CREATE INDEX idx_supplier_regulars_supplier_user_id ON supplier_regulars(supplier_user_id);
 
 -- =============================================================================
--- 4. PHYSICAL STALLS (PROPERTY LISTINGS)
+-- 4. PHYSICAL STALLS (SINGLE SOURCE OF TRUTH UNTUK SEMUA LAPAK & BAZAAR)
 -- =============================================================================
 
 CREATE TABLE stalls (
@@ -176,7 +170,7 @@ CREATE TABLE stalls (
     description TEXT,
     
     -- Physical Property Classification
-    property_type VARCHAR(64) NOT NULL,                  -- e.g., 'shophouse', 'mall-shop', 'open-market-stall'
+    property_type VARCHAR(64) NOT NULL,                  -- e.g., 'shophouse', 'mall-shop', 'bazaar-booth'
     permanence_type stall_permanence_type NOT NULL DEFAULT 'permanent',
     placement stall_placement_type NOT NULL DEFAULT 'indoor',
     
@@ -230,7 +224,7 @@ CREATE TABLE stalls (
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_stalls_city ON stalls(city);
@@ -241,64 +235,7 @@ CREATE INDEX idx_stalls_lat_lon ON stalls(latitude, longitude);
 CREATE INDEX idx_stalls_deleted_at ON stalls(deleted_at);
 
 -- =============================================================================
--- 5. BAZAARS & POP-UP EVENTS (SHORT-TERM EVENT DOMAIN)
--- =============================================================================
-
-CREATE TABLE bazaars (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organizer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    
-    -- Event Schedule & Registration Window
-    registration_start_date DATE NOT NULL,
-    registration_end_date DATE NOT NULL,
-    event_start_date DATE NOT NULL,
-    event_end_date DATE NOT NULL,
-    
-    -- Event Location
-    venue_name VARCHAR(255) NOT NULL,
-    address TEXT NOT NULL,
-    city VARCHAR(128) NOT NULL,
-    latitude NUMERIC(10, 8),
-    longitude NUMERIC(11, 8),
-    
-    -- Allowed Business Types
-    allowed_business_type_ids JSONB DEFAULT '[]'::jsonb,
-    
-    banner_url TEXT,
-    layout_map_url TEXT,
-    is_published BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_bazaars_event_dates ON bazaars(event_start_date, event_end_date);
-
--- Booth Slots inside Event Bazaar
-CREATE TABLE bazaar_booths (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    bazaar_id UUID NOT NULL REFERENCES bazaars(id) ON DELETE CASCADE,
-    booth_code VARCHAR(32) NOT NULL,          -- e.g. "A-01", "VIP-03"
-    size_sqm NUMERIC(6, 2) NOT NULL,
-    placement stall_placement_type DEFAULT 'indoor',
-    
-    -- Financials (Full Event Duration Package Rate)
-    total_price_amount NUMERIC(15, 2) NOT NULL,
-    included_facilities JSONB DEFAULT '["power", "trash-area"]'::jsonb,
-    
-    -- Status
-    status VARCHAR(32) DEFAULT 'available',    -- 'available', 'booked', 'occupied'
-    booked_by_user_id UUID REFERENCES users(id),
-    booked_business_id UUID REFERENCES businesses(id),
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_bazaar_booths_bazaar_status ON bazaar_booths(bazaar_id, status);
-
--- =============================================================================
--- 6. LEASE CONTRACTS & REVIEWS
+-- 5. LEASE CONTRACTS & REVIEWS
 -- =============================================================================
 
 CREATE TABLE lease_contracts (
@@ -342,7 +279,7 @@ CREATE TABLE stall_reviews (
 CREATE INDEX idx_stall_reviews_stall_id ON stall_reviews(stall_id);
 
 -- =============================================================================
--- 7. POS CASHIER SYSTEM
+-- 6. POS CASHIER SYSTEM
 -- =============================================================================
 
 CREATE TABLE pos_staff_accounts (
@@ -361,7 +298,7 @@ CREATE TABLE pos_categories (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE pos_items (
@@ -383,7 +320,7 @@ CREATE TABLE pos_items (
     image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_pos_items_business_id ON pos_items(business_id);
@@ -403,7 +340,7 @@ CREATE TABLE pos_transactions (
 CREATE INDEX idx_pos_transactions_business_id ON pos_transactions(business_id);
 
 -- =============================================================================
--- 8. SUPPLIER B2B MARKETPLACE
+-- 7. SUPPLIER B2B MARKETPLACE
 -- =============================================================================
 
 CREATE TABLE supplier_catalogs (
@@ -421,7 +358,7 @@ CREATE TABLE supplier_catalogs (
     favorited_by_user_ids JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_supplier_catalogs_supplier_user_id ON supplier_catalogs(supplier_user_id);
@@ -438,14 +375,14 @@ CREATE TABLE supplier_orders (
     digital_delivery_note_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_supplier_orders_tenant_user_id ON supplier_orders(tenant_user_id);
 CREATE INDEX idx_supplier_orders_supplier_user_id ON supplier_orders(supplier_user_id);
 
 -- =============================================================================
--- 9. NOTIFICATIONS & CMS
+-- 8. NOTIFICATIONS & CMS
 -- =============================================================================
 
 CREATE TABLE notifications (
@@ -461,7 +398,7 @@ CREATE TABLE notifications (
     metadata JSONB DEFAULT '{}'::jsonb,
     
     is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    read_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -480,7 +417,6 @@ CREATE TABLE contact_inquiries (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- FAQ Publik (Bahasa Indonesia & Inggris via lang)
 CREATE TABLE cms_public_faqs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     lang VARCHAR(8) NOT NULL DEFAULT 'en',
@@ -494,7 +430,6 @@ CREATE TABLE cms_public_faqs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Dokumen Legal Publik (Sektor Bahasa Menggunakan lang)
 CREATE TABLE cms_legal_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     doc_type VARCHAR(32) NOT NULL,
@@ -507,25 +442,21 @@ CREATE TABLE cms_legal_documents (
 );
 
 -- =============================================================================
--- 10. GENERATED REPORTS (Multi-Role Analysis History)
+-- 9. GENERATED REPORTS (Multi-Role Analysis History)
 -- =============================================================================
 
 CREATE TABLE generated_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    -- Role Context & Jenis Laporan
     role_type VARCHAR(32) NOT NULL,             -- 'tenant', 'stall_owner', 'supplier'
     report_type VARCHAR(64) NOT NULL,           -- 'multi_timeline_forecast', 'vacancy_loss_analysis', 'opportunity_gap_analysis'
     
-    -- Entity Reference (Opsional: terikat ke Bisnis atau Lapak spesifik)
     business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
     stall_id UUID REFERENCES stalls(id) ON DELETE SET NULL,
     
     title VARCHAR(255) NOT NULL,                -- e.g. "Forecast Q3 2026 - Coffee Shop A"
     
-    -- Flexible JSON Payload
-    -- Menampung snapshot input (Preset/Excel summary) & hasil keluaran AI/Forecast
     input_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
     result_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     
