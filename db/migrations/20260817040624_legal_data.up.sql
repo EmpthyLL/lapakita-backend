@@ -15,28 +15,43 @@ VALUES
         "title": "Introduction & Platform Nature",
         "subsections": [
           {
-            "body": "Lapakita is an online venue and operating platform connecting Tenants (Business Operators), Stall Owners, and B2B Suppliers. Lapakita is not a real estate broker, property manager, cleaner, law enforcement agent, or direct seller of products. Lapakita provides digital infrastructure, contract tools, escrow payment facilitation, and business analytics."
+            "body": "Lapakita is an online venue and operating platform connecting Tenants (Business Operators), Stall Owners, and B2B Suppliers. Lapakita is not a real estate broker, property manager, cleaner, law enforcement agent, or direct seller of physical products. Lapakita provides digital infrastructure, lease contract tools, escrow payment facilitation, and business intelligence analytics."
           }
         ]
       },
       {
         "id": "user-roles",
         "number": "2",
-        "title": "User Roles & Single Account Multi-Persona",
+        "title": "User Roles & Multi-Persona Profiles",
         "subsections": [
           {
-            "body": "A user registers a single primary account verified by email and phone number. A single account may operate across three personas (Tenant, Stall Owner, Supplier). Users are responsible for all activities under their credentials."
+            "body": "A user registers a primary account verified by email and phone number. A single account may operate across three personas (Tenant, Stall Owner, Supplier) with customizable role-specific display names and avatars. Users remain responsible for all activities under their credentials."
+          }
+        ]
+      },
+      {
+        "id": "stall-permanence-bazaar",
+        "number": "3",
+        "title": "Stall Classification & Short-Term Bazaar Events",
+        "subsections": [
+          {
+            "title": "Operational Permanence Levels",
+            "body": "Lapakita classifies properties into three distinct operational types: (a) Permanent (Independent properties with 24/7 access, physical sqm specifications, and no parent entity restrictions), (b) Semi-Permanent (Managed complex stalls such as mall shops, food court counters, and traditional market stalls bound by parent entity operating hours and parent complex names), and (c) Temporary (Short-term pop-up bazaar booths, street vendor spots, and food truck bays)."
+          },
+          {
+            "title": "Pop-Up & Bazaar Event Booking & Lease Rules",
+            "body": "Temporary bazaar booths are bound by specific event schedules, registration deadlines, slot availability, and event-specific lease rules. Event lease rules configure operating days (''everyday'', ''weekends'', ''weekdays'', ''flexible''), attendance requirements (''mandatory_full'' or ''flexible_days''), and cancellation policies (''pro_rata'', ''deposit_refundable'', or ''non_refundable''). Tenants applying for bazaar booths agree to abide by these event terms."
           }
         ]
       },
       {
         "id": "leasing-contracts",
-        "number": "3",
+        "number": "4",
         "title": "Stall Leasing, Contracts & Payment Timelines",
         "subsections": [
           {
             "title": "Digital Lease Agreement & Owner Configurations",
-            "body": "Stall Owners configure specific lease rules for their listings, including Start Date options (1st, 15th, End of Month, or custom dates between 1-28), Minimum Lease Durations, and Payment Cycles (Monthly, Quarterly, Semesterly, Yearly). Tenants use search filters to find stalls matching their preferred timeline."
+            "body": "Stall Owners configure specific lease rules for their listings. For Permanent & Semi-Permanent stalls, rules include Start Date options (1st, 15th, End of Month, or custom dates between 1-28), Minimum Lease Months, and Payment Cycles (Monthly, Quarterly, Semesterly, Yearly). For Temporary stalls, rules include Minimum Lease Days, Start Day options (e.g. Event Day 1, Event Day 2, Event Week 1), and Daily/Monthly event pricing."
           },
           {
             "title": "Approval Lock & Payment Deadline",
@@ -48,13 +63,13 @@ VALUES
           },
           {
             "title": "Refundable Anti-Spam Commitment Fee",
-            "body": "To protect Owners from application spam, Tenants with two (2) or more unpaid or cancelled approved applications within a 30-day window are flagged. Flagged Tenants are required to submit a temporary 35% commitment deposit when applying. This deposit is 100% REFUNDABLE and non-punitive: if the lease becomes active, 100% of the deposit is applied directly toward the Tenant''s initial rent and security deposit balance. If the application is cancelled or fails to proceed before the Start Date, the commitment deposit is fully refunded back to the Tenant''s account. Account flag status and public star ratings remain the primary disciplinary measures for non-completion."
+            "body": "To protect Owners from application spam, Tenants with two (2) or more unpaid or cancelled approved applications within a 30-day window are flagged. Flagged Tenants are required to submit a temporary 35% commitment deposit when applying. This deposit is 100% REFUNDABLE and non-punitive: if the lease becomes active, 100% of the deposit is applied directly toward the Tenant''s initial rent and security deposit balance. If the application is cancelled or fails to proceed before the Start Date, the commitment deposit is fully refunded back to the Tenant''s account."
           }
         ]
       },
       {
         "id": "escrow",
-        "number": "4",
+        "number": "5",
         "title": "Security Deposit & Escrow Handling",
         "subsections": [
           {
@@ -76,8 +91,23 @@ VALUES
         ]
       },
       {
+        "id": "analytics-reports",
+        "number": "6",
+        "title": "Generated Reports & Data Analysis History",
+        "subsections": [
+          {
+            "title": "Report Generation & Execution",
+            "body": "Subscribed users (Premium or Active Tier) may execute automated data analysis reports, including Tenant Multi-Timeline Business Forecasts, Owner Vacancy Loss Analyses, and Supplier Market Opportunity Gap Analyses."
+          },
+          {
+            "title": "Historical Data Archive Rights",
+            "body": "All generated reports are compiled into structured JSON payloads and saved permanently in the user''s Report History archive. Users retain full rights to view, export, and download previously generated reports at any time, even if their subscription plan reverts to the Free tier. Regenerating new analysis reports requires an active subscription."
+          }
+        ]
+      },
+      {
         "id": "keys-access",
-        "number": "5",
+        "number": "7",
         "title": "Physical Keys, Duplication & Lock Cylinder Responsibility",
         "subsections": [
           {
@@ -108,7 +138,7 @@ VALUES
       },
       {
         "id": "utilities-electricity",
-        "number": "6",
+        "number": "8",
         "title": "Utilities, Electricity & Operational Expenses",
         "subsections": [
           {
@@ -127,7 +157,7 @@ VALUES
       },
       {
         "id": "cleanliness-eviction",
-        "number": "7",
+        "number": "9",
         "title": "Stall Cleanliness, Abandoned Items & Evictions",
         "subsections": [
           {
@@ -146,7 +176,7 @@ VALUES
       },
       {
         "id": "supplier-disputes",
-        "number": "8",
+        "number": "10",
         "title": "Supplier Marketplace & B2B Disputes",
         "subsections": [
           {
@@ -161,180 +191,11 @@ VALUES
       },
       {
         "id": "payouts",
-        "number": "9",
+        "number": "11",
         "title": "Payouts & Bank Account Requirements",
         "subsections": [
           {
             "body": "Owners and Suppliers must register a valid bank account for automated payout disbursements. Tenants must register a valid bank account to receive potential deposit refunds."
-          }
-        ]
-      }
-    ]'::jsonb
-),
-(
-    gen_random_uuid(),
-    'terms',
-    'id',
-    'Syarat dan Ketentuan',
-    'Syarat dan ketentuan ini mengatur penggunaan Lapakita oleh Penyewa, Pemilik Lapak, dan Supplier. Harap baca dengan cermat sebelum menggunakan platform.',
-    '[
-      {
-        "id": "platform-nature",
-        "number": "1",
-        "title": "Pendahuluan & Sifat Platform",
-        "subsections": [
-          {
-            "body": "Lapakita adalah platform operasional dan tempat sewa online yang menghubungkan Penyewa (Pelaku Usaha), Pemilik Lapak, dan Supplier B2B. Lapakita bukan agen properti, pengelola gedung, penyedia jasa kebersihan, aparat penegak hukum, atau penjual langsung. Lapakita menyediakan infrastruktur digital, alat pembuatan kontrak, fasilitasi pembayaran escrow, dan analitik bisnis."
-          }
-        ]
-      },
-      {
-        "id": "user-roles",
-        "number": "2",
-        "title": "Peran Pengguna & Satu Akun Multi-Persona",
-        "subsections": [
-          {
-            "body": "Pengguna mendaftarkan satu akun utama yang diverifikasi melalui email dan nomor telepon. Satu akun dapat beroperasi dalam tiga persona (Penyewa, Pemilik Lapak, Supplier). Pengguna bertanggung jawab penuh atas seluruh aktivitas di bawah kredensial mereka."
-          }
-        ]
-      },
-      {
-        "id": "leasing-contracts",
-        "number": "3",
-        "title": "Sewa Lapak, Kontrak & Tenggat Pembayaran",
-        "subsections": [
-          {
-            "title": "Perjanjian Sewa Digital & Konfigurasi Pemilik",
-            "body": "Pemilik Lapak mengonfigurasi aturan sewa spesifik pada listing mereka, termasuk opsi Tanggal Mulai (Tanggal 1, 15, Akhir Bulan, atau tanggal kustom antara 1-28), Durasi Sewa Minimum, dan Siklus Pembayaran (Bulanan, Triwulan, Semesteran, Tahunan). Penyewa menggunakan filter pencarian untuk menemukan lapak yang sesuai dengan preferensi mereka."
-          },
-          {
-            "title": "Kunci Persetujuan & Tenggat Pembayaran",
-            "body": "Setelah persetujuan Pemilik, lapak akan dikunci sementara dan dihapus dari pencarian publik. Penyewa wajib menyelesaikan pembayaran sewa awal dan deposit jaminan melalui Payment Gateway pada atau sebelum Tanggal Mulai yang dipilih."
-          },
-          {
-            "title": "Sanksi Pembatalan & Pembatalan Kontrak",
-            "body": "Jika Penyewa gagal menyelesaikan pembayaran sesuai tenggat Tanggal Mulai, Pemilik berhak untuk segera membatalkan kontrak dan memberikan ulasan publik bintang 1 atas pelanggaran komitmen."
-          },
-          {
-            "title": "Biaya Komitmen Anti-Spam (Dapat Dikembalikan)",
-            "body": "Untuk melindungi Pemilik dari spam pengajuan, Penyewa dengan dua (2) atau lebih pengajuan yang disetujui namun tidak dibayar/dibatalkan dalam kurun waktu 30 hari akan ditandai. Penyewa yang ditandai wajib menyetorkan deposit komitmen sementara sebesar 35% saat mengajukan sewa. Deposit ini 100% DAPAT DIKEMBALIKAN dan tidak bersifat menghukum: jika sewa aktif, 100% deposit langsung dialokasikan untuk mengurangi tagihan sewa awal dan deposit jaminan. Jika pengajuan dibatalkan sebelum Tanggal Mulai, deposit komitmen dikembalikan penuh ke akun Penyewa. Status penandaan akun dan ulasan bintang publik tetap menjadi tindakan disipliner utama."
-          }
-        ]
-      },
-      {
-        "id": "escrow",
-        "number": "4",
-        "title": "Deposit Jaminan & Pengelolaan Escrow",
-        "subsections": [
-          {
-            "title": "Penyimpanan Escrow",
-            "body": "Deposit jaminan dikumpulkan melalui Escrow Payment Gateway berizin dan dipegang secara netral selama masa sewa. Deposit tidak disimpan di rekening bank pribadi Pemilik selama masa sewa aktif."
-          },
-          {
-            "title": "Cakupan Penggunaan",
-            "body": "Deposit jaminan murni berfungsi sebagai jaminan terhadap kerusakan fisik properti atau penggantian kunci yang hilang, bukan sebagai denda harian."
-          },
-          {
-            "title": "Klaim Kerusakan & Proses Banding",
-            "body": "Saat penyewa keluar, Pemilik dapat mengajukan klaim kerusakan disertai rincian biaya dan bukti foto berstempel waktu. Penyewa memiliki batas waktu untuk Menerima atau Mengajukan Banding. Jika Diterima, dana dicairkan ke rekening bank Pemilik, dan sisanya dikembalikan ke Penyewa. Jika Dibanding, Dukungan Platform Lapakita bertindak sebagai peninjau administratif netral untuk memeriksa catatan foto awal vs. akhir dan membuat penyesuaian deposit yang bersifat mengikat."
-          },
-          {
-            "title": "Batas Deposit & Kerusakan Mayor Properti",
-            "body": "Deposit Jaminan yang ditetapkan Pemilik merupakan batas maksimal jaminan escrow yang dapat dipulihkan langsung melalui platform. Lapakita tidak bertanggung jawab atas biaya perbaikan yang melebihi jumlah deposit. Dalam kasus kerusakan berat atau vandalisme yang melebihi deposit, Lapakita akan mencairkan 100% deposit yang tersedia kepada Pemilik serta memberikan bukti KYC terverifikasi untuk membantu Pemilik dalam proses hukum formal. Akun Penyewa yang melanggar akan diblokir permanen."
-          }
-        ]
-      },
-      {
-        "id": "keys-access",
-        "number": "5",
-        "title": "Kunci Fisik, Duplikasi & Tanggung Jawab Silinder Kunci",
-        "subsections": [
-          {
-            "title": "Serah Terima Kunci Awal",
-            "body": "Kunci diserahkan secara langsung dari Pemilik kepada Penyewa pada awal masa sewa."
-          },
-          {
-            "title": "Pengembalian Kunci & Keluar (Kebebasan Pengembalian)",
-            "body": "Pengembalian kunci fisik saat masa sewa berakhir bersifat opsional. Penyewa tidak dikenakan sanksi hanya karena tidak mengembalikan kunci, dan tidak diwajibkan mengembalikan kunci hasil duplikasi."
-          },
-          {
-            "title": "Duplikasi Kunci",
-            "body": "Penyewa bebas menduplikasi kunci secara mandiri di tukang kunci lokal dengan biaya sendiri selama masa sewa."
-          },
-          {
-            "title": "Rekomendasi Keamanan Pemilik (Higiene Silinder Kunci)",
-            "body": "Lapakita sangat menyarankan Pemilik Lapak untuk mengganti silinder/gagang kunci di antara periode penyewa yang berbeda. Jika Pemilik memilih menggunakan kembali set kunci lama, Pemilik menanggung seluruh risiko keamanan terkait potensi kunci duplikat. Lapakita tidak bertanggung jawab atas pelanggaran keamanan properti akibat penggunaan kunci lama."
-          },
-          {
-            "title": "Protokol Kunci Hilang — Pemilik Memiliki Kunci Cadangan",
-            "body": "Jika Penyewa kehilangan kunci tetapi Pemilik memiliki kunci cadangan, Penyewa hanya membayar biaya duplikasi kunci, yang dapat dipotong dari deposit jaminan atau dibayarkan langsung ke Pemilik."
-          },
-          {
-            "title": "Protokol Kunci Hilang — Kehilangan Kunci Total",
-            "body": "Jika seluruh kunci hilang dan tukang kunci harus membongkar, membuat kunci baru dari nol, atau mengganti seluruh silinder kunci: Pemilik bertanggung jawab mengelola proses penggantian dan menanggung biaya perangkat keras silinder kunci sebagai pemilik aset. Penyewa hanya membayar biaya pembuatan kunci individu yang dibuat untuk mereka sebagai sanksi atas kelalaian."
-          }
-        ]
-      },
-      {
-        "id": "utilities-electricity",
-        "number": "6",
-        "title": "Utilitas, Listrik & Biaya Operasional",
-        "subsections": [
-          {
-            "title": "Penyediaan oleh Pemilik",
-            "body": "Pemilik Lapak bertanggung jawab menyediakan infrastruktur utilitas operasional dasar, termasuk kapasitas daya listrik (kVA), meteran air, atau sambungan pipa sesuai yang diiklankan pada listing."
-          },
-          {
-            "title": "Penggunaan & Tanggung Jawab Tagihan Penyewa",
-            "body": "Konsumsi harian listrik, air, internet, pembuangan sampah, atau iuran pemeliharaan pasar lokal selama masa sewa aktif menjadi tanggung jawab penuh Penyewa. Penyewa wajib mengisi ulang token listrik prabayar (PLN) atau membayar tagihan utilitas pascabayar secara langsung."
-          },
-          {
-            "title": "Tunggakan Utilitas Saat Keluar",
-            "body": "Jika Penyewa mengosongkan lapak dengan meninggalkan tunggakan tagihan utilitas atau iuran kebersihan lokal, Pemilik berhak memotong tepat sejumlah tunggakan tersebut dari deposit jaminan escrow Penyewa saat keluar."
-          }
-        ]
-      },
-      {
-        "id": "cleanliness-eviction",
-        "number": "7",
-        "title": "Kebersihan Lapak, Barang Tertinggal & Pengosongan",
-        "subsections": [
-          {
-            "title": "Kewajiban Kebersihan",
-            "body": "Penyewa bertanggung jawab penuh untuk mengosongkan seluruh barang pribadi dan inventaris saat keluar. Pemilik bertanggung jawab menyajikan ruang yang bersih bagi penyewa baru."
-          },
-          {
-            "title": "Reaktivasi Listing Manual",
-            "body": "Lapak aktif atau tertunda secara otomatis disembunyikan dari pasar. Setelah penyewa keluar atau kontrak dibatalkan, lapak TIDAK otomatis muncul kembali. Pemilik bertanggung jawab penuh untuk mengaktifkan/menerbitkan kembali listing secara manual setelah ruang fisik bersih dan siap untuk peninjauan baru."
-          },
-          {
-            "title": "Barang yang Ditinggalkan",
-            "body": "Barang-barang yang ditinggalkan oleh penyewa yang dihentikan atau keluar setelah masa sewa dapat dibuang, disimpan, atau dibersihkan oleh Pemilik Lapak atas diskresi penuh mereka. Lapakita tidak bertanggung jawab atas barang yang ditinggalkan."
-          }
-        ]
-      },
-      {
-        "id": "supplier-disputes",
-        "number": "8",
-        "title": "Pasar Supplier & Sengketa B2B",
-        "subsections": [
-          {
-            "title": "Transaksi Peer-to-Peer",
-            "body": "Pasar Supplier B2B menghubungkan Penyewa secara langsung dengan Supplier."
-          },
-          {
-            "title": "Penanganan Sengketa",
-            "body": "Lapakita tidak menyediakan arbitrasi admin manual untuk keluhan produk supplier (misalnya salah bahan, keterlambatan pengiriman, cacat stok ringan). Pembeli dan Supplier harus menyelesaikan masalah melalui obrolan langsung. Pembeli mempertahankan hak penuh untuk memberikan rating bintang dan ulasan publik pada katalog produk dan profil supplier."
-          }
-        ]
-      },
-      {
-        "id": "payouts",
-        "number": "9",
-        "title": "Pencairan Dana & Persyaratan Rekening Bank",
-        "subsections": [
-          {
-            "body": "Pemilik dan Supplier wajib mendaftarkan rekening bank yang valid untuk pencairan dana otomatis. Penyewa wajib mendaftarkan rekening bank yang valid untuk menerima potensi pengembalian deposit."
           }
         ]
       }
@@ -353,20 +214,20 @@ VALUES
         "title": "Data We Collect",
         "subsections": [
           {
-            "title": "Account Identity",
-            "body": "Full name, email address, phone number (WhatsApp), and encrypted password."
+            "title": "Account Identity & Role Profiles",
+            "body": "Full name, email address, multi-phone contact numbers (WhatsApp), role-specific avatars, display names, and encrypted password credentials."
           },
           {
             "title": "Verification Data (KYC)",
-            "body": "ID card (KTP) photo, OCR data, and a selfie with KTP — collected prior to lease signing or supplier activation for legal identity binding."
+            "body": "ID card (KTP) photo, NIK, OCR data, and official business document photos collected prior to lease signing, stall publishing, or supplier activation."
           },
           {
             "title": "Financial & Payout Data",
-            "body": "Bank account name, bank name, and account number for automated payment routing via payment gateway APIs."
+            "body": "Bank account holder name, bank code, and account number for automated payment routing and escrow payouts."
           },
           {
-            "title": "Operational & Transactional Data",
-            "body": "POS sales entries, stock levels, item prices, rental payment history, chat messages, uploaded property photos, and review ratings."
+            "title": "Operational & Generated Analysis Data",
+            "body": "POS sales entries, stock levels, item prices, rental payment history, chat messages, uploaded property media, and saved historical analysis report payloads."
           }
         ]
       },
@@ -376,13 +237,13 @@ VALUES
         "title": "How We Use Your Data",
         "subsections": [
           {
-            "body": "To facilitate digital lease contracts, billing, and automated payout transfers."
+            "body": "To facilitate digital lease contracts, short-term bazaar booth bookings, billing, and automated payout transfers."
           },
           {
             "body": "To display B2B supplier catalogs to relevant tenant business categories."
           },
           {
-            "body": "To generate aggregated, non-personally identifiable Business Intelligence (BI) statistics — e.g. area demand trends, average foot traffic scores."
+            "body": "To compile historical business forecast analysis and store structured report history accessible via user dashboards."
           },
           {
             "body": "To verify identity in cases of legal lease disputes or deposit appeals."
@@ -414,87 +275,7 @@ VALUES
         "title": "Data Retention & User Rights",
         "subsections": [
           {
-            "body": "Users may request account deactivation and data erasure, provided there are no active binding lease contracts, pending escrow deposit claims, or unfulfilled B2B transactions associated with the account."
-          }
-        ]
-      }
-    ]'::jsonb
-),
-(
-    gen_random_uuid(),
-    'privacy',
-    'id',
-    'Kebijakan Privasi',
-    'Kebijakan ini menjelaskan data apa yang dikumpulkan Lapakita, bagaimana data tersebut digunakan, dan perlindungan yang diterapkan di seluruh akun Penyewa, Pemilik, dan Supplier.',
-    '[
-      {
-        "id": "data-collected",
-        "number": "1",
-        "title": "Data yang Kami Kumpulkan",
-        "subsections": [
-          {
-            "title": "Identitas Akun",
-            "body": "Nama lengkap, alamat email, nomor telepon (WhatsApp), dan kata sandi terenkripsi."
-          },
-          {
-            "title": "Data Verifikasi (KYC)",
-            "body": "Foto kartu identitas (KTP), data OCR, dan foto selfie dengan KTP — dikumpulkan sebelum penandatanganan sewa atau aktivasi supplier untuk pengikatan identitas hukum."
-          },
-          {
-            "title": "Data Keuangan & Pencarian Dana",
-            "body": "Nama pemilik rekening bank, nama bank, dan nomor rekening untuk perutean pembayaran otomatis via API payment gateway."
-          },
-          {
-            "title": "Data Operasional & Transaksi",
-            "body": "Entri penjualan POS, tingkat stok, harga barang, riwayat pembayaran sewa, pesan obrolan, foto properti yang diunggah, dan rating ulasan."
-          }
-        ]
-      },
-      {
-        "id": "data-usage",
-        "number": "2",
-        "title": "Cara Kami Menggunakan Data Anda",
-        "subsections": [
-          {
-            "body": "Untuk memfasilitasi kontrak sewa digital, penagihan, dan transfer pencairan dana otomatis."
-          },
-          {
-            "body": "Untuk menampilkan katalog supplier B2B ke kategori bisnis penyewa yang relevan."
-          },
-          {
-            "body": "Untuk menghasilkan statistik Business Intelligence (BI) anonim yang diagregasi — misalnya tren permintaan area, skor lalu lintas pejalan kaki rata-rata."
-          },
-          {
-            "body": "Untuk memverifikasi identitas dalam kasus sengketa sewa hukum atau banding deposit."
-          }
-        ]
-      },
-      {
-        "id": "data-protection",
-        "number": "3",
-        "title": "Perlindungan Data & Kerahasiaan",
-        "subsections": [
-          {
-            "title": "Tidak Ada Penjualan Data",
-            "body": "Lapakita secara tegas tidak pernah menjual, menyewakan, atau memperdagangkan data pribadi pengguna, pendapatan bisnis, atau log transaksi pribadi kepada pengiklan pihak ketiga atau broker data."
-          },
-          {
-            "title": "Kerahasiaan Data Pendapatan",
-            "body": "Angka pendapatan penyewa individu dan buku kas POS bersifat privat untuk akun bisnis penyewa. Pemilik Lapak tidak dapat melihat pendapatan kotor atau margin keuntungan penyewa secara pasti."
-          },
-          {
-            "title": "Infrastruktur Aman",
-            "body": "Semua data muatan sensitif, token API, dan kredensial dienkripsi menggunakan protokol standar industri (TLS/SSL) dan disimpan secara aman."
-          }
-        ]
-      },
-      {
-        "id": "data-retention",
-        "number": "4",
-        "title": "Retensi Data & Hak Pengguna",
-        "subsections": [
-          {
-            "body": "Pengguna dapat mengajukan penonaktifan akun dan penghapusan data, dengan syarat tidak ada kontrak sewa mengikat yang aktif, klaim deposit escrow yang tertunda, atau transaksi B2B yang belum terpenuhi yang terkait dengan akun tersebut."
+            "body": "Users may request account deactivation and data erasure, provided there are no active binding lease contracts, pending escrow deposit claims, unfulfilled B2B orders, or active event bookings associated with the account."
           }
         ]
       }
@@ -517,7 +298,7 @@ VALUES
             "body": "Keeping you logged in securely across page reloads."
           },
           {
-            "title": "Active Role Preference",
+            "title": "Active Role & Profile Preference",
             "body": "Remembering whether you last operated in Tenant, Owner, or Supplier mode."
           },
           {
@@ -533,44 +314,6 @@ VALUES
         "subsections": [
           {
             "body": "We do not use invasive third-party tracking cookies, cross-site behavioral tracking scripts, or ad-retargeting pixels. Third-party scripts are strictly limited to secure Payment Gateway iFrames (Midtrans/Xendit) for payment processing."
-          }
-        ]
-      }
-    ]'::jsonb
-),
-(
-    gen_random_uuid(),
-    'cookies',
-    'id',
-    'Kebijakan Cookies & Penyimpanan Lokal',
-    'Lapakita menggunakan penyimpanan browser minimal — murni untuk fungsionalitas esensial, tidak pernah untuk pelacakan invasif atau retargeting iklan.',
-    '[
-      {
-        "id": "what-we-store",
-        "number": "1",
-        "title": "Apa yang Kami Simpan",
-        "subsections": [
-          {
-            "title": "Status Sesi",
-            "body": "Menjaga Anda tetap masuk secara aman saat memuat ulang halaman."
-          },
-          {
-            "title": "Preferensi Peran Aktif",
-            "body": "Mengingat apakah Anda terakhir beroperasi dalam mode Penyewa, Pemilik, atau Supplier."
-          },
-          {
-            "title": "Cache POS",
-            "body": "Menyimpan sementara item keranjang POS dan daftar produk secara lokal agar antarmuka kasir Anda tetap cepat dan responsif bahkan saat terjadi gangguan jaringan ringan."
-          }
-        ]
-      },
-      {
-        "id": "third-party-cookies",
-        "number": "2",
-        "title": "Cookies Pihak Ketiga",
-        "subsections": [
-          {
-            "body": "Kami tidak menggunakan cookies pelacak pihak ketiga yang invasif, skrip pelacak perilaku lintas situs, atau piksel retargeting iklan. Skrip pihak ketiga murni dibatasi pada iFrame Payment Gateway aman (Midtrans/Xendit) untuk pemrosesan pembayaran."
           }
         ]
       }

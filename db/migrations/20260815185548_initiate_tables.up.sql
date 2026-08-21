@@ -5,17 +5,12 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- =============================================================================
 
 -- Level Kontrol Operasional & Dependensi Lapak
-CREATE TYPE stall_permanence_type AS ENUM (
-    'permanent',        -- Independent / Standalone (Mandiri, 24/7 Access, Tanpa Induk)
-    'semi-permanent',   -- Managed Complex (Terikat Jam Buka/Tutup Pengelola Induk: Mall, Pasar, Foodcourt)
-    'temporary'         -- Temporary & Event Spots (Bazaar Pop-Up, Kakilima, Food Truck)
-);
+CREATE TYPE stall_permanence_type AS ENUM ('permanent', 'semi-permanent', 'temporary');
+CREATE TYPE stall_placement_type AS ENUM ('indoor', 'semi-outdoor', 'outdoor');
 
-CREATE TYPE stall_placement_type AS ENUM (
-    'indoor',
-    'semi-outdoor',
-    'outdoor'
-);
+CREATE TYPE event_operating_days_type AS ENUM ('everyday', 'weekends', 'weekdays', 'flexible');
+CREATE TYPE attendance_requirement_type AS ENUM ('mandatory_full', 'flexible_days');
+CREATE TYPE cancellation_policy_type AS ENUM ('pro_rata', 'deposit_refundable', 'non_refundable');
 
 -- =============================================================================
 -- 1. USERS, IDENTITIES & MULTI-ROLE PROFILES
@@ -169,17 +164,25 @@ CREATE TABLE stalls (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     
-    -- Physical Property Classification
+    -- Klasifikasi Properti
     property_type VARCHAR(64) NOT NULL,                  -- e.g., 'shophouse', 'mall-shop', 'bazaar-booth'
     permanence_type stall_permanence_type NOT NULL DEFAULT 'permanent',
     placement stall_placement_type NOT NULL DEFAULT 'indoor',
     
-    -- Physical Specs
-    size_sqm NUMERIC(8, 2) NOT NULL,
-    length_meters NUMERIC(6, 2),
-    width_meters NUMERIC(6, 2),
+    -- Physical Specs (Opsional untuk Semi / Temporary)
+    size_sqm NUMERIC(8, 2) DEFAULT NULL,
+    length_meters NUMERIC(6, 2) DEFAULT NULL,
+    width_meters NUMERIC(6, 2) DEFAULT NULL,
     floor_level INT DEFAULT 1,
     electricity_capacity_va INT DEFAULT 1300,
+
+    -- ── 1. SEMI-PERMANENT CONTEXT (Parent Complex & Operating Hours) ──
+    parent_complex_name VARCHAR(255) DEFAULT NULL,       -- e.g. "Plaza Margonda", "Pasar Johar"
+    operating_hours JSONB DEFAULT NULL,                  -- e.g. {"opening_time": "10:00", "closing_time": "22:00", "is_24_hours": false}
+
+    -- ── 2. TEMPORARY CONTEXT (Event Schedule & Slots) ──
+    event_schedule JSONB DEFAULT NULL,                   -- e.g. {"event_name": "Ramadan Fest", "start_date": "2026-03-20", "end_date": "2026-03-23", "registration_deadline_days": 5}
+    slot_info JSONB DEFAULT NULL,                        -- e.g. {"total_slots": 20, "available_slots": 6}
 
     -- Location Data
     street_address TEXT NOT NULL,
@@ -196,27 +199,36 @@ CREATE TABLE stalls (
     embedded_map_url TEXT,
     nearby_landmarks JSONB DEFAULT '[]'::jsonb,
 
-    -- Rates & Payment Cycles
-    allowed_payment_cycles JSONB NOT NULL DEFAULT '["month"]'::jsonb,
-    daily_rate NUMERIC(15, 2),
-    monthly_rate NUMERIC(15, 2),
-    quarterly_rate NUMERIC(15, 2),
-    semesterly_rate NUMERIC(15, 2),
-    yearly_rate NUMERIC(15, 2),
-    security_deposit NUMERIC(15, 2) NOT NULL,
+    -- Multi-Cycle Rates
+    allowed_payment_cycles JSONB NOT NULL DEFAULT '["month"]'::jsonb, -- e.g. ["day", "month"]
+    daily_rate NUMERIC(15, 2) DEFAULT NULL,
+    monthly_rate NUMERIC(15, 2) DEFAULT NULL,
+    quarterly_rate NUMERIC(15, 2) DEFAULT NULL,
+    semesterly_rate NUMERIC(15, 2) DEFAULT NULL,
+    yearly_rate NUMERIC(15, 2) DEFAULT NULL,
+    security_deposit NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
 
-    -- Terms & Contextual Facilities
-    minimum_lease_months INT DEFAULT 1,
-    start_date_options JSONB NOT NULL DEFAULT '["1", "15", "eom"]'::jsonb,
+    -- ── 3. LEASE TERMS & OPTIONS ──
+    minimum_lease_months INT DEFAULT NULL,                -- Digunakan oleh Permanent & Semi-Permanent
+    minimum_lease_days INT DEFAULT NULL,                  -- Digunakan oleh Temporary Event
+    start_date_options JSONB DEFAULT '[]'::jsonb,        -- Permanent: ["1", "15", "eom"], Temp: ["event_day_1", "event_day_2", "event_week_1"]
+    
+    -- Aturan Sewa Event Khusus Temporary (Nullable untuk Permanent & Semi)
+    event_operating_days event_operating_days_type DEFAULT NULL,
+    event_attendance_requirement attendance_requirement_type DEFAULT NULL,
+    event_cancellation_policy cancellation_policy_type DEFAULT NULL,
+
     utility_terms TEXT,
-    facility_values JSONB DEFAULT '[]'::jsonb,           -- e.g. ["power", "water", "wifi"]
-    allowed_business_type_ids JSONB DEFAULT '[]'::jsonb, -- Matchmaking filter
+
+    -- Facilities & Matchmaking
+    facility_values JSONB DEFAULT '[]'::jsonb,           -- e.g. ["power", "water", "trash-area"]
+    allowed_business_type_ids JSONB DEFAULT '[]'::jsonb, -- Filter bisnis yang diizinkan
     house_rules JSONB DEFAULT '[]'::jsonb,
     
-    display_media JSONB NOT NULL,
+    display_media JSONB NOT NULL,                        -- { mainImage, facilityImages: [] }
     legal_documents JSONB DEFAULT '[]'::jsonb,
 
-    -- Rating & State
+    -- Ratings & State
     rating_avg NUMERIC(3, 2) DEFAULT 0.00,
     review_count INT DEFAULT 0,
     is_published BOOLEAN DEFAULT FALSE,
@@ -224,7 +236,7 @@ CREATE TABLE stalls (
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX idx_stalls_city ON stalls(city);

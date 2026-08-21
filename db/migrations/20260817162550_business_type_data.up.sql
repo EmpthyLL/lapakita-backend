@@ -1,27 +1,29 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- SEED DATA: 16 MASTER BUSINESS TYPES (I18n, Financial Benchmarks & Permanence Presets)
 INSERT INTO business_types (
     id,
-    group_name_lang,
     label_lang,
+    group_name_lang,
     default_bep_months,
     default_capital,
     avg_gross_margin_ratio,
     industry_rent_to_revenue_ratio,
-    recommended_landmarks,
-    permanence_presets
+    permanence_presets,
+    recommended_landmarks
 ) VALUES
--- 1. Full-Service Restaurant
+
+-- =============================================================================
+-- F&B (FOOD & BEVERAGES)
+-- =============================================================================
+
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
     '{"en": "Full-Service Restaurant", "id": "Restoran Layanan Penuh"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     12,
     60000000.00,
     0.5000,
     0.1500,
-    '["office", "market", "residential", "culinary-center"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway", "street-kiosk"],
@@ -39,19 +41,17 @@ INSERT INTO business_types (
             "defaultClosingTime": "22:00",
             "facilities": ["power", "high-power", "water", "drainage", "grease-trap", "ventilation", "air-conditioner", "seating", "toilet", "parking", "trash-area", "cleaning-service"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["office", "market", "residential", "culinary-center"]'::jsonb
 ),
-
--- 2. Coffee Shop & Cafe
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
     '{"en": "Coffee Shop & Cafe", "id": "Kedai Kopi & Kafe"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     9,
     35000000.00,
     0.7000,
     0.1800,
-    '["office", "campus", "residential", "transit-station"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway", "street-kiosk"],
@@ -77,19 +77,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "water", "trash-area", "seating"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["office", "campus", "residential", "transit-station"]'::jsonb
 ),
-
--- 3. Bakery & Pastry Shop
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
     '{"en": "Bakery & Pastry Shop", "id": "Toko Roti & Kue"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     9,
     30000000.00,
     0.5500,
     0.1500,
-    '["residential", "school", "market", "transit-station"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway", "street-kiosk"],
@@ -115,19 +113,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "display-case", "trash-area"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["residential", "school", "market", "transit-station"]'::jsonb
 ),
-
--- 4. Quick-Service / Fast Food
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
     '{"en": "Quick-Service / Fast Food", "id": "Makanan Cepat Saji"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     8,
     25000000.00,
     0.5000,
     0.1500,
-    '["campus", "office", "market", "culinary-center"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "street-kiosk", "garage-driveway"],
@@ -153,19 +149,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "water", "trash-area"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["campus", "office", "market", "culinary-center"]'::jsonb
 ),
-
--- 5. Beverage & Snack Kiosk
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
-    '{"en": "Beverage & Snack Kiosk", "id": "Kios Minuman & Camilan"}'::jsonb,
+    '{"en": "Beverage & Snack Kiosk", "id": "Kios Minuman & Makanan Ringan"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     4,
     10000000.00,
     0.6500,
     0.1600,
-    '["campus", "school", "residential", "transit-station", "transit-bus"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["street-kiosk", "garage-driveway"],
@@ -191,19 +185,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "water", "trash-area"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["campus", "school", "residential", "transit-station", "transit-bus"]'::jsonb
 ),
-
--- 6. Street Food & Hawker Stall
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
-    '{"en": "Street Food & Hawker Stall", "id": "Jajanan Kakilima & Lapak Kakilima"}'::jsonb,
+    '{"en": "Street Food & Hawker Stall", "id": "Jajanan Kaki Lima & Lapak Kuliner"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     3,
     6000000.00,
     0.6000,
     0.1200,
-    '["school", "campus", "residential", "transit-bus"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["street-kiosk", "garage-driveway"],
@@ -229,19 +221,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 2,
             "facilities": ["power", "trash-area"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["school", "campus", "residential", "transit-bus"]'::jsonb
 ),
-
--- 7. Meat, Poultry & Seafood Retail
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
-    '{"en": "Meat, Poultry & Seafood Retail", "id": "Toko Daging, Ayam & Makanan Laut"}'::jsonb,
+    '{"en": "Meat, Poultry & Seafood Retail", "id": "Kios Daging, Unggas & Seafood"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     5,
     12000000.00,
     0.4500,
     0.1200,
-    '["market", "residential", "culinary-center"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "street-kiosk"],
@@ -259,19 +249,17 @@ INSERT INTO business_types (
             "defaultClosingTime": "12:00",
             "facilities": ["water", "drainage", "trash-area"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["market", "residential", "culinary-center"]'::jsonb
 ),
-
--- 8. Food Truck & Mobile Unit
 (
     gen_random_uuid(),
-    '{"en": "F&B (Food & Beverages)", "id": "F&B (Makanan & Minuman)"}'::jsonb,
-    '{"en": "Food Truck & Mobile Unit", "id": "Food Truck & Unit Seluler"}'::jsonb,
+    '{"en": "Food Truck & Mobile Unit", "id": "Food Truck & Unit Keliling"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
     6,
     20000000.00,
     0.5500,
     0.1500,
-    '["culinary-center", "campus", "office"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["garage-driveway"],
@@ -289,19 +277,22 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "water", "trash-area", "parking"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["culinary-center", "campus", "office"]'::jsonb
 ),
 
--- 9. Mini Market & Convenience Store
+-- =============================================================================
+-- RETAIL & COMMERCE
+-- =============================================================================
+
 (
     gen_random_uuid(),
+    '{"en": "Mini Market & Convenience Store", "id": "Minimarket & Toko Kelontong Modern"}'::jsonb,
     '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
-    '{"en": "Mini Market & Convenience Store", "id": "Toko Kelontong & Minimarket"}'::jsonb,
     12,
     60000000.00,
     0.2000,
     0.0800,
-    '["residential", "office", "gas-station", "healthcare"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway"],
@@ -319,19 +310,17 @@ INSERT INTO business_types (
             "defaultClosingTime": "22:00",
             "facilities": ["power", "high-power", "water", "air-conditioner", "storage", "security", "cctv"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["residential", "office", "gas-station", "healthcare"]'::jsonb
 ),
-
--- 10. Fresh Fruits, Vegetables & Spices
 (
     gen_random_uuid(),
+    '{"en": "Fresh Fruits, Vegetables & Spices", "id": "Toko Buah, Sayur & Bumbu Segar"}'::jsonb,
     '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
-    '{"en": "Fresh Fruits, Vegetables & Spices", "id": "Buah, Sayur & Bumbu Segar"}'::jsonb,
     4,
     8000000.00,
     0.2500,
     0.0800,
-    '["market", "residential"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "street-kiosk", "garage-driveway"],
@@ -357,19 +346,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 1,
             "facilities": ["trash-area"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["market", "residential"]'::jsonb
 ),
-
--- 11. Fashion, Apparel & Accessory Boutique
 (
     gen_random_uuid(),
+    '{"en": "Fashion, Apparel & Accessory Boutique", "id": "Batik, Pakaian & Aksesori"}'::jsonb,
     '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
-    '{"en": "Fashion, Apparel & Accessory Boutique", "id": "Butik Pakaian & Aksesori"}'::jsonb,
     10,
     40000000.00,
     0.4500,
     0.1400,
-    '["market", "office", "campus"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway"],
@@ -395,19 +382,17 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "display-case"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["market", "office", "campus"]'::jsonb
 ),
-
--- 12. General Retail & Hobby Store
 (
     gen_random_uuid(),
+    '{"en": "General Retail & Hobby Store", "id": "Toko Kelontong Umum & Hobi"}'::jsonb,
     '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
-    '{"en": "General Retail & Hobby Store", "id": "Toko Ritel Umum & Hobi"}'::jsonb,
     9,
     25000000.00,
     0.3500,
     0.1200,
-    '["residential", "market", "school"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "street-kiosk", "garage-driveway"],
@@ -433,19 +418,22 @@ INSERT INTO business_types (
             "typicalDurationDays": 3,
             "facilities": ["power", "display-case"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["residential", "market", "school"]'::jsonb
 ),
 
--- 13. Beauty Salon, Barbershop & Spa
+-- =============================================================================
+-- SERVICES
+-- =============================================================================
+
 (
     gen_random_uuid(),
+    '{"en": "Beauty Salon, Barbershop & Spa", "id": "Salon Kecantikan, Barbershop & Spa"}'::jsonb,
     '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
-    '{"en": "Beauty Salon, Barbershop & Spa", "id": "Salon Kecantikan, Pangkas Rambut & Spa"}'::jsonb,
     10,
     30000000.00,
     0.6000,
     0.1500,
-    '["residential", "office", "campus"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway"],
@@ -463,19 +451,17 @@ INSERT INTO business_types (
             "defaultClosingTime": "21:00",
             "facilities": ["power", "water", "drainage", "air-conditioner", "seating", "toilet"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["residential", "office", "campus"]'::jsonb
 ),
-
--- 14. Service, Repair Shop & Laundry
 (
     gen_random_uuid(),
+    '{"en": "Service, Repair Shop & Laundry", "id": "Jasa Reparasi, Servis & Laundry"}'::jsonb,
     '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
-    '{"en": "Service, Repair Shop & Laundry", "id": "Bengkel Servis, Reparasi & Laundry"}'::jsonb,
     8,
     20000000.00,
     0.5000,
     0.1200,
-    '["residential", "office", "gas-station"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway", "street-kiosk"],
@@ -493,19 +479,17 @@ INSERT INTO business_types (
             "defaultClosingTime": "17:00",
             "facilities": ["power", "water", "storage"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["residential", "office", "gas-station"]'::jsonb
 ),
-
--- 15. Professional Office & Agency
 (
     gen_random_uuid(),
-    '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
     '{"en": "Professional Office & Agency", "id": "Kantor Profesional & Agensi"}'::jsonb,
+    '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
     12,
     45000000.00,
     0.5500,
     0.1500,
-    '["office", "market", "government"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse"],
@@ -523,19 +507,17 @@ INSERT INTO business_types (
             "defaultClosingTime": "18:00",
             "facilities": ["power", "high-power", "wifi", "air-conditioner", "security", "toilet"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["office", "market", "government"]'::jsonb
 ),
-
--- 16. Education & Studio Space
 (
     gen_random_uuid(),
+    '{"en": "Education & Studio Space", "id": "Studio Foto, Seni & Tempat Kursus"}'::jsonb,
     '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
-    '{"en": "Education & Studio Space", "id": "Ruang Edukasi, Kursus & Studio"}'::jsonb,
     12,
     35000000.00,
     0.5000,
     0.1400,
-    '["school", "campus", "residential"]'::jsonb,
     '{
         "permanent": {
             "allowedPropertyTypes": ["shophouse", "garage-driveway"],
@@ -553,5 +535,6 @@ INSERT INTO business_types (
             "defaultClosingTime": "20:00",
             "facilities": ["power", "water", "air-conditioner", "wifi", "seating", "toilet"]
         }
-    }'::jsonb
+    }'::jsonb,
+    '["school", "campus", "residential"]'::jsonb
 );
