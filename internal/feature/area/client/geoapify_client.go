@@ -139,10 +139,12 @@ func (c *geoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			entityType = "country"
 			title = country
 			subtitleParts = []string{"Negara"}
+
 		case "state", "province":
 			entityType = "province"
 			title = stateClean
 			subtitleParts = []string{country}
+
 		case "city", "county":
 			entityType = "city"
 			title = cityClean
@@ -150,12 +152,12 @@ func (c *geoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 				subtitleParts = append(subtitleParts, stateClean)
 			}
 			subtitleParts = append(subtitleParts, country)
-		case "suburb", "district":
+
+		case "district":
 			entityType = "district"
-			if p.Suburb != "" {
+			title = p.District
+			if title == "" {
 				title = p.Suburb
-			} else {
-				title = p.District
 			}
 			if cityClean != "" {
 				subtitleParts = append(subtitleParts, cityClean)
@@ -164,13 +166,34 @@ func (c *geoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 				subtitleParts = append(subtitleParts, stateClean)
 			}
 			subtitleParts = append(subtitleParts, country)
-		default:
+
+		case "suburb":
+			entityType = "suburb"
+			title = p.Suburb
+			if title == "" {
+				title = p.District
+			}
+			if p.District != "" && p.District != title {
+				subtitleParts = append(subtitleParts, p.District)
+			}
+			if cityClean != "" {
+				subtitleParts = append(subtitleParts, cityClean)
+			}
+			if stateClean != "" {
+				subtitleParts = append(subtitleParts, stateClean)
+			}
+			subtitleParts = append(subtitleParts, country)
+
+		default: // "street" / building / POI
 			entityType = "street"
 			if title == "" {
 				title = p.Formatted
 			}
 			if p.Suburb != "" {
 				subtitleParts = append(subtitleParts, p.Suburb)
+			}
+			if p.District != "" && p.District != p.Suburb {
+				subtitleParts = append(subtitleParts, p.District)
 			}
 			if cityClean != "" {
 				subtitleParts = append(subtitleParts, cityClean)
@@ -196,6 +219,8 @@ func (c *geoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			CountryCode: strings.ToUpper(p.CountryCode),
 			City:        cityClean,
 			Province:    stateClean,
+			District:    p.District,
+			Suburb:      p.Suburb,
 		}
 
 		items = append(items, item)

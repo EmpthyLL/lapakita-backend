@@ -8,14 +8,16 @@ type GetAreaGeneralRequest struct {
 }
 
 type AreaGeneralResponseData struct {
-	Type        string `json:"type"`         // "country", "province", "city", "district", "street"
-	Title       string `json:"title"`        // Contoh: "Jalan Delimas" / "Surabaya"
-	Subtitle    string `json:"subtitle"`     // Contoh: "Surabaya, Jawa Timur, Indonesia"
-	FullLabel   string `json:"full_label"`   // Contoh: "Jalan Delimas, Surabaya, Jawa Timur, Indonesia"
-	Country     string `json:"country"`      // Contoh: "Indonesia"
-	CountryCode string `json:"country_code"` // Contoh: "ID"
-	City        string `json:"city,omitempty"`
-	Province    string `json:"province,omitempty"`
+	Type        string `json:"type"`               // "country", "province", "city", "district", "suburb", "street"
+	Title       string `json:"title"`              // Contoh: "Jalan Delimas" / "Tebet" / "Surabaya"
+	Subtitle    string `json:"subtitle"`           // Contoh: "Surabaya, Jawa Timur, Indonesia"
+	FullLabel   string `json:"full_label"`         // Contoh: "Jalan Delimas, Tebet, Surabaya, Jawa Timur, Indonesia"
+	Country     string `json:"country"`            // Contoh: "Indonesia"
+	CountryCode string `json:"country_code"`       // Contoh: "ID"
+	City        string `json:"city,omitempty"`     // Kota / Kabupaten (Clean)
+	Province    string `json:"province,omitempty"` // Provinsi (Clean)
+	District    string `json:"district,omitempty"` // Kecamatan
+	Suburb      string `json:"suburb,omitempty"`   // Kelurahan / Desa
 }
 
 type GetAreaGeneralResponse = api.PaginatedResponse[[]AreaGeneralResponseData]
