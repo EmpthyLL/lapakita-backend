@@ -6,6 +6,7 @@ package main
 import (
 	"lapakita-backend/config"
 	"lapakita-backend/internal/feature/area"
+	"lapakita-backend/internal/feature/cms"
 	"lapakita-backend/pkg/cache"
 	"lapakita-backend/pkg/database"
 	"lapakita-backend/pkg/firebase"
@@ -30,13 +31,18 @@ var infrastructureSet = wire.NewSet(
 
 var featureSet = wire.NewSet(
 	area.AreaFeatureSet,
+	cms.CMSFeatureSet,
+)
+
+var HandlersSet = wire.NewSet(
+	wire.Struct(new(Handlers), "*"),
 )
 
 func InitializeServer() (*Server, error) {
 	wire.Build(
 		infrastructureSet,
 		featureSet,
-		NewHandlers,
+		HandlersSet,
 		NewServer,
 	)
 	return &Server{}, nil

@@ -3,6 +3,7 @@ package main
 import (
 	"lapakita-backend/config"
 	areaHandler "lapakita-backend/internal/feature/area/handler"
+	cmsHandler "lapakita-backend/internal/feature/cms/handler"
 	"lapakita-backend/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +13,7 @@ import (
 
 type Handlers struct {
 	AreaHandler *areaHandler.AreaHandler
-}
-
-func NewHandlers(areaH *areaHandler.AreaHandler) *Handlers {
-	return &Handlers{
-		AreaHandler: areaH,
-	}
+	CMSHandler  *cmsHandler.CMSHandler
 }
 
 type Server struct {
@@ -42,6 +38,10 @@ func NewServer(cfg *config.Config, logger *zap.Logger, h *Handlers) *Server {
 		apiGroup.GET("/areas", h.AreaHandler.SearchGeneral)
 
 		apiGroup.GET("/areas/detail", h.AreaHandler.SearchDetail)
+
+		apiGroup.GET("/faqs", h.CMSHandler.GetFAQs)
+
+		apiGroup.GET("/legals", h.CMSHandler.GetLegalDocument)
 	}
 
 	return &Server{
