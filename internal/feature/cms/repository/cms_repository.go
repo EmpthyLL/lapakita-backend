@@ -16,15 +16,12 @@ func NewCMSRepository(db *gorm.DB) *CMSRepository {
 	return &CMSRepository{database: db}
 }
 
-func (r *CMSRepository) GetFAQs(ctx context.Context, lang, category, roleType string) ([]entity.CMSPublicFAQ, error) {
+func (r *CMSRepository) GetFAQs(ctx context.Context, lang, roleType string) ([]entity.CMSPublicFAQ, error) {
 	var faqs []entity.CMSPublicFAQ
 	query := r.database.WithContext(ctx).Model(&entity.CMSPublicFAQ{})
 
 	if lang != "" {
 		query = query.Where("lang = ?", lang)
-	}
-	if category != "" {
-		query = query.Where("category_id = ?", category)
 	}
 	if roleType != "" {
 		query = query.Where("role_type = ?", roleType)

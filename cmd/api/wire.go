@@ -6,6 +6,7 @@ package main
 import (
 	"lapakita-backend/config"
 	"lapakita-backend/internal/feature/area"
+	businesstype "lapakita-backend/internal/feature/business_type"
 	"lapakita-backend/internal/feature/cms"
 	"lapakita-backend/pkg/cache"
 	"lapakita-backend/pkg/database"
@@ -32,6 +33,7 @@ var infrastructureSet = wire.NewSet(
 var featureSet = wire.NewSet(
 	area.AreaFeatureSet,
 	cms.CMSFeatureSet,
+	businesstype.BusinessTypeFeatureSet,
 )
 
 var HandlersSet = wire.NewSet(

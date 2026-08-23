@@ -3,6 +3,7 @@ package main
 import (
 	"lapakita-backend/config"
 	areaHandler "lapakita-backend/internal/feature/area/handler"
+	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
 	cmsHandler "lapakita-backend/internal/feature/cms/handler"
 	"lapakita-backend/internal/middleware"
 
@@ -12,8 +13,9 @@ import (
 )
 
 type Handlers struct {
-	AreaHandler *areaHandler.AreaHandler
-	CMSHandler  *cmsHandler.CMSHandler
+	AreaHandler         *areaHandler.AreaHandler
+	CMSHandler          *cmsHandler.CMSHandler
+	BusinessTypeHandler *businessTypeHandler.BusinessTypeHandler
 }
 
 type Server struct {
@@ -26,8 +28,9 @@ type Server struct {
 func NewServer(cfg *config.Config, logger *zap.Logger, h *Handlers) *Server {
 	r := gin.Default()
 
-	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.CORSMiddleware(cfg.FrontendOrigin))
 	r.Use(middleware.RateLimiterMiddleware(rate.Limit(5), 10))
+	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
@@ -39,9 +42,11 @@ func NewServer(cfg *config.Config, logger *zap.Logger, h *Handlers) *Server {
 
 		apiGroup.GET("/areas/detail", h.AreaHandler.SearchDetail)
 
-		apiGroup.GET("/faqs", h.CMSHandler.GetFAQs)
+		apiGroup.GET("/faqs/:role_type", h.CMSHandler.GetFAQs)
 
-		apiGroup.GET("/legals", h.CMSHandler.GetLegalDocument)
+		apiGroup.GET("/legals/:doc_type", h.CMSHandler.GetLegalDocument)
+
+		apiGroup.GET("/business-types", h.BusinessTypeHandler.GetBusinessTypes)
 	}
 
 	return &Server{

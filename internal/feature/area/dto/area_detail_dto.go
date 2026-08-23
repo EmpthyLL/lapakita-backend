@@ -23,8 +23,6 @@ type AreaDetailResponseData struct {
 	EmbeddedMapURL string  `json:"embedded_map_url"`
 }
 
-type GetAreaDetailResponse = api.PaginatedResponse[[]AreaDetailResponseData]
-
 // Struct Internal Decode JSON Geoapify
 type GeoapifyProperties struct {
 	Formatted   string  `json:"formatted"`

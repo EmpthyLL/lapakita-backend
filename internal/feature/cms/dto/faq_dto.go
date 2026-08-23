@@ -1,9 +1,9 @@
 package dto
 
-type FAQQueryReq struct {
-	Lang     string `form:"lang"`
-	Category string `form:"category"`
-	RoleType string `form:"role_type"`
+import "time"
+
+type FAQQueryRequest struct {
+	Lang string `form:"lang"`
 }
 
 type FAQItem struct {
@@ -18,8 +18,7 @@ type FAQSubTopic struct {
 }
 
 type FAQCategoryResponse struct {
-	ID          string        `json:"id"`
-	Label       string        `json:"label"`
-	Description string        `json:"description"`
-	SubTopics   []FAQSubTopic `json:"subTopics"`
+	ID            string        `json:"id"`
+	SubTopics     []FAQSubTopic `json:"subTopics"`
+	LastUpdatedAt *time.Time    `json:"last_updated_at"`
 }

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 
 	"lapakita-backend/internal/feature/cms/dto"
 	"lapakita-backend/internal/feature/cms/repository"
@@ -17,14 +18,17 @@ func NewCMSUsecase(cmsRepo *repository.CMSRepository) *CMSUsecase {
 	}
 }
 
-func (u *CMSUsecase) GetGroupedFAQs(ctx context.Context, lang string, req *dto.FAQQueryReq) ([]dto.FAQCategoryResponse, error) {
-	// Gunakan lang dari request query jika diisi, jika tidak gunakan lang dari header
+func (u *CMSUsecase) GetGroupedFAQs(ctx context.Context, lang string, roleType string, req *dto.FAQQueryRequest) ([]dto.FAQCategoryResponse, error) {
 	activeLang := req.Lang
 	if activeLang == "" {
 		activeLang = lang
 	}
 
-	faqs, err := u.cmsRepo.GetFAQs(ctx, activeLang, req.Category, req.RoleType)
+	if roleType == "" {
+		roleType = "all"
+	}
+
+	faqs, err := u.cmsRepo.GetFAQs(ctx, activeLang, roleType)
 	if err != nil {
 		return nil, err
 	}
@@ -33,18 +37,22 @@ func (u *CMSUsecase) GetGroupedFAQs(ctx context.Context, lang string, req *dto.F
 	var catOrder []string
 
 	for _, faq := range faqs {
-		catID := faq.CategoryID
+		catID := faq.RoleType
 		if _, exists := catMap[catID]; !exists {
 			catMap[catID] = &dto.FAQCategoryResponse{
-				ID:          catID,
-				Label:       getCategoryLabel(catID, activeLang),
-				Description: getCategoryDescription(catID, activeLang),
-				SubTopics:   []dto.FAQSubTopic{},
+				ID:        catID,
+				SubTopics: []dto.FAQSubTopic{},
 			}
 			catOrder = append(catOrder, catID)
 		}
 
 		cat := catMap[catID]
+
+		if cat.LastUpdatedAt == nil || faq.UpdatedAt.After(*cat.LastUpdatedAt) {
+			t := faq.UpdatedAt
+			cat.LastUpdatedAt = &t
+		}
+
 		subTopicIdx := -1
 		for i, st := range cat.SubTopics {
 			if st.Title == faq.SubTopicTitle {
@@ -77,86 +85,24 @@ func (u *CMSUsecase) GetGroupedFAQs(ctx context.Context, lang string, req *dto.F
 	return result, nil
 }
 
-func (u *CMSUsecase) GetLegalDocument(ctx context.Context, lang string, req *dto.LegalDocumentQueryReq) (*dto.LegalDocumentResponse, error) {
+func (u *CMSUsecase) GetLegalDocument(ctx context.Context, lang string, docType string, req *dto.LegalDocumentQueryRequest) (*dto.LegalDocumentResponse, error) {
 	activeLang := req.Lang
 	if activeLang == "" {
 		activeLang = lang
 	}
 
-	doc, err := u.cmsRepo.GetLegalDocument(ctx, req.DocType, activeLang)
+	doc, err := u.cmsRepo.GetLegalDocument(ctx, docType, activeLang)
 	if err != nil || doc == nil {
 		return nil, err
 	}
 
+	var sections []dto.LegalSection
+	if err := json.Unmarshal(doc.SectionsJSON, &sections); err != nil {
+		return nil, err
+	}
+
 	return &dto.LegalDocumentResponse{
-		DocType:  doc.DocType,
-		Label:    getLegalLabel(doc.DocType),
-		Title:    doc.Title,
-		Intro:    doc.Intro,
-		Sections: doc.SectionsJSON,
+		LastUpdatedAt: &doc.UpdatedAt,
+		Data:          sections,
 	}, nil
-}
-
-func getCategoryLabel(id string, lang string) string {
-	switch id {
-	case "all":
-		if lang == "id" {
-			return "Umum & Platform"
-		}
-		return "General & Platform"
-	case "tenant":
-		if lang == "id" {
-			return "Penyewa & Bisnis"
-		}
-		return "Tenant & Business"
-	case "owner":
-		if lang == "id" {
-			return "Pemilik Lapak"
-		}
-		return "Stall Owner"
-	case "supplier":
-		return "Supplier & B2B"
-	default:
-		return id
-	}
-}
-
-func getCategoryDescription(id string, lang string) string {
-	switch id {
-	case "all":
-		if lang == "id" {
-			return "Pelajari tentang ekosistem Lapakita, akun tunggal multi-peran, dan paket harga."
-		}
-		return "Learn about Lapakita's ecosystem, single account multi-role, and pricing plans."
-	case "tenant":
-		if lang == "id" {
-			return "Panduan untuk pelaku usaha yang menjalankan POS, mencari lapak, dan menganalisis keuangan."
-		}
-		return "Guides for business operators running POS, finding stalls, and analyzing finances."
-	case "owner":
-		if lang == "id" {
-			return "Informasi untuk pemilik properti dalam mengelola listing, penyewa, dan deposit escrow."
-		}
-		return "Information for property owners managing listings, tenants, and escrow deposits."
-	case "supplier":
-		if lang == "id" {
-			return "Detail untuk grosir dan distributor yang terhubung dengan pembeli UMKM."
-		}
-		return "Details for wholesalers and distributors connecting with SME buyers."
-	default:
-		return ""
-	}
-}
-
-func getLegalLabel(docType string) string {
-	switch docType {
-	case "terms":
-		return "Terms & Conditions"
-	case "privacy":
-		return "Privacy Policy"
-	case "cookies":
-		return "Cookies Policy"
-	default:
-		return docType
-	}
 }

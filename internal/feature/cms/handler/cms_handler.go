@@ -6,6 +6,7 @@ import (
 	"lapakita-backend/internal/feature/cms/dto"
 	"lapakita-backend/internal/feature/cms/usecase"
 	"lapakita-backend/pkg/api"
+	"lapakita-backend/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,36 +23,43 @@ func NewCMSHandler(cmsUsecase *usecase.CMSUsecase) *CMSHandler {
 
 func (h *CMSHandler) GetFAQs(c *gin.Context) {
 	lang := api.GetLanguageFromHeader(c)
+	roleType := c.Param("role_type")
 
-	var req dto.FAQQueryReq
+	var req dto.FAQQueryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
 		return
 	}
 
-	faqs, err := h.cmsUsecase.GetGroupedFAQs(c.Request.Context(), lang, &req)
+	faqs, err := h.cmsUsecase.GetGroupedFAQs(c.Request.Context(), lang, roleType, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch FAQs"})
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyCMSFAQFailedToGet))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": faqs})
+	if len(faqs) == 0 {
+		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyCMSFAQNotFound))
+		return
+	}
+
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyCMSFAQGetSuccess), faqs)
 }
 
 func (h *CMSHandler) GetLegalDocument(c *gin.Context) {
 	lang := api.GetLanguageFromHeader(c)
+	docType := c.Param("doc_type")
 
-	var req dto.LegalDocumentQueryReq
+	var req dto.LegalDocumentQueryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
 		return
 	}
 
-	doc, err := h.cmsUsecase.GetLegalDocument(c.Request.Context(), lang, &req)
-	if err != nil || doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Legal document not found"})
+	res, err := h.cmsUsecase.GetLegalDocument(c.Request.Context(), lang, docType, &req)
+	if err != nil || res == nil {
+		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyCMSLegalNotFound))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": doc})
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyCMSLegalGetSuccess), res)
 }

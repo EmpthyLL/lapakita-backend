@@ -8,9 +8,11 @@ import (
 
 type Config struct {
 	// App
-	AppName string `mapstructure:"APP_NAME"`
-	AppEnv  string `mapstructure:"APP_ENV"`
-	AppPort string `mapstructure:"APP_PORT"`
+	AppName        string `mapstructure:"APP_NAME"`
+	AppEnv         string `mapstructure:"APP_ENV"`
+	AppPort        string `mapstructure:"APP_PORT"`
+	FrontendOrigin string `mapstructure:"FRONTEND_ORIGIN"`
+	LogLevel       string `mapstructure:"LOG_LEVEL"`
 
 	// Database
 	DBHost     string `mapstructure:"DB_HOST"`
@@ -65,6 +67,10 @@ type Config struct {
 func LoadConfig() (*Config, error) {
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
+
+	// Default values
+	viper.SetDefault("FRONTEND_ORIGIN", "*")
+	viper.SetDefault("LOG_LEVEL", "debug")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Warning: .env file not found, reading from environment variables")

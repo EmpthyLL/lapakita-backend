@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+
 	i18n.Init()
 	server, err := InitializeServer()
 	if err != nil {

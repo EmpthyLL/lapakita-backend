@@ -432,7 +432,6 @@ CREATE TABLE contact_inquiries (
 CREATE TABLE cms_public_faqs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     lang VARCHAR(8) NOT NULL DEFAULT 'en',
-    category_id VARCHAR(32) NOT NULL,
     sub_topic_title VARCHAR(255) NOT NULL,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
@@ -447,7 +446,7 @@ CREATE TABLE cms_legal_documents (
     doc_type VARCHAR(32) NOT NULL,
     lang VARCHAR(8) NOT NULL DEFAULT 'en',
     title VARCHAR(255) NOT NULL,
-    intro TEXT NOT NULL,
+    description TEXT NOT NULL,
     sections_json JSONB NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(doc_type, lang)

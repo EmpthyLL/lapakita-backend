@@ -19,5 +19,3 @@ type AreaGeneralResponseData struct {
 	District    string `json:"district,omitempty"` // Kecamatan
 	Suburb      string `json:"suburb,omitempty"`   // Kelurahan / Desa
 }
-
-type GetAreaGeneralResponse = api.PaginatedResponse[[]AreaGeneralResponseData]

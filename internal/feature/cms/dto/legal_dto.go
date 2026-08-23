@@ -1,16 +1,24 @@
 package dto
 
-import "encoding/json"
+import "time"
 
-type LegalDocumentQueryReq struct {
-	DocType string `form:"doc_type" binding:"required"`
-	Lang    string `form:"lang"`
+type LegalDocumentQueryRequest struct {
+	Lang string `form:"lang"`
+}
+
+type LegalSubsection struct {
+	Title string `json:"title,omitempty"`
+	Body  string `json:"body"`
+}
+
+type LegalSection struct {
+	ID          string            `json:"id"`
+	Number      string            `json:"number"`
+	Title       string            `json:"title"`
+	Subsections []LegalSubsection `json:"subsections"`
 }
 
 type LegalDocumentResponse struct {
-	DocType  string          `json:"doc_type"`
-	Label    string          `json:"label"`
-	Title    string          `json:"title"`
-	Intro    string          `json:"intro"`
-	Sections json.RawMessage `json:"sections"`
+	LastUpdatedAt *time.Time     `json:"last_updated_at"`
+	Data          []LegalSection `json:"data"`
 }
