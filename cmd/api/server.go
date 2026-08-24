@@ -38,6 +38,7 @@ func NewServer(cfg *config.Config, logger *zap.Logger, h *Handlers) *Server {
 
 	apiGroup := r.Group("/api/v1")
 	{
+
 		apiGroup.GET("/areas", h.AreaHandler.SearchGeneral)
 
 		apiGroup.GET("/areas/detail", h.AreaHandler.SearchDetail)

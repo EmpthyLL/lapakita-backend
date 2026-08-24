@@ -41,23 +41,12 @@ func (r *BusinessTypeRepository) GetBusinessTypes(ctx context.Context, lang stri
 		return nil, 0, err
 	}
 
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-
-	offset := (page - 1) * limit
-
+	offset := (req.Page - 1) * req.Limit
 	orderClause := fmt.Sprintf("label_lang->>'%s' ASC", lang)
 
 	err := query.Order(orderClause).
 		Offset(offset).
-		Limit(limit).
+		Limit(req.Limit).
 		Find(&businessTypes).Error
 
 	if err != nil {

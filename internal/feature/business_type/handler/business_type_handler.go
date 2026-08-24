@@ -28,6 +28,8 @@ func (h *BusinessTypeHandler) GetBusinessTypes(c *gin.Context) {
 		return
 	}
 
+	req.SetDefaults()
+
 	data, meta, err := h.usecase.GetBusinessTypes(c.Request.Context(), lang, &req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyBusinessTypeFailedToGet))
