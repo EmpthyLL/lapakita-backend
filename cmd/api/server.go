@@ -3,6 +3,7 @@ package main
 import (
 	"lapakita-backend/config"
 	areaHandler "lapakita-backend/internal/feature/area/handler"
+	authHandler "lapakita-backend/internal/feature/auth/handler"
 	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
 	cmsHandler "lapakita-backend/internal/feature/cms/handler"
 	"lapakita-backend/internal/middleware"
@@ -16,6 +17,7 @@ type Handlers struct {
 	AreaHandler         *areaHandler.AreaHandler
 	CMSHandler          *cmsHandler.CMSHandler
 	BusinessTypeHandler *businessTypeHandler.BusinessTypeHandler
+	AuthHandler         *authHandler.AuthHandler
 }
 
 type Server struct {
@@ -48,6 +50,18 @@ func NewServer(cfg *config.Config, logger *zap.Logger, h *Handlers) *Server {
 		apiGroup.GET("/legals/:doc_type", h.CMSHandler.GetLegalDocument)
 
 		apiGroup.GET("/business-types", h.BusinessTypeHandler.GetBusinessTypes)
+
+		authGroup := apiGroup.Group("/auth")
+		{
+			authGroup.POST("/register", h.AuthHandler.Register)
+			authGroup.POST("/login", h.AuthHandler.Login)
+			authGroup.POST("/google", h.AuthHandler.GoogleAuth)
+			authGroup.POST("/complete-profile", h.AuthHandler.CompleteProfile)
+			authGroup.POST("/otp/send", h.AuthHandler.SendOTP)
+			authGroup.POST("/otp/verify", h.AuthHandler.VerifyOTP)
+			authGroup.POST("/reset-password", h.AuthHandler.ResetPassword)
+			authGroup.POST("/refresh", h.AuthHandler.RefreshToken)
+		}
 	}
 
 	return &Server{

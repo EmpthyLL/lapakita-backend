@@ -42,14 +42,14 @@ func JWTAuthMiddleware(jwtService jwt.JWTService) gin.HandlerFunc {
 		}
 
 		claims, ok := token.Claims.(*jwt.JWTCustomClaims)
-		if !ok {
+		if !ok || claims.TokenType != "access" {
 			api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyTokenClaimsFailed))
 			c.Abort()
 			return
 		}
 
 		c.Set(CtxUserIDKey, claims.UserID)
-		c.Set(CtxUserRoleKey, claims.Role)
+		c.Set(CtxUserRoleKey, claims.ActiveRole)
 
 		c.Next()
 	}

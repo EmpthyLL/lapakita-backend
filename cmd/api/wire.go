@@ -6,6 +6,7 @@ package main
 import (
 	"lapakita-backend/config"
 	"lapakita-backend/internal/feature/area"
+	"lapakita-backend/internal/feature/auth"
 	businesstype "lapakita-backend/internal/feature/business_type"
 	"lapakita-backend/internal/feature/cms"
 	"lapakita-backend/pkg/cache"
@@ -13,6 +14,7 @@ import (
 	"lapakita-backend/pkg/firebase"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
+	"lapakita-backend/pkg/mailer"
 	"lapakita-backend/pkg/payment"
 	"lapakita-backend/pkg/storage"
 
@@ -21,6 +23,7 @@ import (
 
 var infrastructureSet = wire.NewSet(
 	config.LoadConfig,
+	mailer.NewMailer,
 	logger.NewLogger,
 	database.NewPostgresDB,
 	cache.NewRedisClient,
@@ -34,6 +37,7 @@ var featureSet = wire.NewSet(
 	area.AreaFeatureSet,
 	cms.CMSFeatureSet,
 	businesstype.BusinessTypeFeatureSet,
+	auth.AuthFeatureSet,
 )
 
 var HandlersSet = wire.NewSet(

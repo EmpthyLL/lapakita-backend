@@ -27,12 +27,6 @@ type Config struct {
 	JWTSecret string `mapstructure:"JWT_SECRET"`
 	JWTExpiry string `mapstructure:"JWT_EXPIRY"`
 
-	// Mail
-	MailHost     string `mapstructure:"MAIL_HOST"`
-	MailPort     string `mapstructure:"MAIL_PORT"`
-	MailUsername string `mapstructure:"MAIL_USERNAME"`
-	MailPassword string `mapstructure:"MAIL_PASSWORD"`
-
 	// Firebase
 	FirebaseCred string `mapstructure:"FIREBASE_CREDENTIALS_FILE"`
 
@@ -60,8 +54,14 @@ type Config struct {
 	RedisDB       int    `mapstructure:"REDIS_DB"`
 
 	// Geoapify
-	GeoapifyAPIKey  string `mapstructure:"GEOAPIFY_API_KEY"`
-	GeoapifyBaseURL string `mapstructure:"GEOAPIFY_BASE_URL"`
+	GeoapifyAPIKey string `mapstructure:"GEOAPIFY_API_KEY"`
+
+	// SMTP Mailer
+	SMTPHost     string `mapstructure:"SMTP_HOST"`
+	SMTPPort     int    `mapstructure:"SMTP_PORT"`
+	SMTPUser     string `mapstructure:"SMTP_USER"`
+	SMTPPassword string `mapstructure:"SMTP_PASSWORD"`
+	SMTPSender   string `mapstructure:"SMTP_SENDER"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -71,6 +71,9 @@ func LoadConfig() (*Config, error) {
 	// Default values
 	viper.SetDefault("FRONTEND_ORIGIN", "*")
 	viper.SetDefault("LOG_LEVEL", "debug")
+	viper.SetDefault("SMTP_PORT", 587)
+	viper.SetDefault("SMTP_HOST", "smtp.gmail.com")
+	viper.SetDefault("SMTP_SENDER", "Lapakita Platform <no-reply@lapakita.id>")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Warning: .env file not found, reading from environment variables")

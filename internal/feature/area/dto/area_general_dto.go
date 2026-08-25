@@ -4,7 +4,7 @@ import "lapakita-backend/pkg/api"
 
 type GetAreaGeneralRequest struct {
 	api.BasePaginationRequest
-	Search string `form:"search" binding:"required"`
+	Search string `form:"search" binding:"omitempty"`
 }
 
 type AreaGeneralResponseData struct {

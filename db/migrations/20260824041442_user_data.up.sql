@@ -5,34 +5,34 @@ INSERT INTO users (
     id, name, email, password_hash, default_avatar_url, phone_numbers, role_profiles, active_role, subscription_plan
 ) VALUES 
 (
-    gen_random_uuid(), 'Rian Hidayat', 'rian.hidayat@example.com',
-    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P', -- Password: password123
+    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Rian Hidayat', 'rian.hidayat@example.com',
+    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-    '[{"type": "primary", "number": "+62 811-2233-4455", "is_whatsapp": true}]'::jsonb,
+    '[{"number": "+6281122334455", "is_primary": true, "roles": ["stall_owner", "supplier"]}]'::jsonb,
     '{"stall_owner": {"display_name": "Rian Property Group", "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop"}}'::jsonb,
     'stall_owner', 'all_access'
 ),
 (
-    gen_random_uuid(), 'Budi Santoso', 'budi.santoso@example.com',
-    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P', -- Password: password123
+    'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'Budi Santoso', 'budi.santoso@example.com',
+    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P',
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
-    '[{"type": "primary", "number": "+62 812-3456-7890", "is_whatsapp": true}]'::jsonb,
+    '[{"number": "+6281234567890", "is_primary": true, "roles": ["stall_owner"]}]'::jsonb,
     '{"stall_owner": {"display_name": "Budi Commercial Space", "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop"}}'::jsonb,
     'stall_owner', 'single_role'
 ),
 (
-    gen_random_uuid(), 'Jakarta Event Management', 'info@jakartaevent.com',
-    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P', -- Password: password123
+    'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'Jakarta Event Management', 'info@jakartaevent.com',
+    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P',
     'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&h=200&fit=crop',
-    '[{"type": "primary", "number": "+62 813-9988-7766", "is_whatsapp": true}]'::jsonb,
+    '[{"number": "+6281399887766", "is_primary": true, "roles": ["stall_owner"]}]'::jsonb,
     '{"stall_owner": {"display_name": "Jakarta EO Official", "avatar_url": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&h=200&fit=crop"}}'::jsonb,
     'stall_owner', 'all_access'
 ),
 (
-    gen_random_uuid(), 'Siti Aminah', 'siti.aminah@example.com',
-    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P', -- Password: password123
+    'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'Siti Aminah', 'siti.aminah@example.com',
+    '$2a$10$42w7Xp3M9Ie8S5rJ0vY8e.LqC6U9rT01v5Y1wW819aK1M9L8N7O6P',
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-    '[{"type": "primary", "number": "+62 856-1122-3344", "is_whatsapp": true}]'::jsonb,
+    '[{"number": "+6285611223344", "is_primary": true, "roles": ["tenant"]}]'::jsonb,
     '{"tenant": {"display_name": "Kedai Kopi Siti", "avatar_url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop"}}'::jsonb,
     'tenant', 'free'
 );

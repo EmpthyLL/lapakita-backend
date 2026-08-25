@@ -27,4 +27,32 @@ const (
 	// Business Type Feature Keys
 	KeyBusinessTypeGetSuccess  MessageKey = "business_type.get_success"
 	KeyBusinessTypeFailedToGet MessageKey = "business_type.failed_to_get"
+
+	// Generic & Common
+	KeyInvalidPayload MessageKey = "error.invalid_payload"
+	KeyUserNotFound   MessageKey = "error.user_not_found"
+
+	// Registration & Login
+	KeyEmailAlreadyRegistered MessageKey = "error.email_already_registered"
+	KeyWrongPassword          MessageKey = "error.wrong_password"
+	KeyRegisterSuccess        MessageKey = "success.register"
+	KeyLoginSuccess           MessageKey = "success.login"
+
+	// Google Auth & Complete Profile
+	KeyGoogleAuthFailed            MessageKey = "error.google_auth_failed"
+	KeySetupTokenExpired           MessageKey = "error.setup_token_expired"
+	KeyGoogleAuthProfileIncomplete MessageKey = "success.google_auth_profile_incomplete"
+	KeyProfileCompleteSuccess      MessageKey = "success.profile_completed"
+
+	// OTP System
+	KeyOTPSendFailed    MessageKey = "error.otp_send_failed"
+	KeyOTPSendSuccess   MessageKey = "success.otp_sent"
+	KeyOTPVerifySuccess MessageKey = "success.otp_verified"
+	KeyOTPExpired       MessageKey = "error.otp_expired"
+
+	// Password Reset & Tokens
+	KeyResetTokenExpired    MessageKey = "error.reset_token_expired"
+	KeyResetPasswordSuccess MessageKey = "success.password_reset"
+	KeyRefreshTokenExpired  MessageKey = "error.refresh_token_expired"
+	KeyTokenRefreshSuccess  MessageKey = "success.token_refreshed"
 )

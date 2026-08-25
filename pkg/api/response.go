@@ -10,7 +10,7 @@ import (
 type Response[T any] struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-	Data    T      `json:"data,omitempty"`
+	Data    *T     `json:"data,omitempty"`
 }
 
 // Standar Metadata Pagination
@@ -46,17 +46,23 @@ type ErrorResponse struct {
 
 // --- Helper Functions ---
 
-// Success mengirim respon sukses tanpa pagination
-func Success[T any](c *gin.Context, status int, message string, data T) {
+// Success mengirim respon sukses tanpa pagination (data bersifat opsional)
+func Success[T any](c *gin.Context, status int, message string, data ...T) {
 	c.Header("Content-Type", "application/json")
 	c.Status(status)
-	encoder := json.NewEncoder(c.Writer)
-	encoder.SetEscapeHTML(false)
-	encoder.Encode(Response[T]{
+
+	res := Response[T]{
 		Success: true,
 		Message: message,
-		Data:    data,
-	})
+	}
+
+	if len(data) > 0 {
+		res.Data = &data[0]
+	}
+
+	encoder := json.NewEncoder(c.Writer)
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(res)
 }
 
 // SuccessWithPagination mengirim respon data ber-halaman

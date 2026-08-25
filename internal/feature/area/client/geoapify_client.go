@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,93 +30,103 @@ func NewGeoapifyClient(cfg *config.Config, rdb *redis.Client) *GeoapifyClient {
 	}
 }
 
+// cleanComponent membersihkan prefix administrative baik bahasa Indonesia maupun Inggris
 func cleanComponent(val string) string {
 	cleaned := strings.TrimSpace(val)
+
+	// Prefix Bahasa Inggris (Geoapify Output)
+	cleaned = strings.TrimPrefix(cleaned, "City of ")
+	cleaned = strings.TrimPrefix(cleaned, "Regency of ")
+	cleaned = strings.TrimPrefix(cleaned, "Province of ")
+	cleaned = strings.TrimPrefix(cleaned, "Special Region of ")
+	cleaned = strings.TrimPrefix(cleaned, "Special Capital Region of ")
+
+	// Prefix Bahasa Indonesia
 	cleaned = strings.TrimPrefix(cleaned, "Kota ")
 	cleaned = strings.TrimPrefix(cleaned, "Kabupaten ")
-	cleaned = strings.TrimPrefix(cleaned, "City of ")
 	cleaned = strings.TrimPrefix(cleaned, "Provinsi ")
-	return cleaned
+	cleaned = strings.TrimPrefix(cleaned, "Daerah Khusus Ibukota ")
+	cleaned = strings.TrimPrefix(cleaned, "Daerah Istimewa ")
+
+	return strings.TrimSpace(cleaned)
 }
 
 // -----------------------------------------------------------------------------
-// 1. SEARCH GENERAL
+// 1. SEARCH GENERAL (Dropdown UI Search Bar)
 // -----------------------------------------------------------------------------
 func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGeneralRequest) ([]dto.AreaGeneralResponseData, api.PaginationMeta, error) {
-	cleanSearch := strings.TrimSpace(req.Search)
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
 
-	// Pastikan mengembalikan slice kosong [] dan BUKAN nil (mencegah response 'null' di JSON FE)
+	cleanSearch := strings.TrimSpace(req.Search)
 	items := make([]dto.AreaGeneralResponseData, 0)
 
+	metaFallback := api.PaginationMeta{
+		CurrentPage: page,
+		PerPage:     limit,
+		HasNextPage: false,
+		HasPrevPage: page > 1,
+	}
+
 	if len(cleanSearch) < 2 {
-		return items, api.PaginationMeta{
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
-			HasNextPage: false,
-			HasPrevPage: false,
-		}, nil
+		return items, metaFallback, nil
 	}
 
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.Limit <= 0 {
-		req.Limit = 10
-	}
+	offset := (page - 1) * limit
 
-	offset := (req.Page - 1) * req.Limit
-
-	// Cache key aman
-	cacheKey := fmt.Sprintf("geoapify:general_v3:%s:%d:%d", cleanSearch, req.Page, req.Limit)
-	cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
-	if err == nil && cachedData != "" {
-		var cachedResult struct {
-			Data []dto.AreaGeneralResponseData `json:"data"`
-			Meta api.PaginationMeta            `json:"meta"`
-		}
-		if err := json.Unmarshal([]byte(cachedData), &cachedResult); err == nil && cachedResult.Data != nil {
-			return cachedResult.Data, cachedResult.Meta, nil
+	// Cache Key
+	cacheKey := fmt.Sprintf("geoapify:gen_v6:%s:%d:%d", cleanSearch, page, limit)
+	if c.rdb != nil {
+		cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
+		if err == nil && cachedData != "" {
+			var cachedResult struct {
+				Data []dto.AreaGeneralResponseData `json:"data"`
+				Meta api.PaginationMeta            `json:"meta"`
+			}
+			if err := json.Unmarshal([]byte(cachedData), &cachedResult); err == nil && cachedResult.Data != nil {
+				return cachedResult.Data, cachedResult.Meta, nil
+			}
 		}
 	}
 
-	fetchLimit := req.Limit * 2
 	apiURL := "https://api.geoapify.com/v1/geocode/autocomplete"
 	reqURL, err := url.Parse(apiURL)
 	if err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("invalid url: %w", err)
+		return items, metaFallback, nil
 	}
 
 	query := reqURL.Query()
 	query.Set("text", cleanSearch)
-	query.Set("limit", fmt.Sprintf("%d", fetchLimit))
+	query.Set("limit", fmt.Sprintf("%d", limit*2))
 	query.Set("offset", fmt.Sprintf("%d", offset))
-
-	// CATATAN: filter countrycode DIHAPUS agar pencarian global/general (seperti Baker Street) berfungsi.
-	// Jika ingin mengutamakan Indonesia tanpa memblokir negara lain, Geoapify tidak perlu 'filter=countrycode:id'.
-
-	query.Set("lang", "id")
+	query.Set("lang", "en") // Menggunakan lang=en agar terjemahan administrative stabil
 	query.Set("apiKey", c.cfg.GeoapifyAPIKey)
 	reqURL.RawQuery = query.Encode()
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("failed to create http request: %w", err)
+		return items, metaFallback, nil
 	}
 
 	resp, err := c.httpClient.Do(httpReq)
-	if err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("failed to call geoapify service: %w", err)
+	if err != nil || resp == nil {
+		return items, metaFallback, nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return items, api.PaginationMeta{}, fmt.Errorf("geoapify error (%d): %s", resp.StatusCode, string(body))
+		return items, metaFallback, nil
 	}
 
 	var geoResp dto.GeoapifyResponse
 	if err := json.NewDecoder(resp.Body).Decode(&geoResp); err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("failed to decode response payload: %w", err)
+		return items, metaFallback, nil
 	}
 
 	for _, f := range geoResp.Features {
@@ -126,14 +135,18 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 		cityClean := cleanComponent(p.City)
 		stateClean := cleanComponent(p.State)
 		country := p.Country
-		if country == "" {
-			country = "Indonesia"
-		}
 
 		entityType := "street"
 		title := p.Street
 		if title == "" {
 			title = p.Name
+		}
+		if title == "" {
+			title = p.Formatted
+		}
+
+		if title == "" {
+			continue
 		}
 
 		var subtitleParts []string
@@ -147,7 +160,9 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 		case "state", "province":
 			entityType = "province"
 			title = stateClean
-			subtitleParts = []string{country}
+			if country != "" {
+				subtitleParts = []string{country}
+			}
 
 		case "city", "county":
 			entityType = "city"
@@ -155,7 +170,9 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			if stateClean != "" {
 				subtitleParts = append(subtitleParts, stateClean)
 			}
-			subtitleParts = append(subtitleParts, country)
+			if country != "" {
+				subtitleParts = append(subtitleParts, country)
+			}
 
 		case "district":
 			entityType = "district"
@@ -169,7 +186,9 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			if stateClean != "" {
 				subtitleParts = append(subtitleParts, stateClean)
 			}
-			subtitleParts = append(subtitleParts, country)
+			if country != "" {
+				subtitleParts = append(subtitleParts, country)
+			}
 
 		case "suburb":
 			entityType = "suburb"
@@ -186,13 +205,12 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			if stateClean != "" {
 				subtitleParts = append(subtitleParts, stateClean)
 			}
-			subtitleParts = append(subtitleParts, country)
+			if country != "" {
+				subtitleParts = append(subtitleParts, country)
+			}
 
 		default:
 			entityType = "street"
-			if title == "" {
-				title = p.Formatted
-			}
 			if p.Suburb != "" {
 				subtitleParts = append(subtitleParts, p.Suburb)
 			}
@@ -205,17 +223,15 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			if stateClean != "" {
 				subtitleParts = append(subtitleParts, stateClean)
 			}
-			subtitleParts = append(subtitleParts, country)
+			if country != "" {
+				subtitleParts = append(subtitleParts, country)
+			}
 		}
 
 		subtitle := strings.Join(subtitleParts, ", ")
 		fullLabel := title
 		if subtitle != "" && entityType != "country" {
 			fullLabel = fmt.Sprintf("%s, %s", title, subtitle)
-		}
-
-		if title == "" {
-			continue
 		}
 
 		items = append(items, dto.AreaGeneralResponseData{
@@ -233,105 +249,109 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 	}
 
 	hasNextPage := false
-	if len(items) > req.Limit {
+	if len(items) > limit {
 		hasNextPage = true
-		items = items[:req.Limit]
+		items = items[:limit]
 	}
 
 	meta := api.PaginationMeta{
-		CurrentPage: req.Page,
-		PerPage:     req.Limit,
+		CurrentPage: page,
+		PerPage:     limit,
 		HasNextPage: hasNextPage,
-		HasPrevPage: req.Page > 1,
+		HasPrevPage: page > 1,
 	}
 
-	cachePayload := struct {
-		Data []dto.AreaGeneralResponseData `json:"data"`
-		Meta api.PaginationMeta            `json:"meta"`
-	}{
-		Data: items,
-		Meta: meta,
-	}
-
-	if marshalled, err := json.Marshal(cachePayload); err == nil {
-		c.rdb.Set(ctx, cacheKey, string(marshalled), 24*time.Hour)
+	if c.rdb != nil {
+		cachePayload := struct {
+			Data []dto.AreaGeneralResponseData `json:"data"`
+			Meta api.PaginationMeta            `json:"meta"`
+		}{
+			Data: items,
+			Meta: meta,
+		}
+		if marshalled, err := json.Marshal(cachePayload); err == nil {
+			c.rdb.Set(ctx, cacheKey, string(marshalled), 24*time.Hour)
+		}
 	}
 
 	return items, meta, nil
 }
 
 // -----------------------------------------------------------------------------
-// 2. SEARCH DETAIL
+// 2. SEARCH DETAIL (Form Auto-fill Owner)
 // -----------------------------------------------------------------------------
 func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetailRequest) ([]dto.AreaDetailResponseData, api.PaginationMeta, error) {
-	cleanSearch := strings.TrimSpace(req.Search)
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
 
+	cleanSearch := strings.TrimSpace(req.Search)
 	items := make([]dto.AreaDetailResponseData, 0)
 
+	metaFallback := api.PaginationMeta{
+		CurrentPage: page,
+		PerPage:     limit,
+		HasNextPage: false,
+		HasPrevPage: page > 1,
+	}
+
 	if len(cleanSearch) < 2 {
-		return items, api.PaginationMeta{
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
-			HasNextPage: false,
-			HasPrevPage: false,
-		}, nil
+		return items, metaFallback, nil
 	}
 
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.Limit <= 0 {
-		req.Limit = 10
-	}
+	offset := (page - 1) * limit
 
-	offset := (req.Page - 1) * req.Limit
-
-	cacheKey := fmt.Sprintf("geoapify:detail_v3:%s:%d:%d", cleanSearch, req.Page, req.Limit)
-	cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
-	if err == nil && cachedData != "" {
-		var cachedResult struct {
-			Data []dto.AreaDetailResponseData `json:"data"`
-			Meta api.PaginationMeta           `json:"meta"`
-		}
-		if err := json.Unmarshal([]byte(cachedData), &cachedResult); err == nil && cachedResult.Data != nil {
-			return cachedResult.Data, cachedResult.Meta, nil
+	cacheKey := fmt.Sprintf("geoapify:det_v6:%s:%d:%d", cleanSearch, page, limit)
+	if c.rdb != nil {
+		cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
+		if err == nil && cachedData != "" {
+			var cachedResult struct {
+				Data []dto.AreaDetailResponseData `json:"data"`
+				Meta api.PaginationMeta           `json:"meta"`
+			}
+			if err := json.Unmarshal([]byte(cachedData), &cachedResult); err == nil && cachedResult.Data != nil {
+				return cachedResult.Data, cachedResult.Meta, nil
+			}
 		}
 	}
 
-	fetchLimit := req.Limit * 2
 	apiURL := "https://api.geoapify.com/v1/geocode/autocomplete"
 	reqURL, err := url.Parse(apiURL)
 	if err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("invalid url: %w", err)
+		return items, metaFallback, nil
 	}
 
 	query := reqURL.Query()
 	query.Set("text", cleanSearch)
-	query.Set("limit", fmt.Sprintf("%d", fetchLimit))
+	query.Set("limit", fmt.Sprintf("%d", limit*2))
 	query.Set("offset", fmt.Sprintf("%d", offset))
-	query.Set("lang", "id")
+	query.Set("lang", "en")
 	query.Set("apiKey", c.cfg.GeoapifyAPIKey)
 	reqURL.RawQuery = query.Encode()
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("failed to create http request: %w", err)
+		return items, metaFallback, nil
 	}
 
 	resp, err := c.httpClient.Do(httpReq)
-	if err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("failed to call geoapify service: %w", err)
+	if err != nil || resp == nil {
+		return items, metaFallback, nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return items, api.PaginationMeta{}, fmt.Errorf("geoapify error (%d): %s", resp.StatusCode, string(body))
+		return items, metaFallback, nil
 	}
 
 	var geoResp dto.GeoapifyResponse
 	if err := json.NewDecoder(resp.Body).Decode(&geoResp); err != nil {
-		return items, api.PaginationMeta{}, fmt.Errorf("failed to decode response payload: %w", err)
+		return items, metaFallback, nil
 	}
 
 	for _, f := range geoResp.Features {
@@ -341,11 +361,11 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 		if street == "" {
 			street = p.Name
 		}
+		if street == "" {
+			street = p.Formatted
+		}
 
 		country := p.Country
-		if country == "" {
-			country = "Indonesia"
-		}
 
 		items = append(items, dto.AreaDetailResponseData{
 			Formatted:      p.Formatted,
@@ -365,28 +385,29 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 	}
 
 	hasNextPage := false
-	if len(items) > req.Limit {
+	if len(items) > limit {
 		hasNextPage = true
-		items = items[:req.Limit]
+		items = items[:limit]
 	}
 
 	meta := api.PaginationMeta{
-		CurrentPage: req.Page,
-		PerPage:     req.Limit,
+		CurrentPage: page,
+		PerPage:     limit,
 		HasNextPage: hasNextPage,
-		HasPrevPage: req.Page > 1,
+		HasPrevPage: page > 1,
 	}
 
-	cachePayload := struct {
-		Data []dto.AreaDetailResponseData `json:"data"`
-		Meta api.PaginationMeta           `json:"meta"`
-	}{
-		Data: items,
-		Meta: meta,
-	}
-
-	if marshalled, err := json.Marshal(cachePayload); err == nil {
-		c.rdb.Set(ctx, cacheKey, string(marshalled), 24*time.Hour)
+	if c.rdb != nil {
+		cachePayload := struct {
+			Data []dto.AreaDetailResponseData `json:"data"`
+			Meta api.PaginationMeta           `json:"meta"`
+		}{
+			Data: items,
+			Meta: meta,
+		}
+		if marshalled, err := json.Marshal(cachePayload); err == nil {
+			c.rdb.Set(ctx, cacheKey, string(marshalled), 24*time.Hour)
+		}
 	}
 
 	return items, meta, nil
