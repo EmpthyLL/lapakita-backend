@@ -7,9 +7,9 @@ import (
 	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
 	cmsHandler "lapakita-backend/internal/feature/cms/handler"
 	"lapakita-backend/internal/middleware"
+	"lapakita-backend/pkg/logger"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -23,11 +23,11 @@ type Handlers struct {
 type Server struct {
 	router   *gin.Engine
 	cfg      *config.Config
-	logger   *zap.Logger
+	logger   *logger.Logger
 	handlers *Handlers
 }
 
-func NewServer(cfg *config.Config, logger *zap.Logger, h *Handlers) *Server {
+func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers) *Server {
 	r := gin.Default()
 
 	r.Use(middleware.CORSMiddleware(cfg.FrontendOrigin))

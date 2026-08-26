@@ -24,18 +24,21 @@ import (
 )
 
 type AuthUsecase struct {
-	repo       repository.AuthRepository
-	jwtService jwt.JWTService
-	mailer     mailer.Mailer
+	repo       *repository.AuthRepository
+	rdb        *redis.Client
+	jwtService *jwt.JWTService
+	mailer     *mailer.Mailer
 }
 
 func NewAuthUsecase(
-	repo repository.AuthRepository,
-	jwtService jwt.JWTService,
-	mailer mailer.Mailer,
+	repo *repository.AuthRepository,
+	rdb *redis.Client,
+	jwtService *jwt.JWTService,
+	mailer *mailer.Mailer,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		repo:       repo,
+		rdb:        rdb,
 		jwtService: jwtService,
 		mailer:     mailer,
 	}
@@ -47,35 +50,83 @@ func generateOTP() string {
 }
 
 func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthResponseData, error) {
-	primaryPhone := user.PhoneNumbers.GetPrimaryNumber()
+	defaultPhone := user.PhoneNumbers.GetPrimaryNumber()
 
-	var avatarPtr *string
+	var defaultAvatarPtr *string
+	defaultAvatarStr := ""
 	if user.DefaultAvatarURL != nil && *user.DefaultAvatarURL != "" {
-		avatarPtr = user.DefaultAvatarURL
+		defaultAvatarPtr = user.DefaultAvatarURL
+		defaultAvatarStr = *user.DefaultAvatarURL
 	}
 
+	activePlan := user.SubscriptionPlan
 	var subExpiresAtPtr *string
-	subExpiresAtStr := ""
+
 	if user.SubscriptionExpiresAt != nil {
-		formatted := user.SubscriptionExpiresAt.Format(time.RFC3339)
-		subExpiresAtPtr = &formatted
-		subExpiresAtStr = formatted
+		if time.Now().After(*user.SubscriptionExpiresAt) {
+			activePlan = "free"
+		} else {
+			formatted := user.SubscriptionExpiresAt.Format(time.RFC3339)
+			subExpiresAtPtr = &formatted
+		}
 	}
 
-	avatarStr := ""
-	if avatarPtr != nil {
-		avatarStr = *avatarPtr
+	phonePayloads := make([]dto.PhonePayload, 0)
+	roleToPhoneMap := make(map[string]string)
+
+	for _, p := range user.PhoneNumbers {
+		phonePayloads = append(phonePayloads, dto.PhonePayload{
+			Number:    p.Number,
+			IsPrimary: p.IsPrimary,
+			Roles:     p.Roles,
+		})
+
+		for _, role := range p.Roles {
+			if _, exists := roleToPhoneMap[role]; !exists {
+				roleToPhoneMap[role] = p.Number
+			}
+		}
+	}
+
+	personas := make(map[string]dto.PersonaDetail)
+	for roleKey, profile := range user.RoleProfiles {
+		phoneVal := roleToPhoneMap[roleKey]
+		if phoneVal == "" {
+			phoneVal = defaultPhone
+		}
+
+		avatarVal := profile.AvatarURL
+		if avatarVal == "" {
+			avatarVal = defaultAvatarStr
+		}
+
+		nameVal := profile.DisplayName
+		if nameVal == "" {
+			nameVal = user.Name
+		}
+
+		personas[roleKey] = dto.PersonaDetail{
+			DisplayName: nameVal,
+			AvatarURL:   avatarVal,
+			Phone:       phoneVal,
+		}
+	}
+
+	userPayload := dto.UserPayload{
+		ID:                    user.ID.String(),
+		DefaultName:           user.Name,
+		DefaultAvatarURL:      defaultAvatarPtr,
+		DefaultPhone:          defaultPhone,
+		Email:                 user.Email,
+		ActiveRole:            user.ActiveRole,
+		SubscriptionPlan:      activePlan,
+		SubscriptionExpiresAt: subExpiresAtPtr,
+		PhoneNumbers:          phonePayloads,
+		Personas:              personas,
 	}
 
 	claims := jwt.JWTCustomClaims{
-		UserID:                user.ID.String(),
-		Name:                  user.Name,
-		Email:                 user.Email,
-		Phone:                 primaryPhone,
-		AvatarURL:             avatarStr,
-		ActiveRole:            user.ActiveRole,
-		SubscriptionPlan:      user.SubscriptionPlan,
-		SubscriptionExpiresAt: subExpiresAtStr,
+		UserPayload: userPayload,
 	}
 
 	tokenPair, err := u.jwtService.GenerateTokenPair(claims)
@@ -83,25 +134,17 @@ func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthRespo
 		return nil, err
 	}
 
+	userPayload.Token = tokenPair.AccessToken
+
 	return &dto.AuthResponseData{
-		User: dto.UserPayload{
-			ID:                    user.ID.String(),
-			Name:                  user.Name,
-			Email:                 user.Email,
-			Phone:                 primaryPhone,
-			AvatarURL:             avatarPtr,
-			ActiveRole:            user.ActiveRole,
-			SubscriptionPlan:      user.SubscriptionPlan,
-			SubscriptionExpiresAt: subExpiresAtPtr,
-			Token:                 tokenPair.AccessToken,
-		},
+		User:         userPayload,
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
 	}, nil
 }
 
 // -----------------------------------------------------------------------------
-// 1. REGISTER
+// 1. REGISTER & LOGIN
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponseData, error) {
 	existingUser, _ := u.repo.FindUserByEmail(ctx, req.Email)
@@ -115,10 +158,11 @@ func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	}
 
 	newUser := &entity.User{
-		Name:         req.Name,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		ActiveRole:   "tenant",
+		Name:             req.Name,
+		Email:            req.Email,
+		PasswordHash:     string(hashedPassword),
+		ActiveRole:       "tenant",
+		SubscriptionPlan: "free",
 		PhoneNumbers: entity.PhoneNumbers{
 			{
 				Number:    req.Phone,
@@ -135,9 +179,6 @@ func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	return u.helperBuildAuthResponse(newUser)
 }
 
-// -----------------------------------------------------------------------------
-// 2. LOGIN
-// -----------------------------------------------------------------------------
 func (u *AuthUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponseData, error) {
 	user, err := u.repo.FindUserByEmail(ctx, req.Email)
 	if err != nil || user == nil {
@@ -152,7 +193,7 @@ func (u *AuthUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 }
 
 // -----------------------------------------------------------------------------
-// 3. GOOGLE AUTH & COMPLETE PROFILE
+// 2. GOOGLE AUTH & COMPLETE PROFILE
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest) (*dto.AuthResponseData, *dto.GoogleSetupPresetResponse, error) {
 	payload, err := idtoken.Validate(ctx, req.IDToken, "")
@@ -173,6 +214,7 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 			PasswordHash:     "",
 			DefaultAvatarURL: &picture,
 			ActiveRole:       "tenant",
+			SubscriptionPlan: "free",
 			PhoneNumbers:     entity.PhoneNumbers{},
 		}
 		if err := u.repo.CreateUser(ctx, newUser); err != nil {
@@ -255,12 +297,13 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, req dto.CompleteProfi
 }
 
 // -----------------------------------------------------------------------------
-// 4. OTP SYSTEM
+// 3. OTP SYSTEM (REDIS DIRECT)
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) (string, error) {
 	otpCode := generateOTP()
+	redisKey := fmt.Sprintf("otp:%s:%s", req.Mode, req.Email)
 
-	if err := u.repo.SetOTP(ctx, req.Mode, req.Email, otpCode, 5*time.Minute); err != nil {
+	if err := u.rdb.Set(ctx, redisKey, otpCode, 5*time.Minute).Err(); err != nil {
 		return "", err
 	}
 
@@ -286,15 +329,17 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 		return "", errors.New(string(i18n.KeyOTPExpired))
 	}
 
-	storedOTP, err := u.repo.GetOTP(ctx, state.Mode, state.Email)
+	redisKey := fmt.Sprintf("otp:%s:%s", state.Mode, state.Email)
+	storedOTP, err := u.rdb.Get(ctx, redisKey).Result()
 	if err == redis.Nil || storedOTP != req.OTPCode {
 		return "", errors.New(string(i18n.KeyOTPExpired))
 	}
 
-	_ = u.repo.DeleteOTP(ctx, state.Mode, state.Email)
+	u.rdb.Del(ctx, redisKey)
 
 	tokenVal := fmt.Sprintf("vtok_%d", time.Now().UnixNano())
-	if err := u.repo.SetVerificationToken(ctx, state.Mode, state.Email, tokenVal, 15*time.Minute); err != nil {
+	verifyTokenKey := fmt.Sprintf("verified:%s:%s", state.Mode, state.Email)
+	if err := u.rdb.Set(ctx, verifyTokenKey, tokenVal, 15*time.Minute).Err(); err != nil {
 		return "", err
 	}
 
@@ -302,10 +347,11 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 }
 
 // -----------------------------------------------------------------------------
-// 5. RESET PASSWORD & REFRESH TOKEN
+// 4. RESET PASSWORD & REFRESH TOKEN
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) ResetPassword(ctx context.Context, email string, req dto.ResetPasswordRequest) error {
-	storedVal, err := u.repo.GetVerificationToken(ctx, "reset_password", email)
+	verifyTokenKey := fmt.Sprintf("verified:reset_password:%s", email)
+	storedVal, err := u.rdb.Get(ctx, verifyTokenKey).Result()
 	if err == redis.Nil || storedVal != req.VerificationToken {
 		return errors.New(string(i18n.KeyResetTokenExpired))
 	}
@@ -325,7 +371,7 @@ func (u *AuthUsecase) ResetPassword(ctx context.Context, email string, req dto.R
 		return err
 	}
 
-	_ = u.repo.DeleteVerificationToken(ctx, "reset_password", email)
+	u.rdb.Del(ctx, verifyTokenKey)
 	return nil
 }
 
@@ -340,7 +386,7 @@ func (u *AuthUsecase) RefreshToken(ctx context.Context, req dto.RefreshTokenRequ
 		return nil, errors.New(string(i18n.KeyRefreshTokenExpired))
 	}
 
-	userID, err := uuid.Parse(claims.UserID)
+	userID, err := uuid.Parse(claims.UserPayload.ID)
 	if err != nil {
 		return nil, errors.New(string(i18n.KeyRefreshTokenExpired))
 	}

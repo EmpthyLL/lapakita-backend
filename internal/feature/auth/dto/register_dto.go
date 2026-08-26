@@ -1,18 +1,18 @@
 package dto
 
 type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" binding:"required,min=2"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
 	Phone    string `json:"phone" binding:"required"`
 }
 
 type CompleteProfileRequest struct {
 	SetupToken string `json:"setup_token" binding:"required"`
-	Name       string `json:"name" binding:"required"`
-	Password   string `json:"password" binding:"required"`
+	Name       string `json:"name" binding:"required,min=2"`
+	Password   string `json:"password" binding:"required,min=6"`
 	Phone      string `json:"phone" binding:"required"`
-	AvatarURL  string `json:"avatar_url"`
+	AvatarURL  string `json:"avatar_url" binding:"omitempty,url"`
 }
 
 type GoogleSetupPresetResponse struct {

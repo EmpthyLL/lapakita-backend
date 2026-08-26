@@ -30,7 +30,7 @@ CREATE TABLE users (
     role_profiles JSONB DEFAULT '{}'::jsonb,
     
     -- Active Context & Platform Subscription
-    active_role VARCHAR(32) DEFAULT 'tenant', -- tenant, stall_owner, supplier
+    active_role VARCHAR(32) DEFAULT 'tenant', -- tenant, owner, supplier
     subscription_plan VARCHAR(32) DEFAULT 'free', -- free, single_role, all_access
     subscription_expires_at TIMESTAMP WITH TIME ZONE,
     

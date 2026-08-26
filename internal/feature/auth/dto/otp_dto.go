@@ -1,13 +1,13 @@
 package dto
 
 type SendOTPRequest struct {
-	Email string `json:"email" binding:"required"`
-	Mode  string `json:"mode" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
+	Mode  string `json:"mode" binding:"required,oneof=register reset_password"`
 }
 
 type VerifyOTPRequest struct {
 	StatePayload string `json:"state_payload" binding:"required"`
-	OTPCode      string `json:"otp_code" binding:"required"`
+	OTPCode      string `json:"otp_code" binding:"required,len=6"`
 }
 
 type OTPStatePayload struct {

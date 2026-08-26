@@ -11,19 +11,15 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type Mailer interface {
-	SendOTPEmail(toEmail string, otpCode string, mode string) error
-}
-
-type mailer struct {
+type Mailer struct {
 	cfg *config.Config
 }
 
-func NewMailer(cfg *config.Config) Mailer {
-	return &mailer{cfg: cfg}
+func NewMailer(cfg *config.Config) *Mailer {
+	return &Mailer{cfg: cfg}
 }
 
-func (m *mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error {
+func (m *Mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error {
 	var templateFile string
 	var subject string
 

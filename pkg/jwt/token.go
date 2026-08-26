@@ -5,20 +5,14 @@ import (
 	"time"
 
 	"lapakita-backend/config"
+	"lapakita-backend/internal/feature/auth/dto"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type JWTCustomClaims struct {
-	UserID                string `json:"user_id"`
-	Name                  string `json:"name"`
-	Email                 string `json:"email"`
-	Phone                 string `json:"phone,omitempty"`
-	AvatarURL             string `json:"avatar_url,omitempty"`
-	ActiveRole            string `json:"active_role"`
-	SubscriptionPlan      string `json:"subscription_plan"`
-	SubscriptionExpiresAt string `json:"subscription_expires_at,omitempty"`
-	TokenType             string `json:"token_type"` // "access" atau "refresh"
+	dto.UserPayload `json:",inline"`
+	TokenType       string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
@@ -27,25 +21,20 @@ type TokenPair struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-type JWTService interface {
-	GenerateTokenPair(claims JWTCustomClaims) (*TokenPair, error)
-	ValidateToken(tokenString string) (*jwt.Token, error)
-}
-
-type jwtService struct {
+type JWTService struct {
 	secretKey     []byte
 	issuer        string
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
 }
 
-func NewJWTService(cfg *config.Config) JWTService {
+func NewJWTService(cfg *config.Config) *JWTService {
 	duration, err := time.ParseDuration(cfg.JWTExpiry)
 	if err != nil {
 		duration = 24 * time.Hour
 	}
 
-	return &jwtService{
+	return &JWTService{
 		secretKey:     []byte(cfg.JWTSecret),
 		issuer:        cfg.AppName,
 		accessExpiry:  duration,
@@ -53,10 +42,10 @@ func NewJWTService(cfg *config.Config) JWTService {
 	}
 }
 
-func (j *jwtService) GenerateTokenPair(claims JWTCustomClaims) (*TokenPair, error) {
+func (j *JWTService) GenerateTokenPair(claims JWTCustomClaims) (*TokenPair, error) {
 	now := time.Now()
 
-	// 1. Generate Access Token
+	// 1. Access Token (Flat structure membawa seluruh UserPayload)
 	accessClaims := claims
 	accessClaims.TokenType = "access"
 	accessClaims.RegisteredClaims = jwt.RegisteredClaims{
@@ -71,9 +60,11 @@ func (j *jwtService) GenerateTokenPair(claims JWTCustomClaims) (*TokenPair, erro
 		return nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
 
-	// 2. Generate Refresh Token
+	// 2. Refresh Token (Hanya membawa ID di root level)
 	refreshClaims := JWTCustomClaims{
-		UserID:    claims.UserID,
+		UserPayload: dto.UserPayload{
+			ID: claims.UserPayload.ID,
+		},
 		TokenType: "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(j.refreshExpiry)),
@@ -94,7 +85,7 @@ func (j *jwtService) GenerateTokenPair(claims JWTCustomClaims) (*TokenPair, erro
 	}, nil
 }
 
-func (j *jwtService) ValidateToken(tokenString string) (*jwt.Token, error) {
+func (j *JWTService) ValidateToken(tokenString string) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(tokenString, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

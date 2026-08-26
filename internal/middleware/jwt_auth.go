@@ -15,7 +15,6 @@ const (
 	AuthorizationHeader = "Authorization"
 	BearerPrefix        = "Bearer "
 	CtxUserIDKey        = "userID"
-	CtxUserRoleKey      = "userRole"
 )
 
 func JWTAuthMiddleware(jwtService jwt.JWTService) gin.HandlerFunc {
@@ -48,8 +47,7 @@ func JWTAuthMiddleware(jwtService jwt.JWTService) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(CtxUserIDKey, claims.UserID)
-		c.Set(CtxUserRoleKey, claims.ActiveRole)
+		c.Set(CtxUserIDKey, claims.UserPayload.ID)
 
 		c.Next()
 	}
