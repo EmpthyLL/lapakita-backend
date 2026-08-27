@@ -6,8 +6,9 @@ type SendOTPRequest struct {
 }
 
 type VerifyOTPRequest struct {
-	StatePayload string `json:"state_payload" binding:"required"`
-	OTPCode      string `json:"otp_code" binding:"required,len=6"`
+	Email   string `json:"email" binding:"required,email"`
+	Mode    string `json:"mode" binding:"required,oneof=register reset_password"`
+	OTPCode string `json:"otp_code" binding:"required,len=6"`
 }
 
 type OTPStatePayload struct {

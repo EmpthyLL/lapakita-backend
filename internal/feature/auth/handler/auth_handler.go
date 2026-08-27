@@ -27,13 +27,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.Register(c.Request.Context(), req)
-	if err != nil {
+	if err := h.usecase.Register(c.Request.Context(), req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyRegisterSuccess), res)
+	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
 }
 
 // POST /api/v1/auth/login
@@ -100,15 +99,12 @@ func (h *AuthHandler) SendOTP(c *gin.Context) {
 		return
 	}
 
-	statePayload, err := h.usecase.SendOTP(c.Request.Context(), req)
-	if err != nil {
-		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyOTPSendFailed))
+	if err := h.usecase.SendOTP(c.Request.Context(), req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess), gin.H{
-		"state_payload": statePayload,
-	})
+	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
 }
 
 // POST /api/v1/auth/otp/verify
@@ -119,15 +115,13 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	token, err := h.usecase.VerifyOTP(c.Request.Context(), req)
+	res, err := h.usecase.VerifyOTP(c.Request.Context(), req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPVerifySuccess), gin.H{
-		"verification_token": token,
-	})
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPVerifySuccess), res)
 }
 
 // POST /api/v1/auth/reset-password

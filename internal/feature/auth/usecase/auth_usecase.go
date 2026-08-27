@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -146,17 +145,17 @@ func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthRespo
 // -----------------------------------------------------------------------------
 // 1. REGISTER & LOGIN
 // -----------------------------------------------------------------------------
-func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) (string, error) {
+func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) error {
 	// 1. Cek ketersediaan email di PostgreSQL
 	existingUser, _ := u.repo.FindUserByEmail(ctx, req.Email)
 	if existingUser != nil {
-		return "", errors.New(string(i18n.KeyEmailAlreadyRegistered))
+		return errors.New(string(i18n.KeyEmailAlreadyRegistered))
 	}
 
-	// 2. Hash Password & simpan data registrasi sementara ke Redis (TTL 10 menit)
+	// 2. Hash Password & simpan pending registration ke Redis (TTL 10 menit)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	pendingUserKey := fmt.Sprintf("pending_reg:%s", req.Email)
@@ -168,23 +167,21 @@ func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) (st
 	})
 
 	if err := u.rdb.Set(ctx, pendingUserKey, pendingData, 10*time.Minute).Err(); err != nil {
-		return "", err
+		return err
 	}
 
-	// 3. Generate & kirim OTP Registrasi (Format key: otp:register:email)
+	// 3. Send OTP (Simpan dengan format key: otp:register:<email>)
 	otpCode := generateOTP()
 	otpKey := fmt.Sprintf("otp:register:%s", req.Email)
 	if err := u.rdb.Set(ctx, otpKey, otpCode, 5*time.Minute).Err(); err != nil {
-		return "", err
+		return err
 	}
 
 	go func(email, code string) {
 		_ = u.mailer.SendOTPEmail(email, code, "register")
 	}(req.Email, otpCode)
 
-	stateData := dto.OTPStatePayload{Email: req.Email, Mode: "register"}
-	jsonBytes, _ := json.Marshal(stateData)
-	return base64.StdEncoding.EncodeToString(jsonBytes), nil
+	return nil
 }
 
 func (u *AuthUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponseData, error) {
@@ -215,38 +212,28 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 
 	user, _ := u.repo.FindUserByEmail(ctx, email)
 
-	if user == nil {
-		newUser := &entity.User{
-			Name:             name,
-			Email:            email,
-			PasswordHash:     "",
-			DefaultAvatarURL: &picture,
-			ActiveRole:       "tenant",
-			SubscriptionPlan: "free",
-			PhoneNumbers:     entity.PhoneNumbers{},
-			RoleProfiles:     entity.RoleProfiles{},
+	// Jika user baru / belum lengkap nomor HP-nya
+	if user == nil || len(user.PhoneNumbers) == 0 {
+		if user == nil {
+			newUser := &entity.User{
+				Name:             name,
+				Email:            email,
+				PasswordHash:     "",
+				DefaultAvatarURL: &picture,
+				ActiveRole:       "tenant",
+				SubscriptionPlan: "free",
+				PhoneNumbers:     entity.PhoneNumbers{},
+				RoleProfiles:     entity.RoleProfiles{},
+			}
+			if err := u.repo.CreateUser(ctx, newUser); err != nil {
+				return nil, nil, err
+			}
 		}
-		if err := u.repo.CreateUser(ctx, newUser); err != nil {
-			return nil, nil, err
-		}
 
-		setupData := dto.GoogleTokenPayload{Email: email, Name: name, AvatarURL: picture}
-		jsonBytes, _ := json.Marshal(setupData)
-		setupToken := base64.StdEncoding.EncodeToString(jsonBytes)
-
-		return nil, &dto.GoogleSetupPresetResponse{
-			Email:              email,
-			Name:               name,
-			AvatarURL:          picture,
-			SetupToken:         setupToken,
-			IsProfileCompleted: false,
-		}, nil
-	}
-
-	if len(user.PhoneNumbers) == 0 {
-		setupData := dto.GoogleTokenPayload{Email: email, Name: name, AvatarURL: picture}
-		jsonBytes, _ := json.Marshal(setupData)
-		setupToken := base64.StdEncoding.EncodeToString(jsonBytes)
+		// Buat setup_token berbasis Random UUID & simpan ke Redis (TTL 15 menit)
+		setupToken := uuid.New().String()
+		setupKey := fmt.Sprintf("google_setup:%s", setupToken)
+		_ = u.rdb.Set(ctx, setupKey, email, 15*time.Minute).Err()
 
 		return nil, &dto.GoogleSetupPresetResponse{
 			Email:              email,
@@ -262,28 +249,21 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 }
 
 func (u *AuthUsecase) CompleteProfile(ctx context.Context, req dto.CompleteProfileRequest) (*dto.AuthResponseData, error) {
-	rawBytes, err := base64.StdEncoding.DecodeString(req.SetupToken)
-	if err != nil {
+	setupKey := fmt.Sprintf("google_setup:%s", req.SetupToken)
+	email, err := u.rdb.Get(ctx, setupKey).Result()
+	if err == redis.Nil || email == "" {
 		return nil, errors.New(string(i18n.KeySetupTokenExpired))
 	}
 
-	var googleData dto.GoogleTokenPayload
-	if err := json.Unmarshal(rawBytes, &googleData); err != nil {
-		return nil, errors.New(string(i18n.KeySetupTokenExpired))
-	}
-
-	user, err := u.repo.FindUserByEmail(ctx, googleData.Email)
+	user, err := u.repo.FindUserByEmail(ctx, email)
 	if err != nil || user == nil {
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	avatar := req.AvatarURL
-	if avatar == "" {
-		avatar = googleData.AvatarURL
-	}
-
 	user.Name = req.Name
-	user.DefaultAvatarURL = &avatar
+	if req.AvatarURL != "" {
+		user.DefaultAvatarURL = &req.AvatarURL
+	}
 	user.PhoneNumbers = entity.PhoneNumbers{
 		{
 			Number:    req.Phone,
@@ -296,24 +276,25 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, req dto.CompleteProfi
 		return nil, err
 	}
 
+	u.rdb.Del(ctx, setupKey)
+
 	return u.helperBuildAuthResponse(user)
 }
 
 // -----------------------------------------------------------------------------
 // 3. OTP SYSTEM
 // -----------------------------------------------------------------------------
-func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) (string, error) {
-	// Validasi prasyarat sebelum mengirim OTP ulang
+func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) error {
 	if req.Mode == "register" {
 		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
 		exists, err := u.rdb.Exists(ctx, pendingKey).Result()
 		if err != nil || exists == 0 {
-			return "", errors.New(string(i18n.KeyUserNotFound))
+			return errors.New(string(i18n.KeyUserNotFound))
 		}
 	} else if req.Mode == "reset_password" {
 		user, err := u.repo.FindUserByEmail(ctx, req.Email)
 		if err != nil || user == nil {
-			return "", errors.New(string(i18n.KeyUserNotFound))
+			return errors.New(string(i18n.KeyUserNotFound))
 		}
 	}
 
@@ -321,48 +302,34 @@ func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) (stri
 	redisKey := fmt.Sprintf("otp:%s:%s", req.Mode, req.Email)
 
 	if err := u.rdb.Set(ctx, redisKey, otpCode, 5*time.Minute).Err(); err != nil {
-		return "", err
+		return err
 	}
 
 	go func(email, code, mode string) {
 		_ = u.mailer.SendOTPEmail(email, code, mode)
 	}(req.Email, otpCode, req.Mode)
 
-	stateData := dto.OTPStatePayload{Email: req.Email, Mode: req.Mode}
-	jsonBytes, _ := json.Marshal(stateData)
-	return base64.StdEncoding.EncodeToString(jsonBytes), nil
+	return nil
 }
 
 func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (*dto.VerifyOTPResponse, error) {
-	rawBytes, err := base64.StdEncoding.DecodeString(req.StatePayload)
-	if err != nil {
-		return nil, errors.New(string(i18n.KeyOTPExpired))
-	}
-
-	var state dto.OTPStatePayload
-	if err := json.Unmarshal(rawBytes, &state); err != nil {
-		return nil, errors.New(string(i18n.KeyOTPExpired))
-	}
-
-	// 1. Verifikasi Kode OTP dari Redis (Format key: otp:<mode>:<email>)
-	redisKey := fmt.Sprintf("otp:%s:%s", state.Mode, state.Email)
+	// 1. Verifikasi Kode OTP dari Redis (key: otp:<mode>:<email>)
+	redisKey := fmt.Sprintf("otp:%s:%s", req.Mode, req.Email)
 	storedOTP, err := u.rdb.Get(ctx, redisKey).Result()
 	if err == redis.Nil || storedOTP != req.OTPCode {
 		return nil, errors.New(string(i18n.KeyOTPExpired))
 	}
 
-	// 2. Jika Mode REGISTER -> Ekstrak data pending, buat user baru ke DB, dan kembalikan AuthData
-	if state.Mode == "register" {
-		pendingKey := fmt.Sprintf("pending_reg:%s", state.Email)
+	// 2. Jika Mode REGISTER -> Ambil pending data dari Redis & simpan user ke DB
+	if req.Mode == "register" {
+		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
 		pendingStr, err := u.rdb.Get(ctx, pendingKey).Result()
 		if err == redis.Nil {
 			return nil, errors.New(string(i18n.KeyOTPExpired))
 		}
 
 		var regData map[string]string
-		if err := json.Unmarshal([]byte(pendingStr), &regData); err != nil {
-			return nil, errors.New(string(i18n.KeyOTPExpired))
-		}
+		_ = json.Unmarshal([]byte(pendingStr), &regData)
 
 		newUser := &entity.User{
 			Name:             regData["name"],
@@ -384,7 +351,6 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 			return nil, err
 		}
 
-		// Hapus state OTP dan data pending setelah pendaftaran berhasil
 		u.rdb.Del(ctx, redisKey)
 		u.rdb.Del(ctx, pendingKey)
 
@@ -398,11 +364,11 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 		}, nil
 	}
 
-	// 3. Jika Mode RESET PASSWORD -> Hasilkan verification token
+	// 3. Jika Mode RESET PASSWORD -> Hasilkan verification token UUID untuk reset password
 	u.rdb.Del(ctx, redisKey)
 
-	tokenVal := fmt.Sprintf("vtok_%d", time.Now().UnixNano())
-	verifyTokenKey := fmt.Sprintf("verified:%s:%s", state.Mode, state.Email)
+	tokenVal := uuid.New().String()
+	verifyTokenKey := fmt.Sprintf("verified:%s:%s", req.Mode, req.Email)
 	if err := u.rdb.Set(ctx, verifyTokenKey, tokenVal, 15*time.Minute).Err(); err != nil {
 		return nil, err
 	}
