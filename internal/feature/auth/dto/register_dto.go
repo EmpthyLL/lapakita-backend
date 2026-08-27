@@ -10,7 +10,6 @@ type RegisterRequest struct {
 type CompleteProfileRequest struct {
 	SetupToken string `json:"setup_token" binding:"required"`
 	Name       string `json:"name" binding:"required,min=2"`
-	Password   string `json:"password" binding:"required,min=6"`
 	Phone      string `json:"phone" binding:"required"`
 	AvatarURL  string `json:"avatar_url" binding:"omitempty,url"`
 }

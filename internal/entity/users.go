@@ -3,7 +3,7 @@ package entity
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,9 +32,14 @@ func (p *PhoneNumbers) Scan(value interface{}) error {
 		*p = PhoneNumbers{}
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed for PhoneNumbers")
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("failed to scan PhoneNumbers: expected []byte or string, got %T", value)
 	}
 	return json.Unmarshal(bytes, p)
 }
@@ -94,9 +99,14 @@ func (r *RoleProfiles) Scan(value interface{}) error {
 		*r = RoleProfiles{}
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed for RoleProfiles")
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("failed to scan RoleProfiles: expected []byte or string, got %T", value)
 	}
 	return json.Unmarshal(bytes, r)
 }
@@ -108,7 +118,7 @@ type User struct {
 	PasswordHash          string       `gorm:"type:varchar(255);not null" json:"-"`
 	DefaultAvatarURL      *string      `gorm:"type:text" json:"default_avatar_url"`
 	PhoneNumbers          PhoneNumbers `gorm:"type:jsonb;not null;default:'[]'" json:"phone_numbers"`
-	RoleProfiles          RoleProfiles `gorm:"type:jsonb;default:'{}'" json:"role_profiles"`
+	RoleProfiles          RoleProfiles `gorm:"type:jsonb;not null;default:'{}'" json:"role_profiles"`
 	ActiveRole            string       `gorm:"type:varchar(32);default:'tenant'" json:"active_role"`
 	SubscriptionPlan      string       `gorm:"type:varchar(32);default:'free'" json:"subscription_plan"`
 	SubscriptionExpiresAt *time.Time   `gorm:"type:timestamp with time zone" json:"subscription_expires_at"`
@@ -132,6 +142,12 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 	if u.SubscriptionPlan == "" {
 		u.SubscriptionPlan = "free"
+	}
+	if u.PhoneNumbers == nil {
+		u.PhoneNumbers = PhoneNumbers{}
+	}
+	if u.RoleProfiles == nil {
+		u.RoleProfiles = RoleProfiles{}
 	}
 	return
 }

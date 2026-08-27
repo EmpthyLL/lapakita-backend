@@ -14,3 +14,8 @@ type OTPStatePayload struct {
 	Email string `json:"email"`
 	Mode  string `json:"mode"`
 }
+
+type VerifyOTPResponse struct {
+	VerificationToken string            `json:"verification_token,omitempty"`
+	AuthData          *AuthResponseData `json:"auth_data,omitempty"`
+}
