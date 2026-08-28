@@ -272,13 +272,14 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 // 3. OTP SYSTEM
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) error {
-	if req.Mode == "register" {
+	switch req.Mode {
+	case "register":
 		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
 		exists, err := u.rdb.Exists(ctx, pendingKey).Result()
 		if err != nil || exists == 0 {
 			return errors.New(string(i18n.KeyUserNotFound))
 		}
-	} else if req.Mode == "reset_password" {
+	case "reset_password":
 		user, err := u.repo.FindUserByEmail(ctx, req.Email)
 		if err != nil || user == nil {
 			return errors.New(string(i18n.KeyUserNotFound))

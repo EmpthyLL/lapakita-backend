@@ -7,13 +7,6 @@ type RegisterRequest struct {
 	Phone    string `json:"phone" binding:"required"`
 }
 
-type CompleteProfileRequest struct {
-	SetupToken string `json:"setup_token" binding:"required"`
-	Name       string `json:"name" binding:"required,min=2"`
-	Phone      string `json:"phone" binding:"required"`
-	AvatarURL  string `json:"avatar_url" binding:"omitempty,url"`
-}
-
 type GoogleSetupPresetResponse struct {
 	Email              string `json:"email"`
 	Name               string `json:"name"`
