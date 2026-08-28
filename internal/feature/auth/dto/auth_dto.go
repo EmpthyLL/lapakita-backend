@@ -12,6 +12,7 @@ type UserPayload struct {
 	DefaultAvatarURL      *string                  `json:"default_avatar_url"`
 	DefaultPhone          string                   `json:"default_phone"`
 	Email                 string                   `json:"email"`
+	IsPasswordSet         bool                     `json:"is_password_set"`
 	ActiveRole            string                   `json:"active_role"`
 	SubscriptionPlan      string                   `json:"subscription_plan"`
 	SubscriptionExpiresAt *string                  `json:"subscription_expires_at"`

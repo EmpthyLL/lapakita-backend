@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"uuid"
 
 	"lapakita-backend/internal/feature/auth/dto"
 	"lapakita-backend/internal/feature/auth/usecase"
@@ -60,29 +61,37 @@ func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	authRes, setupRes, err := h.usecase.GoogleAuth(c.Request.Context(), req)
+	authRes, err := h.usecase.GoogleAuth(c.Request.Context(), req)
 	if err != nil {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.MessageKey(err.Error())))
-		return
-	}
-
-	if setupRes != nil {
-		api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyGoogleAuthProfileIncomplete), setupRes)
 		return
 	}
 
 	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyLoginSuccess), authRes)
 }
 
-// POST /api/v1/auth/google/complete
+// PUT /api/v1/auth/complete-profile (Protected Route via JWT Middleware)
 func (h *AuthHandler) CompleteProfile(c *gin.Context) {
+	// Ambil user_id dari JWT claims middleware (contoh: c.Get("user_id"))
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
 	var req dto.CompleteProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
 	}
 
-	res, err := h.usecase.CompleteProfile(c.Request.Context(), req)
+	res, err := h.usecase.CompleteProfile(c.Request.Context(), userID, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -124,9 +133,9 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPVerifySuccess), res)
 }
 
-// POST /api/v1/auth/reset-password
+// POST /api/v1/auth/reset-password/:email
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
-	email := c.Query("email")
+	email := c.Param("email")
 	var req dto.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil || email == "" {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))

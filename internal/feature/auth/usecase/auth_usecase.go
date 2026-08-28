@@ -117,6 +117,7 @@ func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthRespo
 		DefaultAvatarURL:      defaultAvatarPtr,
 		DefaultPhone:          defaultPhone,
 		Email:                 user.Email,
+		IsPasswordSet:         user.PasswordHash != "",
 		ActiveRole:            user.ActiveRole,
 		SubscriptionPlan:      activePlan,
 		SubscriptionExpiresAt: subExpiresAtPtr,
@@ -200,70 +201,57 @@ func (u *AuthUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 // -----------------------------------------------------------------------------
 // 2. GOOGLE AUTH & COMPLETE PROFILE
 // -----------------------------------------------------------------------------
-func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest) (*dto.AuthResponseData, *dto.GoogleSetupPresetResponse, error) {
+func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest) (*dto.AuthResponseData, error) {
+	// 1. Validasi ID Token dari Google
 	payload, err := idtoken.Validate(ctx, req.IDToken, "")
 	if err != nil {
-		return nil, nil, errors.New(string(i18n.KeyGoogleAuthFailed))
+		return nil, errors.New(string(i18n.KeyGoogleAuthFailed))
 	}
 
 	email := fmt.Sprintf("%v", payload.Claims["email"])
 	name := fmt.Sprintf("%v", payload.Claims["name"])
 	picture := fmt.Sprintf("%v", payload.Claims["picture"])
 
+	// 2. Cek apakah user sudah terdaftar di PostgreSQL
 	user, _ := u.repo.FindUserByEmail(ctx, email)
 
-	// Jika user baru / belum lengkap nomor HP-nya
-	if user == nil || len(user.PhoneNumbers) == 0 {
-		if user == nil {
-			newUser := &entity.User{
-				Name:             name,
-				Email:            email,
-				PasswordHash:     "",
-				DefaultAvatarURL: &picture,
-				ActiveRole:       "tenant",
-				SubscriptionPlan: "free",
-				PhoneNumbers:     entity.PhoneNumbers{},
-				RoleProfiles:     entity.RoleProfiles{},
-			}
-			if err := u.repo.CreateUser(ctx, newUser); err != nil {
-				return nil, nil, err
-			}
+	// 3. Jika user baru, simpan ke Database secara langsung
+	if user == nil {
+		newUser := &entity.User{
+			Name:             name,
+			Email:            email,
+			PasswordHash:     "", // User registrasi via Google tidak punya password hash
+			DefaultAvatarURL: &picture,
+			ActiveRole:       "tenant",
+			SubscriptionPlan: "free",
+			PhoneNumbers:     entity.PhoneNumbers{},
+			RoleProfiles:     entity.RoleProfiles{},
 		}
 
-		// Buat setup_token berbasis Random UUID & simpan ke Redis (TTL 15 menit)
-		setupToken := uuid.New().String()
-		setupKey := fmt.Sprintf("google_setup:%s", setupToken)
-		_ = u.rdb.Set(ctx, setupKey, email, 15*time.Minute).Err()
-
-		return nil, &dto.GoogleSetupPresetResponse{
-			Email:              email,
-			Name:               name,
-			AvatarURL:          picture,
-			SetupToken:         setupToken,
-			IsProfileCompleted: false,
-		}, nil
+		if err := u.repo.CreateUser(ctx, newUser); err != nil {
+			return nil, err
+		}
+		user = newUser
 	}
 
-	authRes, err := u.helperBuildAuthResponse(user)
-	return authRes, nil, err
+	// 4. Langsung hasilkan JWT Session & User Payload (Auto-Login)
+	return u.helperBuildAuthResponse(user)
 }
 
-func (u *AuthUsecase) CompleteProfile(ctx context.Context, req dto.CompleteProfileRequest) (*dto.AuthResponseData, error) {
-	setupKey := fmt.Sprintf("google_setup:%s", req.SetupToken)
-	email, err := u.rdb.Get(ctx, setupKey).Result()
-	if err == redis.Nil || email == "" {
-		return nil, errors.New(string(i18n.KeySetupTokenExpired))
-	}
-
-	user, err := u.repo.FindUserByEmail(ctx, email)
+func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req dto.CompleteProfileRequest) (*dto.AuthResponseData, error) {
+	// 1. Cari user di DB berdasarkan User ID dari JWT Claims Session
+	user, err := u.repo.FindUserByID(ctx, userID)
 	if err != nil || user == nil {
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 
+	// 2. Update profil user
 	user.Name = req.Name
 	if req.AvatarURL != "" {
 		user.DefaultAvatarURL = &req.AvatarURL
 	}
+
+	// Update / Set primary phone number
 	user.PhoneNumbers = entity.PhoneNumbers{
 		{
 			Number:    req.Phone,
@@ -276,8 +264,7 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, req dto.CompleteProfi
 		return nil, err
 	}
 
-	u.rdb.Del(ctx, setupKey)
-
+	// 3. Re-build Auth Response dengan data profil yang terbaru
 	return u.helperBuildAuthResponse(user)
 }
 
@@ -319,7 +306,6 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 	if err == redis.Nil || storedOTP != req.OTPCode {
 		return nil, errors.New(string(i18n.KeyOTPExpired))
 	}
-
 	// 2. Jika Mode REGISTER -> Ambil pending data dari Redis & simpan user ke DB
 	if req.Mode == "register" {
 		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
@@ -329,7 +315,9 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 		}
 
 		var regData map[string]string
-		_ = json.Unmarshal([]byte(pendingStr), &regData)
+		if err := json.Unmarshal([]byte(pendingStr), &regData); err != nil {
+			return nil, errors.New(string(i18n.KeyOTPExpired))
+		}
 
 		newUser := &entity.User{
 			Name:             regData["name"],
@@ -351,14 +339,17 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 			return nil, err
 		}
 
+		// Hapus Redis key
 		u.rdb.Del(ctx, redisKey)
 		u.rdb.Del(ctx, pendingKey)
 
+		// Generate token JWT & Auth Response
 		authRes, err := u.helperBuildAuthResponse(newUser)
 		if err != nil {
 			return nil, err
 		}
 
+		// Pastikan mengembalikan &dto.VerifyOTPResponse dengan AuthData yang terisi
 		return &dto.VerifyOTPResponse{
 			AuthData: authRes,
 		}, nil

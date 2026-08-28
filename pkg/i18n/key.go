@@ -11,6 +11,7 @@ const (
 	KeyTokenClaimsFailed     MessageKey = "general.token_claims_failed"
 	KeyRateLimitExceeded     MessageKey = "general.rate_limit_exceeded"
 	KeyInternalServerError   MessageKey = "general.internal_server_error"
+	KeyUnauthorized          MessageKey = "general.unauthorized"
 
 	// Area Feature Keys
 	KeyAreaSearchSuccess MessageKey = "area.search_success"

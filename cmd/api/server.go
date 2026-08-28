@@ -59,7 +59,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers) *Server {
 			authGroup.POST("/complete-profile", h.AuthHandler.CompleteProfile)
 			authGroup.POST("/otp/send", h.AuthHandler.SendOTP)
 			authGroup.POST("/otp/verify", h.AuthHandler.VerifyOTP)
-			authGroup.POST("/reset-password", h.AuthHandler.ResetPassword)
+			authGroup.POST("/reset-password/:email", h.AuthHandler.ResetPassword)
 			authGroup.POST("/refresh", h.AuthHandler.RefreshToken)
 		}
 	}

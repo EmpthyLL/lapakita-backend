@@ -9,6 +9,7 @@ var GeneralMessages = map[string]map[string]string{
 		"general.token_claims_failed":      "Failed to process token claim data",
 		"general.rate_limit_exceeded":      "Too many requests. Please slow down.",
 		"general.internal_server_error":    "Internal server error",
+		"general.unauthorized":             "Unauthorized access",
 	},
 	"id": {
 		"general.query_invalid":            "Parameter query tidak valid",
@@ -18,5 +19,6 @@ var GeneralMessages = map[string]map[string]string{
 		"general.token_claims_failed":      "Gagal memproses data klaim token",
 		"general.rate_limit_exceeded":      "Terlalu banyak permintaan. Silakan pelan-pelan.",
 		"general.internal_server_error":    "Terjadi kesalahan pada server",
+		"general.unauthorized":             "Akses tidak diizinkan",
 	},
 }
