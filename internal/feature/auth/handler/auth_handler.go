@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"uuid"
 
 	"lapakita-backend/internal/feature/auth/dto"
 	"lapakita-backend/internal/feature/auth/usecase"
@@ -10,6 +9,7 @@ import (
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
@@ -72,7 +72,6 @@ func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 
 // PUT /api/v1/auth/complete-profile (Protected Route via JWT Middleware)
 func (h *AuthHandler) CompleteProfile(c *gin.Context) {
-	// Ambil user_id dari JWT claims middleware (contoh: c.Get("user_id"))
 	userIDStr, exists := c.Get("user_id")
 	if !exists {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
