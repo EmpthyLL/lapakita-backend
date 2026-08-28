@@ -5,11 +5,11 @@ import (
 
 	"lapakita-backend/internal/feature/auth/dto"
 	"lapakita-backend/internal/feature/auth/usecase"
+	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
@@ -72,15 +72,9 @@ func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 
 // PUT /api/v1/auth/complete-profile (Protected Route via JWT Middleware)
 func (h *AuthHandler) CompleteProfile(c *gin.Context) {
-	userIDStr, exists := c.Get("user_id")
-	if !exists {
+	userID, ok := middleware.GetUserIDFromContext(c)
+	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr.(string))
-	if err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
 	}
 

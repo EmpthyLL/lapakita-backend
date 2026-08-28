@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"lapakita-backend/internal/entity"
@@ -15,6 +16,7 @@ import (
 	"lapakita-backend/pkg/i18n"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/mailer"
+	"lapakita-backend/pkg/storage"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -27,6 +29,7 @@ type AuthUsecase struct {
 	rdb        *redis.Client
 	jwtService *jwt.JWTService
 	mailer     *mailer.Mailer
+	imagekit   *storage.ImageKitService // Added ImageKit Dependency
 }
 
 func NewAuthUsecase(
@@ -34,12 +37,14 @@ func NewAuthUsecase(
 	rdb *redis.Client,
 	jwtService *jwt.JWTService,
 	mailer *mailer.Mailer,
+	imagekit *storage.ImageKitService,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		repo:       repo,
 		rdb:        rdb,
 		jwtService: jwtService,
 		mailer:     mailer,
+		imagekit:   imagekit,
 	}
 }
 
@@ -202,7 +207,6 @@ func (u *AuthUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Aut
 // 2. GOOGLE AUTH & COMPLETE PROFILE
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest) (*dto.AuthResponseData, error) {
-	// 1. Validasi ID Token dari Google
 	payload, err := idtoken.Validate(ctx, req.IDToken, "")
 	if err != nil {
 		return nil, errors.New(string(i18n.KeyGoogleAuthFailed))
@@ -212,16 +216,34 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 	name := fmt.Sprintf("%v", payload.Claims["name"])
 	picture := fmt.Sprintf("%v", payload.Claims["picture"])
 
-	// 2. Cek apakah user sudah terdaftar di PostgreSQL
 	user, _ := u.repo.FindUserByEmail(ctx, email)
 
-	// 3. Jika user baru, simpan ke Database secara langsung
+	// Helper closure untuk upload ke ImageKit
+	uploadAvatar := func(rawURL string) string {
+		if rawURL == "" {
+			return ""
+		}
+		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
+		ikURL, err := u.imagekit.UploadFromURL(ctx, rawURL, fileName, "/avatars")
+		if err != nil {
+			fmt.Printf("[ImageKit Upload Error]: %v\n", err) // Log error jika upload gagal
+			return rawURL                                    // Fallback ke URL asli jika gagal
+		}
+		return ikURL
+	}
+
 	if user == nil {
+		var avatarPtr *string
+		if picture != "" {
+			ikURL := uploadAvatar(picture)
+			avatarPtr = &ikURL
+		}
+
 		newUser := &entity.User{
 			Name:             name,
 			Email:            email,
-			PasswordHash:     "", // User registrasi via Google tidak punya password hash
-			DefaultAvatarURL: &picture,
+			PasswordHash:     "",
+			DefaultAvatarURL: avatarPtr,
 			ActiveRole:       "tenant",
 			SubscriptionPlan: "free",
 			PhoneNumbers:     entity.PhoneNumbers{},
@@ -232,9 +254,17 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 			return nil, err
 		}
 		user = newUser
+	} else {
+		// Jika user lama masih memiliki URL avatar Google asli, update ke ImageKit
+		if user.DefaultAvatarURL != nil && strings.Contains(*user.DefaultAvatarURL, "googleusercontent.com") {
+			ikURL := uploadAvatar(picture)
+			if ikURL != *user.DefaultAvatarURL {
+				user.DefaultAvatarURL = &ikURL
+				_ = u.repo.UpdateUser(ctx, user)
+			}
+		}
 	}
 
-	// 4. Langsung hasilkan JWT Session & User Payload (Auto-Login)
 	return u.helperBuildAuthResponse(user)
 }
 

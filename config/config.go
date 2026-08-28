@@ -31,7 +31,6 @@ type Config struct {
 	FirebaseCred string `mapstructure:"FIREBASE_CREDENTIALS_FILE"`
 
 	// ImageKit
-	ImageKitPublicKey   string `mapstructure:"IMAGEKIT_PUBLIC_KEY"`
 	ImageKitPrivateKey  string `mapstructure:"IMAGEKIT_PRIVATE_KEY"`
 	ImageKitUrlEndpoint string `mapstructure:"IMAGEKIT_URL_ENDPOINT"`
 

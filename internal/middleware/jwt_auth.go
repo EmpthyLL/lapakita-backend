@@ -9,6 +9,7 @@ import (
 	"lapakita-backend/pkg/jwt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
@@ -17,7 +18,8 @@ const (
 	CtxUserIDKey        = "userID"
 )
 
-func JWTAuthMiddleware(jwtService jwt.JWTService) gin.HandlerFunc {
+// JWTAuthMiddleware menggunakan pointer *jwt.JWTService
+func JWTAuthMiddleware(jwtService *jwt.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader(AuthorizationHeader)
 		if authHeader == "" {
@@ -34,7 +36,7 @@ func JWTAuthMiddleware(jwtService jwt.JWTService) gin.HandlerFunc {
 
 		tokenString := strings.TrimPrefix(authHeader, BearerPrefix)
 		token, err := jwtService.ValidateToken(tokenString)
-		if err != nil || !token.Valid {
+		if err != nil || token == nil || !token.Valid {
 			api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyTokenInvalidOrExpired))
 			c.Abort()
 			return
@@ -47,8 +49,29 @@ func JWTAuthMiddleware(jwtService jwt.JWTService) gin.HandlerFunc {
 			return
 		}
 
+		// Simpan User ID ke context Gin
 		c.Set(CtxUserIDKey, claims.UserPayload.ID)
 
 		c.Next()
 	}
+}
+
+// GetUserIDFromContext helper function untuk mengambil userID secara aman
+func GetUserIDFromContext(c *gin.Context) (uuid.UUID, bool) {
+	val, exists := c.Get(CtxUserIDKey)
+	if !exists {
+		return uuid.Nil, false
+	}
+
+	userIDStr, ok := val.(string)
+	if !ok {
+		return uuid.Nil, false
+	}
+
+	parsedUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return uuid.Nil, false
+	}
+
+	return parsedUUID, true
 }
