@@ -221,15 +221,18 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 
 	user, _ := u.repo.FindUserByEmail(ctx, email)
 
+	// Helper closure untuk upload ke ImageKit (mendukung URL HTTP & Base64)
 	uploadAvatar := func(rawSource string) string {
-		if rawSource == "" {
+		cleanSource := strings.TrimSpace(rawSource)
+		if cleanSource == "" {
 			return ""
 		}
+
 		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
-		ikURL, err := u.imagekit.UploadFromURL(ctx, rawSource, fileName, "/avatars")
+		ikURL, err := u.imagekit.UploadFromURL(ctx, cleanSource, fileName, "/avatars")
 		if err != nil {
 			fmt.Printf("[ImageKit Upload Error]: %v\n", err)
-			return rawSource
+			return cleanSource // Fallback ke string asli jika gagal
 		}
 		return ikURL
 	}
@@ -238,7 +241,9 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 		var avatarPtr *string
 		if picture != "" {
 			ikURL := uploadAvatar(picture)
-			avatarPtr = &ikURL
+			if ikURL != "" {
+				avatarPtr = &ikURL
+			}
 		}
 
 		newUser := &entity.User{
@@ -257,9 +262,15 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 		}
 		user = newUser
 	} else {
-		if user.DefaultAvatarURL != nil && strings.Contains(*user.DefaultAvatarURL, "googleusercontent.com") {
+		needsUpload := user.DefaultAvatarURL == nil ||
+			*user.DefaultAvatarURL == "" ||
+			strings.Contains(*user.DefaultAvatarURL, "googleusercontent.com") ||
+			strings.HasPrefix(*user.DefaultAvatarURL, "data:image") ||
+			(!strings.HasPrefix(*user.DefaultAvatarURL, "http://") && !strings.HasPrefix(*user.DefaultAvatarURL, "https://"))
+
+		if needsUpload && picture != "" {
 			ikURL := uploadAvatar(picture)
-			if ikURL != *user.DefaultAvatarURL {
+			if ikURL != "" && (user.DefaultAvatarURL == nil || ikURL != *user.DefaultAvatarURL) {
 				user.DefaultAvatarURL = &ikURL
 				_ = u.repo.UpdateUser(ctx, user)
 			}
@@ -277,8 +288,20 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 	}
 
 	user.Name = req.Name
+
+	// Jika avatar diisi (bisa berupa URL atau Base64), upload ke ImageKit
 	if req.AvatarURL != "" {
-		user.DefaultAvatarURL = &req.AvatarURL
+		avatarSource := strings.TrimSpace(req.AvatarURL)
+
+		// Upload ke ImageKit jika bertipe Base64 atau URL luar
+		if !strings.Contains(avatarSource, "ik.imagekit.io") {
+			fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
+			ikURL, err := u.imagekit.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
+			if err == nil && ikURL != "" {
+				avatarSource = ikURL
+			}
+		}
+		user.DefaultAvatarURL = &avatarSource
 	}
 
 	user.PhoneNumbers = entity.PhoneNumbers{
@@ -293,7 +316,6 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 		return nil, err
 	}
 
-	// Update Profil HANYA mengembalikan UserPayload terbaru tanpa me-reset Token/Session JWT
 	updatedPayload := u.helperBuildUserPayload(user)
 	return &updatedPayload, nil
 }

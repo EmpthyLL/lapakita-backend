@@ -19,8 +19,9 @@ import (
 )
 
 type ImageKitService struct {
-	client imagekit.Client
-	log    *logger.Logger
+	client  imagekit.Client
+	appName string
+	log     *logger.Logger
 }
 
 func NewImageKitService(cfg *config.Config, log *logger.Logger) *ImageKitService {
@@ -29,9 +30,22 @@ func NewImageKitService(cfg *config.Config, log *logger.Logger) *ImageKitService
 	)
 
 	return &ImageKitService{
-		client: client,
-		log:    log,
+		client:  client,
+		appName: strings.ToLower(strings.TrimSpace(cfg.AppName)),
+		log:     log,
 	}
+}
+
+// helperBuildFolderPath menyusun path folder dengan prefix nama aplikasi dari config
+func (s *ImageKitService) helperBuildFolderPath(folder string) string {
+	cleanFolder := strings.TrimPrefix(folder, "/")
+	if s.appName == "" {
+		return "/" + cleanFolder
+	}
+	if cleanFolder == "" {
+		return "/" + s.appName
+	}
+	return fmt.Sprintf("/%s/%s", s.appName, cleanFolder)
 }
 
 func (s *ImageKitService) UploadFile(
@@ -46,17 +60,20 @@ func (s *ImageKitService) UploadFile(
 	}
 	defer file.Close()
 
+	targetFolder := s.helperBuildFolderPath(folder)
+
 	resp, err := s.client.Files.Upload(
 		ctx,
 		imagekit.FileUploadParams{
 			File:     file,
 			FileName: fileHeader.Filename,
-			Folder:   imagekit.String(folder),
+			Folder:   imagekit.String(targetFolder),
 		},
 	)
 	if err != nil {
 		s.log.Error("[ImageKit] Failed to upload file",
 			zap.String("filename", fileHeader.Filename),
+			zap.String("folder", targetFolder),
 			zap.Error(err),
 		)
 		return "", fmt.Errorf("upload imagekit: %w", err)
@@ -65,7 +82,7 @@ func (s *ImageKitService) UploadFile(
 	return resp.URL, nil
 }
 
-// UploadFromURL memproses input gambar (Base64 atau HTTP URL) dan mengubahnya menjadi io.Reader yang valid
+// UploadFromURL memproses input gambar (Base64 atau HTTP URL) dan mengunggahnya dengan prefix folder nama aplikasi
 func (s *ImageKitService) UploadFromURL(
 	ctx context.Context,
 	imageSource string,
@@ -87,7 +104,6 @@ func (s *ImageKitService) UploadFromURL(
 			return "", fmt.Errorf("decode base64: %w", err)
 		}
 
-		// bytes.NewReader mengimplementasikan io.Reader
 		fileReader = bytes.NewReader(decodedBytes)
 	} else {
 		// 2. Jika input berupa URL HTTP/HTTPS (URL Avatar Google)
@@ -117,9 +133,10 @@ func (s *ImageKitService) UploadFromURL(
 			return "", fmt.Errorf("download image failed with status: %s", httpResp.Status)
 		}
 
-		// httpResp.Body mengimplementasikan io.Reader
 		fileReader = httpResp.Body
 	}
+
+	targetFolder := s.helperBuildFolderPath(folder)
 
 	// 3. Eksekusi Upload ke ImageKit menggunakan io.Reader
 	resp, err := s.client.Files.Upload(
@@ -127,17 +144,21 @@ func (s *ImageKitService) UploadFromURL(
 		imagekit.FileUploadParams{
 			File:     fileReader,
 			FileName: fileName,
-			Folder:   imagekit.String(folder),
+			Folder:   imagekit.String(targetFolder),
 		},
 	)
 	if err != nil {
 		s.log.Error("[ImageKit] Failed to upload stream to ImageKit",
 			zap.String("filename", fileName),
+			zap.String("folder", targetFolder),
 			zap.Error(err),
 		)
 		return "", fmt.Errorf("upload to imagekit: %w", err)
 	}
 
-	s.log.Info("[ImageKit] Avatar uploaded successfully", zap.String("url", resp.URL))
+	s.log.Info("[ImageKit] Avatar uploaded successfully",
+		zap.String("url", resp.URL),
+		zap.String("folder", targetFolder),
+	)
 	return resp.URL, nil
 }
