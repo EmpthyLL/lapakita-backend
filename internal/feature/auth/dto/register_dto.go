@@ -6,11 +6,3 @@ type RegisterRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 	Phone    string `json:"phone" binding:"required"`
 }
-
-type GoogleSetupPresetResponse struct {
-	Email              string `json:"email"`
-	Name               string `json:"name"`
-	AvatarURL          string `json:"avatar_url"`
-	SetupToken         string `json:"setup_token"`
-	IsProfileCompleted bool   `json:"is_profile_completed"`
-}

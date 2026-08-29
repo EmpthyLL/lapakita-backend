@@ -7,6 +7,7 @@ import (
 	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
 	cmsHandler "lapakita-backend/internal/feature/cms/handler"
 	"lapakita-backend/internal/middleware"
+	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -21,13 +22,14 @@ type Handlers struct {
 }
 
 type Server struct {
-	router   *gin.Engine
-	cfg      *config.Config
-	logger   *logger.Logger
-	handlers *Handlers
+	router     *gin.Engine
+	cfg        *config.Config
+	logger     *logger.Logger
+	handlers   *Handlers
+	jwtService *jwt.JWTService
 }
 
-func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers) *Server {
+func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtService *jwt.JWTService) *Server {
 	r := gin.Default()
 
 	r.Use(middleware.CORSMiddleware(cfg.FrontendOrigin))
@@ -40,35 +42,40 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers) *Server {
 
 	apiGroup := r.Group("/api/v1")
 	{
-
+		// Public Routes - General
 		apiGroup.GET("/areas", h.AreaHandler.SearchGeneral)
-
 		apiGroup.GET("/areas/detail", h.AreaHandler.SearchDetail)
-
 		apiGroup.GET("/faqs/:role_type", h.CMSHandler.GetFAQs)
-
 		apiGroup.GET("/legals/:doc_type", h.CMSHandler.GetLegalDocument)
-
 		apiGroup.GET("/business-types", h.BusinessTypeHandler.GetBusinessTypes)
 
+		// Auth Routes Group
 		authGroup := apiGroup.Group("/auth")
 		{
+			// 1. Public Auth Endpoints
 			authGroup.POST("/register", h.AuthHandler.Register)
 			authGroup.POST("/login", h.AuthHandler.Login)
 			authGroup.POST("/google", h.AuthHandler.GoogleAuth)
-			authGroup.POST("/complete-profile", h.AuthHandler.CompleteProfile)
 			authGroup.POST("/otp/send", h.AuthHandler.SendOTP)
 			authGroup.POST("/otp/verify", h.AuthHandler.VerifyOTP)
 			authGroup.POST("/reset-password/:email", h.AuthHandler.ResetPassword)
 			authGroup.POST("/refresh", h.AuthHandler.RefreshToken)
+
+			// 2. Protected Auth Endpoints (Requires Valid Access Token)
+			protectedAuth := authGroup.Group("")
+			protectedAuth.Use(middleware.JWTAuthMiddleware(jwtService))
+			{
+				protectedAuth.PUT("/complete-profile", h.AuthHandler.CompleteProfile)
+			}
 		}
 	}
 
 	return &Server{
-		router:   r,
-		cfg:      cfg,
-		logger:   logger,
-		handlers: h,
+		router:     r,
+		cfg:        cfg,
+		logger:     logger,
+		handlers:   h,
+		jwtService: jwtService,
 	}
 }
 

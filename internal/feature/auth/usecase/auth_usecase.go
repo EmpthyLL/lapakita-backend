@@ -29,7 +29,7 @@ type AuthUsecase struct {
 	rdb        *redis.Client
 	jwtService *jwt.JWTService
 	mailer     *mailer.Mailer
-	imagekit   *storage.ImageKitService // Added ImageKit Dependency
+	imagekit   *storage.ImageKitService
 }
 
 func NewAuthUsecase(
@@ -53,7 +53,8 @@ func generateOTP() string {
 	return fmt.Sprintf("%06d", n.Int64()+100000)
 }
 
-func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthResponseData, error) {
+// helperBuildUserPayload khusus menyusun UserPayload tanpa melakukan pembuatan Token JWT baru
+func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload {
 	defaultPhone := user.PhoneNumbers.GetPrimaryNumber()
 
 	var defaultAvatarPtr *string
@@ -116,7 +117,7 @@ func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthRespo
 		}
 	}
 
-	userPayload := dto.UserPayload{
+	return dto.UserPayload{
 		ID:                    user.ID.String(),
 		DefaultName:           user.Name,
 		DefaultAvatarURL:      defaultAvatarPtr,
@@ -129,6 +130,11 @@ func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthRespo
 		PhoneNumbers:          phonePayloads,
 		Personas:              personas,
 	}
+}
+
+// helperBuildAuthResponse digunakan khusus saat INIT SESSION (Login/Register/GoogleAuth/RefreshToken)
+func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthResponseData, error) {
+	userPayload := u.helperBuildUserPayload(user)
 
 	claims := jwt.JWTCustomClaims{
 		UserPayload: userPayload,
@@ -152,13 +158,11 @@ func (u *AuthUsecase) helperBuildAuthResponse(user *entity.User) (*dto.AuthRespo
 // 1. REGISTER & LOGIN
 // -----------------------------------------------------------------------------
 func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) error {
-	// 1. Cek ketersediaan email di PostgreSQL
 	existingUser, _ := u.repo.FindUserByEmail(ctx, req.Email)
 	if existingUser != nil {
 		return errors.New(string(i18n.KeyEmailAlreadyRegistered))
 	}
 
-	// 2. Hash Password & simpan pending registration ke Redis (TTL 10 menit)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -176,7 +180,6 @@ func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) err
 		return err
 	}
 
-	// 3. Send OTP (Simpan dengan format key: otp:register:<email>)
 	otpCode := generateOTP()
 	otpKey := fmt.Sprintf("otp:register:%s", req.Email)
 	if err := u.rdb.Set(ctx, otpKey, otpCode, 5*time.Minute).Err(); err != nil {
@@ -218,16 +221,15 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 
 	user, _ := u.repo.FindUserByEmail(ctx, email)
 
-	// Helper closure untuk upload ke ImageKit
-	uploadAvatar := func(rawURL string) string {
-		if rawURL == "" {
+	uploadAvatar := func(rawSource string) string {
+		if rawSource == "" {
 			return ""
 		}
 		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
-		ikURL, err := u.imagekit.UploadFromURL(ctx, rawURL, fileName, "/avatars")
+		ikURL, err := u.imagekit.UploadFromURL(ctx, rawSource, fileName, "/avatars")
 		if err != nil {
-			fmt.Printf("[ImageKit Upload Error]: %v\n", err) // Log error jika upload gagal
-			return rawURL                                    // Fallback ke URL asli jika gagal
+			fmt.Printf("[ImageKit Upload Error]: %v\n", err)
+			return rawSource
 		}
 		return ikURL
 	}
@@ -255,7 +257,6 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 		}
 		user = newUser
 	} else {
-		// Jika user lama masih memiliki URL avatar Google asli, update ke ImageKit
 		if user.DefaultAvatarURL != nil && strings.Contains(*user.DefaultAvatarURL, "googleusercontent.com") {
 			ikURL := uploadAvatar(picture)
 			if ikURL != *user.DefaultAvatarURL {
@@ -265,23 +266,21 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 		}
 	}
 
+	// Google Auth memicu inisialisasi session -> return AuthResponseData (dengan Token)
 	return u.helperBuildAuthResponse(user)
 }
 
-func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req dto.CompleteProfileRequest) (*dto.AuthResponseData, error) {
-	// 1. Cari user di DB berdasarkan User ID dari JWT Claims Session
+func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req dto.CompleteProfileRequest) (*dto.UserPayload, error) {
 	user, err := u.repo.FindUserByID(ctx, userID)
 	if err != nil || user == nil {
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	// 2. Update profil user
 	user.Name = req.Name
 	if req.AvatarURL != "" {
 		user.DefaultAvatarURL = &req.AvatarURL
 	}
 
-	// Update / Set primary phone number
 	user.PhoneNumbers = entity.PhoneNumbers{
 		{
 			Number:    req.Phone,
@@ -294,8 +293,9 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 		return nil, err
 	}
 
-	// 3. Re-build Auth Response dengan data profil yang terbaru
-	return u.helperBuildAuthResponse(user)
+	// Update Profil HANYA mengembalikan UserPayload terbaru tanpa me-reset Token/Session JWT
+	updatedPayload := u.helperBuildUserPayload(user)
+	return &updatedPayload, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -331,13 +331,12 @@ func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) error
 }
 
 func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (*dto.VerifyOTPResponse, error) {
-	// 1. Verifikasi Kode OTP dari Redis (key: otp:<mode>:<email>)
 	redisKey := fmt.Sprintf("otp:%s:%s", req.Mode, req.Email)
 	storedOTP, err := u.rdb.Get(ctx, redisKey).Result()
 	if err == redis.Nil || storedOTP != req.OTPCode {
 		return nil, errors.New(string(i18n.KeyOTPExpired))
 	}
-	// 2. Jika Mode REGISTER -> Ambil pending data dari Redis & simpan user ke DB
+
 	if req.Mode == "register" {
 		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
 		pendingStr, err := u.rdb.Get(ctx, pendingKey).Result()
@@ -370,23 +369,20 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 			return nil, err
 		}
 
-		// Hapus Redis key
 		u.rdb.Del(ctx, redisKey)
 		u.rdb.Del(ctx, pendingKey)
 
-		// Generate token JWT & Auth Response
+		// Pendaftaran via OTP memicu Login Pertama -> Return AuthResponseData (dengan Token)
 		authRes, err := u.helperBuildAuthResponse(newUser)
 		if err != nil {
 			return nil, err
 		}
 
-		// Pastikan mengembalikan &dto.VerifyOTPResponse dengan AuthData yang terisi
 		return &dto.VerifyOTPResponse{
 			AuthData: authRes,
 		}, nil
 	}
 
-	// 3. Jika Mode RESET PASSWORD -> Hasilkan verification token UUID untuk reset password
 	u.rdb.Del(ctx, redisKey)
 
 	tokenVal := uuid.New().String()

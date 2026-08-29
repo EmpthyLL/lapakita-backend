@@ -1,10 +1,14 @@
 package storage
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"lapakita-backend/config"
 	"lapakita-backend/pkg/logger"
@@ -22,7 +26,6 @@ type ImageKitService struct {
 func NewImageKitService(cfg *config.Config, log *logger.Logger) *ImageKitService {
 	client := imagekit.NewClient(
 		option.WithPrivateKey(cfg.ImageKitPrivateKey),
-		option.WithBaseURL(cfg.ImageKitUrlEndpoint),
 	)
 
 	return &ImageKitService{
@@ -62,45 +65,67 @@ func (s *ImageKitService) UploadFile(
 	return resp.URL, nil
 }
 
-// UploadFromURL mendownload buffer gambar dari URL lalu mengunggah io.Reader ke ImageKit
+// UploadFromURL memproses input gambar (Base64 atau HTTP URL) dan mengubahnya menjadi io.Reader yang valid
 func (s *ImageKitService) UploadFromURL(
 	ctx context.Context,
-	imageURL string,
+	imageSource string,
 	fileName string,
 	folder string,
 ) (string, error) {
-	// 1. Download gambar dari URL
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageURL, nil)
-	if err != nil {
-		s.log.Error("[ImageKit] Failed to create HTTP request", zap.Error(err))
-		return "", fmt.Errorf("create http request: %w", err)
+	var fileReader io.Reader
+
+	// 1. Jika input berupa string Base64
+	if strings.HasPrefix(imageSource, "data:image") || (!strings.HasPrefix(imageSource, "http://") && !strings.HasPrefix(imageSource, "https://")) {
+		rawBase64 := imageSource
+		if idx := strings.Index(imageSource, ","); idx != -1 {
+			rawBase64 = imageSource[idx+1:]
+		}
+
+		decodedBytes, err := base64.StdEncoding.DecodeString(rawBase64)
+		if err != nil {
+			s.log.Error("[ImageKit] Failed to decode base64 string", zap.Error(err))
+			return "", fmt.Errorf("decode base64: %w", err)
+		}
+
+		// bytes.NewReader mengimplementasikan io.Reader
+		fileReader = bytes.NewReader(decodedBytes)
+	} else {
+		// 2. Jika input berupa URL HTTP/HTTPS (URL Avatar Google)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageSource, nil)
+		if err != nil {
+			s.log.Error("[ImageKit] Failed to create HTTP request", zap.Error(err))
+			return "", fmt.Errorf("create http request: %w", err)
+		}
+
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+		httpResp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			s.log.Error("[ImageKit] Failed to download image from URL",
+				zap.String("url", imageSource),
+				zap.Error(err),
+			)
+			return "", fmt.Errorf("download image from url: %w", err)
+		}
+		defer httpResp.Body.Close()
+
+		if httpResp.StatusCode != http.StatusOK {
+			s.log.Error("[ImageKit] Download image failed with non-200 status",
+				zap.String("url", imageSource),
+				zap.Int("status_code", httpResp.StatusCode),
+			)
+			return "", fmt.Errorf("download image failed with status: %s", httpResp.Status)
+		}
+
+		// httpResp.Body mengimplementasikan io.Reader
+		fileReader = httpResp.Body
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-
-	httpResp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		s.log.Error("[ImageKit] Failed to download image from external URL",
-			zap.String("url", imageURL),
-			zap.Error(err),
-		)
-		return "", fmt.Errorf("download image from url: %w", err)
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		s.log.Error("[ImageKit] Download image failed with non-200 status",
-			zap.String("url", imageURL),
-			zap.Int("status_code", httpResp.StatusCode),
-		)
-		return "", fmt.Errorf("download image failed with status: %s", httpResp.Status)
-	}
-
-	// 2. Upload io.Reader ke ImageKit
+	// 3. Eksekusi Upload ke ImageKit menggunakan io.Reader
 	resp, err := s.client.Files.Upload(
 		ctx,
 		imagekit.FileUploadParams{
-			File:     httpResp.Body,
+			File:     fileReader,
 			FileName: fileName,
 			Folder:   imagekit.String(folder),
 		},
@@ -110,7 +135,7 @@ func (s *ImageKitService) UploadFromURL(
 			zap.String("filename", fileName),
 			zap.Error(err),
 		)
-		return "", fmt.Errorf("upload imagekit from reader: %w", err)
+		return "", fmt.Errorf("upload to imagekit: %w", err)
 	}
 
 	s.log.Info("[ImageKit] Avatar uploaded successfully", zap.String("url", resp.URL))
