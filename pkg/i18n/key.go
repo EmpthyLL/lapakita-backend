@@ -14,8 +14,13 @@ const (
 	KeyUnauthorized          MessageKey = "general.unauthorized"
 
 	// Area Feature Keys
-	KeyAreaSearchSuccess MessageKey = "area.search_success"
-	KeyAreaSearchFailed  MessageKey = "area.search_failed"
+	KeyAreaSearchSuccess            MessageKey = "area.search_success"
+	KeyAreaSearchFailed             MessageKey = "area.search_failed"
+	KeyAreaHistoryGetSuccess        MessageKey = "area.history_get_success"
+	KeyAreaHistorySaveSuccess       MessageKey = "area.history_save_success"
+	KeyAreaHistoryDeleteSuccess     MessageKey = "area.history_delete_success"
+	KeyAreaDeviceIDRequired         MessageKey = "area.device_id_required"
+	KeyAreaHistoryDeleteItemSuccess MessageKey = "area.history_delete_item_success"
 
 	// CMS Feature Keys
 	KeyCMSFAQGetSuccess    MessageKey = "cms.faq.get_success"

@@ -56,6 +56,23 @@ func JWTAuthMiddleware(jwtService *jwt.JWTService) gin.HandlerFunc {
 	}
 }
 
+// OptionalJWTAuthMiddleware mengekstrak UserID jika Authorization Bearer header valid.
+func OptionalJWTAuthMiddleware(jwtService *jwt.JWTService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader(AuthorizationHeader)
+		if authHeader != "" && strings.HasPrefix(authHeader, BearerPrefix) {
+			tokenString := strings.TrimPrefix(authHeader, BearerPrefix)
+			token, err := jwtService.ValidateToken(tokenString)
+			if err == nil && token != nil && token.Valid {
+				if claims, ok := token.Claims.(*jwt.JWTCustomClaims); ok && claims.TokenType == "access" {
+					c.Set(CtxUserIDKey, claims.UserPayload.ID)
+				}
+			}
+		}
+		c.Next()
+	}
+}
+
 // GetUserIDFromContext helper function untuk mengambil userID secara aman
 func GetUserIDFromContext(c *gin.Context) (uuid.UUID, bool) {
 	val, exists := c.Get(CtxUserIDKey)

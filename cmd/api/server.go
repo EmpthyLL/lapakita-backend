@@ -42,17 +42,12 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 
 	apiGroup := r.Group("/api/v1")
 	{
-		// Public Routes - General
-		apiGroup.GET("/areas", h.AreaHandler.SearchGeneral)
-		apiGroup.GET("/areas/detail", h.AreaHandler.SearchDetail)
-		apiGroup.GET("/faqs/:role_type", h.CMSHandler.GetFAQs)
-		apiGroup.GET("/legals/:doc_type", h.CMSHandler.GetLegalDocument)
-		apiGroup.GET("/business-types", h.BusinessTypeHandler.GetBusinessTypes)
-
-		// Auth Routes Group
+		// ---------------------------------------------------------------------
+		// 1. AUTH ROUTES
+		// ---------------------------------------------------------------------
 		authGroup := apiGroup.Group("/auth")
 		{
-			// 1. Public Auth Endpoints
+			// Public Auth Endpoints
 			authGroup.POST("/register", h.AuthHandler.Register)
 			authGroup.POST("/login", h.AuthHandler.Login)
 			authGroup.POST("/google", h.AuthHandler.GoogleAuth)
@@ -61,12 +56,49 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			authGroup.POST("/reset-password/:email", h.AuthHandler.ResetPassword)
 			authGroup.POST("/refresh", h.AuthHandler.RefreshToken)
 
-			// 2. Protected Auth Endpoints (Requires Valid Access Token)
+			// Protected Auth Endpoints (Requires Access Token)
 			protectedAuth := authGroup.Group("")
 			protectedAuth.Use(middleware.JWTAuthMiddleware(jwtService))
 			{
 				protectedAuth.PUT("/complete-profile", h.AuthHandler.CompleteProfile)
 			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 2. AREA ROUTES
+		// ---------------------------------------------------------------------
+		areaGroup := apiGroup.Group("/areas")
+		{
+			// Public Area Search Endpoints (Tanpa Middleware Auth)
+			areaGroup.GET("", h.AreaHandler.SearchGeneral)
+			areaGroup.GET("/detail", h.AreaHandler.SearchDetail)
+
+			// History Endpoints (Khusus yang butuh Optional Auth/Device ID)
+			historyGroup := areaGroup.Group("/history")
+			historyGroup.Use(middleware.OptionalJWTAuthMiddleware(jwtService))
+			{
+				historyGroup.GET("", h.AreaHandler.GetHistory)
+				historyGroup.POST("", h.AreaHandler.SaveHistory)
+				historyGroup.DELETE("", h.AreaHandler.ClearHistory)
+				historyGroup.DELETE("/item", h.AreaHandler.DeleteItemHistory)
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 3. CMS ROUTES
+		// ---------------------------------------------------------------------
+		cmsGroup := apiGroup.Group("/cms")
+		{
+			cmsGroup.GET("/faqs/:role_type", h.CMSHandler.GetFAQs)
+			cmsGroup.GET("/legals/:doc_type", h.CMSHandler.GetLegalDocument)
+		}
+
+		// ---------------------------------------------------------------------
+		// 4. BUSINESS TYPE ROUTES
+		// ---------------------------------------------------------------------
+		businessTypeGroup := apiGroup.Group("/business-types")
+		{
+			businessTypeGroup.GET("", h.BusinessTypeHandler.GetBusinessTypes)
 		}
 	}
 
