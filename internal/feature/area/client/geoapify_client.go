@@ -45,10 +45,40 @@ func cleanComponent(val string) string {
 	cleaned = strings.TrimPrefix(cleaned, "Kota ")
 	cleaned = strings.TrimPrefix(cleaned, "Kabupaten ")
 	cleaned = strings.TrimPrefix(cleaned, "Provinsi ")
+	cleaned = strings.TrimPrefix(cleaned, "Propinsi ")
 	cleaned = strings.TrimPrefix(cleaned, "Daerah Khusus Ibukota ")
 	cleaned = strings.TrimPrefix(cleaned, "Daerah Istimewa ")
 
 	return strings.TrimSpace(cleaned)
+}
+
+// translateIndonesianDirection memutar posisi & menerjemahkan arah angin HANYA untuk Indonesia (CountryCode == "ID")
+func translateIndonesianDirection(val string, countryCode string) string {
+	if strings.ToUpper(countryCode) != "ID" || val == "" {
+		return val // Luar negeri tidak disentuh (aman dari risiko salah terjemah)
+	}
+
+	// Map arah angin dari Depan (Inggris) -> Belakang (Indonesia)
+	directions := map[string]string{
+		"North ":     " Utara",
+		"South ":     " Selatan",
+		"West ":      " Barat",
+		"East ":      " Timur",
+		"Central ":   " Tengah",
+		"Southeast ": " Tenggara",
+		"Southwest ": " Barat Daya",
+		"Northeast ": " Timur Laut",
+		"Northwest ": " Barat Daya",
+	}
+
+	for engPrefix, idSuffix := range directions {
+		if strings.HasPrefix(val, engPrefix) {
+			baseName := strings.TrimPrefix(val, engPrefix)
+			return baseName + idSuffix
+		}
+	}
+
+	return val
 }
 
 // -----------------------------------------------------------------------------
@@ -81,7 +111,7 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 	offset := (page - 1) * limit
 
 	// Cache Key
-	cacheKey := fmt.Sprintf("geoapify:gen_v6:%s:%d:%d", cleanSearch, page, limit)
+	cacheKey := fmt.Sprintf("geoapify:gen_v9:%s:%d:%d", cleanSearch, page, limit)
 	if c.rdb != nil {
 		cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
 		if err == nil && cachedData != "" {
@@ -105,7 +135,7 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 	query.Set("text", cleanSearch)
 	query.Set("limit", fmt.Sprintf("%d", limit*2))
 	query.Set("offset", fmt.Sprintf("%d", offset))
-	query.Set("lang", "en") // Menggunakan lang=en agar terjemahan administrative stabil
+	query.Set("lang", "en")
 	query.Set("apiKey", c.cfg.GeoapifyAPIKey)
 	reqURL.RawQuery = query.Encode()
 
@@ -131,9 +161,10 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 
 	for _, f := range geoResp.Features {
 		p := f.Properties
+		countryCode := strings.ToUpper(p.CountryCode)
 
-		cityClean := cleanComponent(p.City)
-		stateClean := cleanComponent(p.State)
+		cityClean := translateIndonesianDirection(cleanComponent(p.City), countryCode)
+		stateClean := translateIndonesianDirection(cleanComponent(p.State), countryCode)
 		country := p.Country
 
 		entityType := "street"
@@ -149,13 +180,15 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			continue
 		}
 
+		title = translateIndonesianDirection(cleanComponent(title), countryCode)
+
 		var subtitleParts []string
 
 		switch p.ResultType {
 		case "country":
 			entityType = "country"
 			title = country
-			subtitleParts = []string{"Negara"}
+			subtitleParts = []string{"Country"}
 
 		case "state", "province":
 			entityType = "province"
@@ -240,7 +273,7 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			Subtitle:    subtitle,
 			FullLabel:   fullLabel,
 			Country:     country,
-			CountryCode: strings.ToUpper(p.CountryCode),
+			CountryCode: countryCode,
 			City:        cityClean,
 			Province:    stateClean,
 			District:    p.District,
@@ -306,7 +339,7 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 
 	offset := (page - 1) * limit
 
-	cacheKey := fmt.Sprintf("geoapify:det_v6:%s:%d:%d", cleanSearch, page, limit)
+	cacheKey := fmt.Sprintf("geoapify:det_v9:%s:%d:%d", cleanSearch, page, limit)
 	if c.rdb != nil {
 		cachedData, err := c.rdb.Get(ctx, cacheKey).Result()
 		if err == nil && cachedData != "" {
@@ -356,6 +389,7 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 
 	for _, f := range geoResp.Features {
 		p := f.Properties
+		countryCode := strings.ToUpper(p.CountryCode)
 
 		street := p.Street
 		if street == "" {
@@ -372,10 +406,10 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 			StreetAddress:  street,
 			Suburb:         p.Suburb,
 			District:       p.District,
-			City:           cleanComponent(p.City),
-			Province:       cleanComponent(p.State),
+			City:           translateIndonesianDirection(cleanComponent(p.City), countryCode),
+			Province:       translateIndonesianDirection(cleanComponent(p.State), countryCode),
 			Country:        country,
-			CountryCode:    strings.ToUpper(p.CountryCode),
+			CountryCode:    countryCode,
 			PostalCode:     p.Postcode,
 			Latitude:       p.Lat,
 			Longitude:      p.Lon,
