@@ -295,8 +295,7 @@ func (u *StallUsecase) Delete(ctx context.Context, ownerID uuid.UUID, id uuid.UU
 	}
 	return u.repo.Delete(ctx, id)
 }
-
-func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) ([]dto.StallResponseData, api.PaginationMeta, error) {
+func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) ([]any, api.PaginationMeta, error) {
 	stalls, total, err := u.repo.Search(ctx, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
@@ -321,15 +320,15 @@ func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) (
 		HasPrevPage: page > 1,
 	}
 
-	responseList := make([]dto.StallResponseData, 0, len(stalls))
+	responseList := make([]any, 0, len(stalls))
 	for _, s := range stalls {
-		responseList = append(responseList, *u.mapToSimpleResponse(&s))
+		responseList = append(responseList, u.mapToCompactResponse(&s))
 	}
 
 	return responseList, meta, nil
 }
 
-func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]dto.StallResponseData, api.PaginationMeta, error) {
+func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]any, api.PaginationMeta, error) {
 	stalls, total, err := u.repo.FindByOwnerID(ctx, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
@@ -354,14 +353,152 @@ func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsR
 		HasPrevPage: page > 1,
 	}
 
-	responseList := make([]dto.StallResponseData, 0, len(stalls))
+	responseList := make([]any, 0, len(stalls))
 	for _, s := range stalls {
-		responseList = append(responseList, *u.mapToSimpleResponse(&s))
+		responseList = append(responseList, u.mapToCompactResponse(&s))
 	}
 
 	return responseList, meta, nil
 }
 
+// mapToCompactResponse mengonversi entity Stall ke DTO ringkas sesuai jenis permanence
+func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
+	// 1. Ekstrak Area (District/Suburb/Address)
+	areaStr := s.StreetAddress
+	if s.District != nil && *s.District != "" {
+		areaStr = *s.District
+	} else if s.Suburb != nil && *s.Suburb != "" {
+		areaStr = *s.Suburb
+	}
+
+	locationSummary := dto.StallLocationSummary{
+		Area:        areaStr,
+		City:        s.City,
+		CountryCode: s.CountryCode,
+	}
+
+	// 2. Hitung Harga Termurah & Periode Pembayaran
+	cheapestVal, periodKey := calculateCheapestPrice(s)
+	priceFormatted := fmt.Sprintf("Rp %s", formatRupiah(cheapestVal))
+
+	base := dto.BaseStallResponse{
+		ID:                     s.ID.String(),
+		Title:                  s.Title,
+		ImageURL:               s.DisplayMedia.MainImage,
+		Location:               locationSummary,
+		PropertyType:           s.PropertyType,
+		Placement:              string(s.Placement),
+		CheapestPriceFormatted: priceFormatted,
+		CheapestPricePeriod:    periodKey,
+		Rating:                 s.RatingAvg,
+		ReviewCount:            s.ReviewCount,
+	}
+
+	// 3. Mapping Polymorphic berdasarkan Permanence Type
+	switch s.PermanenceType {
+	case entity.StallPermanenceSemi:
+		openTime, closeTime := "10:00", "22:00"
+		if s.OperatingHours != nil {
+			openTime = s.OperatingHours.OpeningTime
+			closeTime = s.OperatingHours.ClosingTime
+		}
+
+		res := dto.SemiPermanentStallResponse{
+			BaseStallResponse: base,
+			PermanenceType:    "semi-permanent",
+		}
+		res.OperatingHours.Open = openTime
+		res.OperatingHours.Close = closeTime
+		return res
+
+	case entity.StallPermanenceTemporary:
+		deadlineDays := 0
+		if s.EventSchedule != nil {
+			deadlineDays = s.EventSchedule.RegistrationDeadlineDays
+		}
+
+		durationDays := 1
+		if s.EventSchedule != nil && s.EventSchedule.StartDate != "" && s.EventSchedule.EndDate != "" {
+			t1, err1 := time.Parse("2006-01-02", s.EventSchedule.StartDate)
+			t2, err2 := time.Parse("2006-01-02", s.EventSchedule.EndDate)
+			if err1 == nil && err2 == nil {
+				durationDays = int(t2.Sub(t1).Hours()/24) + 1
+			}
+		}
+
+		res := dto.TemporaryStallResponse{
+			BaseStallResponse: base,
+			PermanenceType:    "temporary",
+		}
+		res.Event.RegistrationDeadlineDays = deadlineDays
+		res.Event.DurationDays = durationDays
+		return res
+
+	default: // Permanent
+		sqm := 0.0
+		if s.SizeSqm != nil {
+			sqm = *s.SizeSqm
+		}
+		floors := 1
+		if s.FloorLevel != nil {
+			floors = *s.FloorLevel
+		}
+
+		res := dto.PermanentStallResponse{
+			BaseStallResponse: base,
+			PermanenceType:    "permanent",
+		}
+		res.Space.SizeSqm = sqm
+		res.Space.FloorCount = floors
+		return res
+	}
+}
+
+// Helpers untuk Kalkulasi Harga Termurah dan Format
+func calculateCheapestPrice(s *entity.Stall) (float64, string) {
+	minPrice := 0.0
+	period := "month"
+
+	if s.DailyRate != nil && *s.DailyRate > 0 {
+		minPrice = *s.DailyRate
+		period = "day"
+	}
+	if s.MonthlyRate != nil && *s.MonthlyRate > 0 && (minPrice == 0 || *s.MonthlyRate < minPrice) {
+		minPrice = *s.MonthlyRate
+		period = "month"
+	}
+	if s.QuarterlyRate != nil && *s.QuarterlyRate > 0 && (minPrice == 0 || *s.QuarterlyRate < minPrice) {
+		minPrice = *s.QuarterlyRate
+		period = "quarter"
+	}
+	if s.SemesterlyRate != nil && *s.SemesterlyRate > 0 && (minPrice == 0 || *s.SemesterlyRate < minPrice) {
+		minPrice = *s.SemesterlyRate
+		period = "semester"
+	}
+	if s.YearlyRate != nil && *s.YearlyRate > 0 && (minPrice == 0 || *s.YearlyRate < minPrice) {
+		minPrice = *s.YearlyRate
+		period = "year"
+	}
+
+	return minPrice, period
+}
+
+func formatRupiah(amount float64) string {
+	in := int64(amount)
+	str := fmt.Sprintf("%d", in)
+	n := len(str)
+	if n <= 3 {
+		return str
+	}
+	var out []byte
+	for i, char := range str {
+		if i > 0 && (n-i)%3 == 0 {
+			out = append(out, '.')
+		}
+		out = append(out, byte(char))
+	}
+	return string(out)
+}
 func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) any {
 	// 1. Owner Summary Mapping
 	ownerSummary := dto.OwnerProfileSummary{
@@ -641,124 +778,6 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 				UtilityTerms:       utilityTerms,
 			},
 		}
-	}
-}
-
-func (u *StallUsecase) mapToSimpleResponse(s *entity.Stall) *dto.StallResponseData {
-	var opHours *dto.OperatingHoursDTO
-	if s.OperatingHours != nil {
-		opHours = &dto.OperatingHoursDTO{
-			OpeningTime: s.OperatingHours.OpeningTime,
-			ClosingTime: s.OperatingHours.ClosingTime,
-			Is24Hours:   s.OperatingHours.Is24Hours,
-		}
-	}
-
-	var eventSched *dto.EventScheduleDTO
-	if s.EventSchedule != nil {
-		eventSched = &dto.EventScheduleDTO{
-			EventName:                s.EventSchedule.EventName,
-			StartDate:                s.EventSchedule.StartDate,
-			EndDate:                  s.EventSchedule.EndDate,
-			RegistrationDeadlineDays: s.EventSchedule.RegistrationDeadlineDays,
-		}
-	}
-
-	var slotInf *dto.SlotInfoDTO
-	if s.SlotInfo != nil {
-		slotInf = &dto.SlotInfoDTO{
-			TotalSlots:     s.SlotInfo.TotalSlots,
-			AvailableSlots: s.SlotInfo.AvailableSlots,
-		}
-	}
-
-	var opDays, attReq, cancelPol *string
-	if s.EventOperatingDays != nil {
-		v := string(*s.EventOperatingDays)
-		opDays = &v
-	}
-	if s.EventAttendanceReq != nil {
-		v := string(*s.EventAttendanceReq)
-		attReq = &v
-	}
-	if s.EventCancellationPolicy != nil {
-		v := string(*s.EventCancellationPolicy)
-		cancelPol = &v
-	}
-
-	facilityImgs := make([]string, 0, len(s.DisplayMedia.FacilityImages))
-	for _, imgVal := range s.DisplayMedia.FacilityImages {
-		if str, ok := imgVal.(string); ok {
-			facilityImgs = append(facilityImgs, str)
-		} else if imgMap, ok := imgVal.(map[string]any); ok {
-			if urlVal, exists := imgMap["url"].(string); exists {
-				facilityImgs = append(facilityImgs, urlVal)
-			}
-		}
-	}
-
-	landmarks := make([]string, 0, len(s.NearbyLandmarks))
-	for _, l := range s.NearbyLandmarks {
-		landmarks = append(landmarks, l.Name)
-	}
-
-	return &dto.StallResponseData{
-		ID:                      s.ID.String(),
-		StallOwnerID:            s.StallOwnerID.String(),
-		Title:                   s.Title,
-		Description:             s.Description,
-		PropertyType:            s.PropertyType,
-		PermanenceType:          string(s.PermanenceType),
-		Placement:               string(s.Placement),
-		SizeSqm:                 s.SizeSqm,
-		LengthMeters:            s.LengthMeters,
-		WidthMeters:             s.WidthMeters,
-		FloorLevel:              s.FloorLevel,
-		ElectricityCapacityVA:   s.ElectricityCapacityVA,
-		ParentComplexName:       s.ParentComplexName,
-		OperatingHours:          opHours,
-		EventSchedule:           eventSched,
-		SlotInfo:                slotInf,
-		StreetAddress:           s.StreetAddress,
-		Suburb:                  s.Suburb,
-		District:                s.District,
-		City:                    s.City,
-		Province:                s.Province,
-		Country:                 s.Country,
-		CountryCode:             s.CountryCode,
-		PostalCode:              s.PostalCode,
-		Latitude:                s.Latitude,
-		Longitude:               s.Longitude,
-		MapURL:                  s.MapURL,
-		EmbeddedMapURL:          s.EmbeddedMapURL,
-		NearbyLandmarks:         landmarks,
-		AllowedPaymentCycles:    s.AllowedPaymentCycles,
-		DailyRate:               s.DailyRate,
-		MonthlyRate:             s.MonthlyRate,
-		QuarterlyRate:           s.QuarterlyRate,
-		SemesterlyRate:          s.SemesterlyRate,
-		YearlyRate:              s.YearlyRate,
-		SecurityDeposit:         s.SecurityDeposit,
-		MinimumLeaseMonths:      s.MinimumLeaseMonths,
-		MinimumLeaseDays:        s.MinimumLeaseDays,
-		StartDateOptions:        s.StartDateOptions,
-		EventOperatingDays:      opDays,
-		EventAttendanceReq:      attReq,
-		EventCancellationPolicy: cancelPol,
-		UtilityTerms:            s.UtilityTerms,
-		FacilityValues:          s.FacilityValues,
-		AllowedBusinessTypeIDs:  s.AllowedBusinessTypeIDs,
-		HouseRules:              s.HouseRules,
-		DisplayMedia: dto.DisplayMediaDTO{
-			MainImage:      s.DisplayMedia.MainImage,
-			FacilityImages: facilityImgs,
-		},
-		LegalDocuments: s.LegalDocuments,
-		RatingAvg:      s.RatingAvg,
-		ReviewCount:    s.ReviewCount,
-		IsPublished:    s.IsPublished,
-		CreatedAt:      s.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:      s.UpdatedAt.Format(time.RFC3339),
 	}
 }
 

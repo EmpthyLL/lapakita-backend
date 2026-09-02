@@ -33,58 +33,48 @@ type SearchStallRequest struct {
 	SortBy                   string                `form:"sortBy"`
 }
 
-type StallResponseData struct {
-	ID                      string             `json:"id"`
-	StallOwnerID            string             `json:"stall_owner_id"`
-	Title                   string             `json:"title"`
-	Description             *string            `json:"description,omitempty"`
-	PropertyType            string             `json:"property_type"`
-	PermanenceType          string             `json:"permanence_type"`
-	Placement               string             `json:"placement"`
-	SizeSqm                 *float64           `json:"size_sqm,omitempty"`
-	LengthMeters            *float64           `json:"length_meters,omitempty"`
-	WidthMeters             *float64           `json:"width_meters,omitempty"`
-	FloorLevel              *int               `json:"floor_level,omitempty"`
-	ElectricityCapacityVA   *int               `json:"electricity_capacity_va,omitempty"`
-	ParentComplexName       *string            `json:"parent_complex_name,omitempty"`
-	OperatingHours          *OperatingHoursDTO `json:"operating_hours,omitempty"`
-	EventSchedule           *EventScheduleDTO  `json:"event_schedule,omitempty"`
-	SlotInfo                *SlotInfoDTO       `json:"slot_info,omitempty"`
-	StreetAddress           string             `json:"street_address"`
-	Suburb                  *string            `json:"suburb,omitempty"`
-	District                *string            `json:"district,omitempty"`
-	City                    string             `json:"city"`
-	Province                string             `json:"province"`
-	Country                 string             `json:"country"`
-	CountryCode             string             `json:"country_code"`
-	PostalCode              *string            `json:"postal_code,omitempty"`
-	Latitude                *float64           `json:"latitude,omitempty"`
-	Longitude               *float64           `json:"longitude,omitempty"`
-	MapURL                  *string            `json:"map_url,omitempty"`
-	EmbeddedMapURL          *string            `json:"embedded_map_url,omitempty"`
-	NearbyLandmarks         []string           `json:"nearby_landmarks"`
-	AllowedPaymentCycles    []string           `json:"allowed_payment_cycles"`
-	DailyRate               *float64           `json:"daily_rate,omitempty"`
-	MonthlyRate             *float64           `json:"monthly_rate,omitempty"`
-	QuarterlyRate           *float64           `json:"quarterly_rate,omitempty"`
-	SemesterlyRate          *float64           `json:"semesterly_rate,omitempty"`
-	YearlyRate              *float64           `json:"yearly_rate,omitempty"`
-	SecurityDeposit         float64            `json:"security_deposit"`
-	MinimumLeaseMonths      *int               `json:"minimum_lease_months,omitempty"`
-	MinimumLeaseDays        *int               `json:"minimum_lease_days,omitempty"`
-	StartDateOptions        []string           `json:"start_date_options"`
-	EventOperatingDays      *string            `json:"event_operating_days,omitempty"`
-	EventAttendanceReq      *string            `json:"event_attendance_requirement,omitempty"`
-	EventCancellationPolicy *string            `json:"event_cancellation_policy,omitempty"`
-	UtilityTerms            *string            `json:"utility_terms,omitempty"`
-	FacilityValues          []string           `json:"facility_values"`
-	AllowedBusinessTypeIDs  []string           `json:"allowed_business_type_ids"`
-	HouseRules              []string           `json:"house_rules"`
-	DisplayMedia            DisplayMediaDTO    `json:"display_media"`
-	LegalDocuments          []string           `json:"legal_documents"`
-	RatingAvg               float64            `json:"rating_avg"`
-	ReviewCount             int                `json:"review_count"`
-	IsPublished             bool               `json:"is_published"`
-	CreatedAt               string             `json:"created_at"`
-	UpdatedAt               string             `json:"updated_at"`
+type StallLocationSummary struct {
+	Area        string `json:"area"`
+	City        string `json:"city"`
+	CountryCode string `json:"countryCode"`
+}
+
+type BaseStallResponse struct {
+	ID                     string               `json:"id"`
+	Title                  string               `json:"title"`
+	ImageURL               string               `json:"imageUrl"`
+	Location               StallLocationSummary `json:"location"`
+	PropertyType           string               `json:"propertyType"`
+	Placement              string               `json:"placement"`
+	CheapestPriceFormatted string               `json:"cheapestPriceFormatted"`
+	CheapestPricePeriod    string               `json:"cheapestPricePeriod"`
+	Rating                 float64              `json:"rating"`
+	ReviewCount            int                  `json:"reviewCount"`
+}
+
+type PermanentStallResponse struct {
+	BaseStallResponse
+	PermanenceType string `json:"permanenceType"` // "permanent"
+	Space          struct {
+		SizeSqm    float64 `json:"sizeSqm"`
+		FloorCount int     `json:"floorCount"`
+	} `json:"space"`
+}
+
+type SemiPermanentStallResponse struct {
+	BaseStallResponse
+	PermanenceType string `json:"permanenceType"` // "semi-permanent"
+	OperatingHours struct {
+		Open  string `json:"open"`
+		Close string `json:"close"`
+	} `json:"operatingHours"`
+}
+
+type TemporaryStallResponse struct {
+	BaseStallResponse
+	PermanenceType string `json:"permanenceType"` // "temporary"
+	Event          struct {
+		RegistrationDeadlineDays int `json:"registrationDeadlineDays"`
+		DurationDays             int `json:"durationDays"`
+	} `json:"event"`
 }
