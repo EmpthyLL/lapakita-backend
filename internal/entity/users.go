@@ -14,7 +14,7 @@ import (
 type PhoneNumberItem struct {
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`
-	Roles     []string `json:"roles"` // e.g. ["tenant", "stall_owner"]
+	Roles     []string `json:"roles"` // e.g. ["tenant", "owner"]
 }
 
 // PhoneNumbers menampung daftar/array banyak nomor telepon per user

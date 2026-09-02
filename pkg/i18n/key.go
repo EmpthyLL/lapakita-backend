@@ -61,4 +61,17 @@ const (
 	KeyResetPasswordSuccess MessageKey = "success.password_reset"
 	KeyRefreshTokenExpired  MessageKey = "error.refresh_token_expired"
 	KeyTokenRefreshSuccess  MessageKey = "success.token_refreshed"
+
+	// Stall Keys
+	KeyStallCreateSuccess  MessageKey = "stall.create_success"
+	KeyStallUpdateSuccess  MessageKey = "stall.update_success"
+	KeyStallDeleteSuccess  MessageKey = "stall.delete_success"
+	KeyStallGetSuccess     MessageKey = "stall.get_success"
+	KeyStallSearchSuccess  MessageKey = "stall.search_success"
+	KeyStallNotFound       MessageKey = "stall.not_found"
+	KeyStallUnauthorized   MessageKey = "stall.unauthorized"
+	KeyStallFailedToCreate MessageKey = "stall.failed_to_create"
+	KeyStallFailedToUpdate MessageKey = "stall.failed_to_update"
+	KeyStallFailedToDelete MessageKey = "stall.failed_to_delete"
+	KeyStallFailedToGet    MessageKey = "stall.failed_to_get"
 )

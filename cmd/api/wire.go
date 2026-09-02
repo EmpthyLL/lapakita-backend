@@ -9,6 +9,7 @@ import (
 	"lapakita-backend/internal/feature/auth"
 	businesstype "lapakita-backend/internal/feature/business_type"
 	"lapakita-backend/internal/feature/cms"
+	"lapakita-backend/internal/feature/stall"
 	"lapakita-backend/pkg/cache"
 	"lapakita-backend/pkg/database"
 	"lapakita-backend/pkg/firebase"
@@ -38,6 +39,7 @@ var featureSet = wire.NewSet(
 	cms.CMSFeatureSet,
 	businesstype.BusinessTypeFeatureSet,
 	auth.AuthFeatureSet,
+	stall.StallFeatureSet,
 )
 
 var HandlersSet = wire.NewSet(

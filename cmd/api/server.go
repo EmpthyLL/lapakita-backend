@@ -6,6 +6,7 @@ import (
 	authHandler "lapakita-backend/internal/feature/auth/handler"
 	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
 	cmsHandler "lapakita-backend/internal/feature/cms/handler"
+	stallHandler "lapakita-backend/internal/feature/stall/handler"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
@@ -19,6 +20,7 @@ type Handlers struct {
 	CMSHandler          *cmsHandler.CMSHandler
 	BusinessTypeHandler *businessTypeHandler.BusinessTypeHandler
 	AuthHandler         *authHandler.AuthHandler
+	StallHandler        *stallHandler.StallHandler
 }
 
 type Server struct {
@@ -99,6 +101,23 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		businessTypeGroup := apiGroup.Group("/business-types")
 		{
 			businessTypeGroup.GET("", h.BusinessTypeHandler.GetBusinessTypes)
+		}
+
+		stallGroup := apiGroup.Group("/stalls")
+		{
+			// Public Routes
+			stallGroup.GET("", h.StallHandler.Search)
+			stallGroup.GET("/:id", h.StallHandler.GetByID)
+
+			// Protected Routes (Owner Only)
+			protectedStalls := stallGroup.Group("")
+			protectedStalls.Use(middleware.JWTAuthMiddleware(jwtService))
+			{
+				protectedStalls.GET("/my-stalls", h.StallHandler.GetByOwner)
+				protectedStalls.POST("", h.StallHandler.Create)
+				protectedStalls.PUT("/:id", h.StallHandler.Update)
+				protectedStalls.DELETE("/:id", h.StallHandler.Delete)
+			}
 		}
 	}
 
