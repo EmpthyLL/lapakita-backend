@@ -70,9 +70,9 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		query = query.Where("property_type IN ?", req.PropertyType)
 	}
 
-	// 5. Filter Business Type
+	// 5. Filter Business Type (HANYA BERLAKU UNTUK TEMPORARY STALL atau jika allowed_business_type_ids TIDAK KOSONG)
 	if req.BusinessType != "" {
-		query = query.Where("allowed_business_type_ids ::jsonb @> ?", fmt.Sprintf(`["%s"]`, req.BusinessType))
+		query = query.Where("(permanence_type != 'temporary' OR (allowed_business_type_ids ::jsonb @> ? OR jsonb_array_length(allowed_business_type_ids) = 0))", fmt.Sprintf(`["%s"]`, req.BusinessType))
 	}
 
 	// 6. Filter Payment Cycle
@@ -122,7 +122,7 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		query = query.Where("(operating_hours->>'closing_time') >= ?", req.ClosingTime)
 	}
 
-	// 12. Filter Event Specific Terms
+	// 12. Filter Event Specific Terms (Hanya Aktif untuk Temporary)
 	if req.EventOperatingDays != "" {
 		query = query.Where("event_operating_days = ?", req.EventOperatingDays)
 	}
