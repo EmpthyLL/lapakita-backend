@@ -17,6 +17,26 @@ const (
 	StallPermanenceTemporary StallPermanenceType = "temporary"
 )
 
+type FacilityImage struct {
+	URL string `json:"url"`
+}
+
+func (f *FacilityImage) UnmarshalJSON(data []byte) error {
+	var url string
+	if err := json.Unmarshal(data, &url); err == nil {
+		f.URL = url
+		return nil
+	}
+
+	type facilityImage FacilityImage
+	var image facilityImage
+	if err := json.Unmarshal(data, &image); err != nil {
+		return err
+	}
+	*f = FacilityImage(image)
+	return nil
+}
+
 type StallPlacementType string
 
 const (
@@ -58,7 +78,7 @@ func (o OperatingHours) Value() (driver.Value, error) {
 	return json.Marshal(o)
 }
 
-func (o *OperatingHours) Scan(value any) error {
+func (o *OperatingHours) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
@@ -80,7 +100,7 @@ func (e EventSchedule) Value() (driver.Value, error) {
 	return json.Marshal(e)
 }
 
-func (e *EventSchedule) Scan(value any) error {
+func (e *EventSchedule) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
@@ -100,7 +120,7 @@ func (s SlotInfo) Value() (driver.Value, error) {
 	return json.Marshal(s)
 }
 
-func (s *SlotInfo) Scan(value any) error {
+func (s *SlotInfo) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
@@ -112,16 +132,16 @@ func (s *SlotInfo) Scan(value any) error {
 }
 
 type DisplayMedia struct {
-	MainImage         string  `json:"mainImage"`
-	FacilityImages    []any   `json:"facilityImages"`
-	VirtualTour360URL *string `json:"virtualTour360Url,omitempty"`
+	MainImage         string          `json:"mainImage"`
+	FacilityImages    []FacilityImage `json:"facilityImages"`
+	VirtualTour360URL *string         `json:"virtualTour360Url,omitempty"`
 }
 
 func (d DisplayMedia) Value() (driver.Value, error) {
 	return json.Marshal(d)
 }
 
-func (d *DisplayMedia) Scan(value any) error {
+func (d *DisplayMedia) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
@@ -148,7 +168,7 @@ func (n NearbyLandmarkArray) Value() (driver.Value, error) {
 	return json.Marshal(n)
 }
 
-func (n *NearbyLandmarkArray) Scan(value any) error {
+func (n *NearbyLandmarkArray) Scan(value interface{}) error {
 	if value == nil {
 		*n = NearbyLandmarkArray{}
 		return nil
@@ -174,7 +194,7 @@ func (s StringArray) Value() (driver.Value, error) {
 	return json.Marshal(s)
 }
 
-func (s *StringArray) Scan(value any) error {
+func (s *StringArray) Scan(value interface{}) error {
 	if value == nil {
 		*s = StringArray{}
 		return nil

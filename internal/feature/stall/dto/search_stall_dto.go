@@ -30,6 +30,7 @@ type SearchStallRequest struct {
 	ClosingTime              string                `form:"closingTime"`
 	RegistrationDeadlineDays *int                  `form:"registrationDeadlineDays"`
 	EventDurationDays        *int                  `form:"eventDurationDays"`
+	Is24Hours                *bool                 `form:"is24Hours"`
 	SortBy                   string                `form:"sortBy"`
 }
 
@@ -52,29 +53,36 @@ type BaseStallResponse struct {
 	ReviewCount            int                  `json:"reviewCount"`
 }
 
+type StallSpace struct {
+	SizeSqm    float64 `json:"sizeSqm"`
+	FloorCount int     `json:"floorCount"`
+}
+
+type StallOperatingHours struct {
+	Open      string `json:"open"`
+	Close     string `json:"close"`
+	Is24Hours bool   `json:"is24Hours"`
+}
+
+type StallEventSummary struct {
+	RegistrationDeadlineDays int `json:"registrationDeadlineDays"`
+	DurationDays             int `json:"durationDays"`
+}
+
 type PermanentStallResponse struct {
 	BaseStallResponse
-	PermanenceType string `json:"permanenceType"` // "permanent"
-	Space          struct {
-		SizeSqm    float64 `json:"sizeSqm"`
-		FloorCount int     `json:"floorCount"`
-	} `json:"space"`
+	PermanenceType string     `json:"permanenceType"` // "permanent"
+	Space          StallSpace `json:"space"`
 }
 
 type SemiPermanentStallResponse struct {
 	BaseStallResponse
-	PermanenceType string `json:"permanenceType"` // "semi-permanent"
-	OperatingHours struct {
-		Open  string `json:"open"`
-		Close string `json:"close"`
-	} `json:"operatingHours"`
+	PermanenceType string              `json:"permanenceType"` // "semi-permanent"
+	OperatingHours StallOperatingHours `json:"operatingHours"`
 }
 
 type TemporaryStallResponse struct {
 	BaseStallResponse
-	PermanenceType string `json:"permanenceType"` // "temporary"
-	Event          struct {
-		RegistrationDeadlineDays int `json:"registrationDeadlineDays"`
-		DurationDays             int `json:"durationDays"`
-	} `json:"event"`
+	PermanenceType string            `json:"permanenceType"` // "temporary"
+	Event          StallEventSummary `json:"event"`
 }

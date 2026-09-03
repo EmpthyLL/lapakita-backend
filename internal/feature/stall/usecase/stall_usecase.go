@@ -52,10 +52,10 @@ func (u *StallUsecase) uploadMediaToImageKit(ctx context.Context, source string,
 func (u *StallUsecase) processDisplayMedia(ctx context.Context, media dto.DisplayMediaDTO) entity.DisplayMedia {
 	mainImg := u.uploadMediaToImageKit(ctx, media.MainImage, "/stalls/main")
 
-	facilityImgs := make([]any, 0, len(media.FacilityImages))
+	facilityImgs := make([]entity.FacilityImage, 0, len(media.FacilityImages))
 	for _, img := range media.FacilityImages {
 		if uploaded := u.uploadMediaToImageKit(ctx, img, "/stalls/facilities"); uploaded != "" {
-			facilityImgs = append(facilityImgs, uploaded)
+			facilityImgs = append(facilityImgs, entity.FacilityImage{URL: uploaded})
 		}
 	}
 
@@ -75,7 +75,7 @@ func (u *StallUsecase) processLegalDocs(ctx context.Context, docs []string) []st
 	return uploadedDocs
 }
 
-func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.CreateStallRequest) (any, error) {
+func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.CreateStallRequest) (dto.StallDetailResponse, error) {
 	displayMedia := u.processDisplayMedia(ctx, req.DisplayMedia)
 	legalDocs := u.processLegalDocs(ctx, req.LegalDocuments)
 
@@ -162,7 +162,6 @@ func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.Cr
 		IsPublished:            req.IsPublished,
 	}
 
-	// Dynamic Nearby Landmark Items Mapping
 	if len(req.NearbyLandmarks) > 0 {
 		landmarks := make(entity.NearbyLandmarkArray, 0, len(req.NearbyLandmarks))
 		for _, lm := range req.NearbyLandmarks {
@@ -189,25 +188,25 @@ func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.Cr
 	}
 
 	if err := u.repo.Create(ctx, stall); err != nil {
-		return nil, err
+		return dto.StallDetailResponse{}, err
 	}
 
 	return u.GetByID(ctx, stall.ID)
 }
 
-func (u *StallUsecase) Update(ctx context.Context, ownerID uuid.UUID, req dto.UpdateStallRequest) (any, error) {
+func (u *StallUsecase) Update(ctx context.Context, ownerID uuid.UUID, req dto.UpdateStallRequest) (dto.StallDetailResponse, error) {
 	stallID, err := uuid.Parse(req.ID)
 	if err != nil {
-		return nil, errors.New(string(i18n.KeyInvalidPayload))
+		return dto.StallDetailResponse{}, errors.New(string(i18n.KeyInvalidPayload))
 	}
 
 	stall, err := u.repo.FindByID(ctx, stallID)
 	if err != nil || stall == nil {
-		return nil, errors.New("stall not found")
+		return dto.StallDetailResponse{}, errors.New("stall not found")
 	}
 
 	if stall.StallOwnerID != ownerID {
-		return nil, errors.New("unauthorized stall update")
+		return dto.StallDetailResponse{}, errors.New("unauthorized stall update")
 	}
 
 	stall.Title = req.Title
@@ -269,16 +268,16 @@ func (u *StallUsecase) Update(ctx context.Context, ownerID uuid.UUID, req dto.Up
 	}
 
 	if err := u.repo.Update(ctx, stall); err != nil {
-		return nil, err
+		return dto.StallDetailResponse{}, err
 	}
 
 	return u.GetByID(ctx, stall.ID)
 }
 
-func (u *StallUsecase) GetByID(ctx context.Context, id uuid.UUID) (any, error) {
+func (u *StallUsecase) GetByID(ctx context.Context, id uuid.UUID) (dto.StallDetailResponse, error) {
 	stall, err := u.repo.FindByID(ctx, id)
 	if err != nil || stall == nil {
-		return nil, errors.New("stall not found")
+		return dto.StallDetailResponse{}, errors.New("stall not found")
 	}
 
 	ownerUser, _ := u.userRepo.FindUserByID(ctx, stall.StallOwnerID)
@@ -295,7 +294,8 @@ func (u *StallUsecase) Delete(ctx context.Context, ownerID uuid.UUID, id uuid.UU
 	}
 	return u.repo.Delete(ctx, id)
 }
-func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) ([]any, api.PaginationMeta, error) {
+
+func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) ([]dto.CompactStallResponse, api.PaginationMeta, error) {
 	stalls, total, err := u.repo.Search(ctx, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
@@ -320,7 +320,7 @@ func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) (
 		HasPrevPage: page > 1,
 	}
 
-	responseList := make([]any, 0, len(stalls))
+	responseList := make([]dto.CompactStallResponse, 0, len(stalls))
 	for _, s := range stalls {
 		responseList = append(responseList, u.mapToCompactResponse(&s))
 	}
@@ -328,7 +328,45 @@ func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) (
 	return responseList, meta, nil
 }
 
-func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]any, api.PaginationMeta, error) {
+func (u *StallUsecase) GetSimilar(ctx context.Context, req dto.GetSimilarStallsRequest) ([]dto.CompactStallResponse, api.PaginationMeta, error) {
+	targetStall, err := u.repo.FindByID(ctx, req.ID)
+	if err != nil || targetStall == nil {
+		return nil, api.PaginationMeta{}, errors.New("stall not found")
+	}
+
+	stalls, total, err := u.repo.FindSimilar(ctx, targetStall, req)
+	if err != nil {
+		return nil, api.PaginationMeta{}, err
+	}
+
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 6
+	}
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	meta := api.PaginationMeta{
+		TotalItems:  int(total),
+		TotalPages:  totalPages,
+		CurrentPage: page,
+		PerPage:     limit,
+		HasNextPage: page < totalPages,
+		HasPrevPage: page > 1,
+	}
+
+	responseList := make([]dto.CompactStallResponse, 0, len(stalls))
+	for _, s := range stalls {
+		responseList = append(responseList, u.mapToCompactResponse(&s))
+	}
+
+	return responseList, meta, nil
+}
+
+func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]dto.CompactStallResponse, api.PaginationMeta, error) {
 	stalls, total, err := u.repo.FindByOwnerID(ctx, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
@@ -353,7 +391,7 @@ func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsR
 		HasPrevPage: page > 1,
 	}
 
-	responseList := make([]any, 0, len(stalls))
+	responseList := make([]dto.CompactStallResponse, 0, len(stalls))
 	for _, s := range stalls {
 		responseList = append(responseList, u.mapToCompactResponse(&s))
 	}
@@ -361,9 +399,7 @@ func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsR
 	return responseList, meta, nil
 }
 
-// mapToCompactResponse mengonversi entity Stall ke DTO ringkas sesuai jenis permanence
-func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
-	// 1. Ekstrak Area (District/Suburb/Address)
+func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) dto.CompactStallResponse {
 	areaStr := s.StreetAddress
 	if s.District != nil && *s.District != "" {
 		areaStr = *s.District
@@ -377,7 +413,6 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
 		CountryCode: s.CountryCode,
 	}
 
-	// 2. Hitung Harga Termurah & Periode Pembayaran
 	cheapestVal, periodKey := calculateCheapestPrice(s)
 	priceFormatted := fmt.Sprintf("Rp %s", formatRupiah(cheapestVal))
 
@@ -394,7 +429,6 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
 		ReviewCount:            s.ReviewCount,
 	}
 
-	// 3. Mapping Polymorphic berdasarkan Permanence Type
 	switch s.PermanenceType {
 	case entity.StallPermanenceSemi:
 		openTime, closeTime := "10:00", "22:00"
@@ -409,7 +443,7 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
 		}
 		res.OperatingHours.Open = openTime
 		res.OperatingHours.Close = closeTime
-		return res
+		return dto.CompactStallResponse{SemiPermanentStallResponse: &res}
 
 	case entity.StallPermanenceTemporary:
 		deadlineDays := 0
@@ -432,9 +466,9 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
 		}
 		res.Event.RegistrationDeadlineDays = deadlineDays
 		res.Event.DurationDays = durationDays
-		return res
+		return dto.CompactStallResponse{TemporaryStallResponse: &res}
 
-	default: // Permanent
+	default:
 		sqm := 0.0
 		if s.SizeSqm != nil {
 			sqm = *s.SizeSqm
@@ -450,11 +484,10 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) any {
 		}
 		res.Space.SizeSqm = sqm
 		res.Space.FloorCount = floors
-		return res
+		return dto.CompactStallResponse{PermanentStallResponse: &res}
 	}
 }
 
-// Helpers untuk Kalkulasi Harga Termurah dan Format
 func calculateCheapestPrice(s *entity.Stall) (float64, string) {
 	minPrice := 0.0
 	period := "month"
@@ -499,8 +532,8 @@ func formatRupiah(amount float64) string {
 	}
 	return string(out)
 }
-func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) any {
-	// 1. Owner Summary Mapping
+
+func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) dto.StallDetailResponse {
 	ownerSummary := dto.OwnerProfileSummary{
 		ID:          s.StallOwnerID.String(),
 		Name:        "Unknown Owner",
@@ -525,17 +558,9 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 		ownerSummary.JoinedYear = fmt.Sprintf("%d", owner.CreatedAt.Year())
 	}
 
-	// 2. Media Mapping (Type Assertion untuk any ke string)
 	facilityImgs := make([]dto.FacilityImageDTO, 0, len(s.DisplayMedia.FacilityImages))
 	for idx, imgVal := range s.DisplayMedia.FacilityImages {
-		imgStr := ""
-		if str, ok := imgVal.(string); ok {
-			imgStr = str
-		} else if imgMap, ok := imgVal.(map[string]any); ok {
-			if urlVal, exists := imgMap["url"].(string); exists {
-				imgStr = urlVal
-			}
-		}
+		imgStr := imgVal.URL
 
 		facilityImgs = append(facilityImgs, dto.FacilityImageDTO{
 			ID:      fmt.Sprintf("img-%d", idx+1),
@@ -555,7 +580,6 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 		VirtualTour360URL: &virtualTour,
 	}
 
-	// 3. Address Mapping
 	suburb := ""
 	if s.Suburb != nil {
 		suburb = *s.Suburb
@@ -590,7 +614,6 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 		EmbeddedMapURL: embeddedMapURL,
 	}
 
-	// 4. Landmarks Mapping
 	nearbyLandmarks := make([]dto.NearbyLandmarkDTO, 0, len(s.NearbyLandmarks))
 	for _, l := range s.NearbyLandmarks {
 		nearbyLandmarks = append(nearbyLandmarks, dto.NearbyLandmarkDTO{
@@ -600,7 +623,6 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 		})
 	}
 
-	// 5. Pricing Mapping
 	pricingDTO := dto.MultiPeriodPricing{
 		DailyRate:            s.DailyRate,
 		MonthlyRate:          s.MonthlyRate,
@@ -621,18 +643,13 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 		utilityTerms = *s.UtilityTerms
 	}
 
-	// 6. Polymorphic Mapping berdasarkan PermanenceType
 	switch s.PermanenceType {
 	case entity.StallPermanenceSemi:
 		parentComplex := ""
 		if s.ParentComplexName != nil {
 			parentComplex = *s.ParentComplexName
 		}
-		opHours := struct {
-			OpeningTime string `json:"openingTime"`
-			ClosingTime string `json:"closingTime"`
-			Is24Hours   bool   `json:"is24Hours"`
-		}{}
+		opHours := dto.StallOperatingHoursDetail{}
 		if s.OperatingHours != nil {
 			opHours.OpeningTime = s.OperatingHours.OpeningTime
 			opHours.ClosingTime = s.OperatingHours.ClosingTime
@@ -644,7 +661,7 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 			minMonths = *s.MinimumLeaseMonths
 		}
 
-		return dto.SemiPermanentStallDetail{
+		res := dto.SemiPermanentStallDetail{
 			ID:                    s.ID.String(),
 			Title:                 s.Title,
 			Description:           desc,
@@ -670,16 +687,10 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 				UtilityTerms:       utilityTerms,
 			},
 		}
+		return dto.StallDetailResponse{SemiPermanentStallDetail: &res}
 
 	case entity.StallPermanenceTemporary:
-		eventMeta := struct {
-			EventName                      string `json:"eventName,omitempty"`
-			EventStartDate                 string `json:"eventStartDate"`
-			EventEndDate                   string `json:"eventEndDate"`
-			RegistrationDeadlineDaysBefore int    `json:"registrationDeadlineDaysBefore"`
-			TotalSlots                     int    `json:"totalSlots"`
-			AvailableSlots                 int    `json:"availableSlots"`
-		}{}
+		eventMeta := dto.StallEventMeta{}
 
 		if s.EventSchedule != nil {
 			eventMeta.EventName = s.EventSchedule.EventName
@@ -710,7 +721,7 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 			cancelPol = string(*s.EventCancellationPolicy)
 		}
 
-		return dto.TemporaryStallDetail{
+		res := dto.TemporaryStallDetail{
 			ID:                    s.ID.String(),
 			Title:                 s.Title,
 			Description:           desc,
@@ -738,14 +749,15 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 				CancellationPolicy:    cancelPol,
 			},
 		}
+		return dto.StallDetailResponse{TemporaryStallDetail: &res}
 
-	default: // Permanent
+	default:
 		minMonths := 1
 		if s.MinimumLeaseMonths != nil {
 			minMonths = *s.MinimumLeaseMonths
 		}
 
-		return dto.PermanentStallDetail{
+		res := dto.PermanentStallDetail{
 			ID:                    s.ID.String(),
 			Title:                 s.Title,
 			Description:           desc,
@@ -778,6 +790,7 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 				UtilityTerms:       utilityTerms,
 			},
 		}
+		return dto.StallDetailResponse{PermanentStallDetail: &res}
 	}
 }
 

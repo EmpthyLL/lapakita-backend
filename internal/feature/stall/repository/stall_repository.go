@@ -121,6 +121,9 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 	if req.ClosingTime != "" {
 		query = query.Where("(operating_hours->>'closing_time') >= ?", req.ClosingTime)
 	}
+	if req.Is24Hours != nil {
+		query = query.Where("permanence_type = ? AND (operating_hours->>'is_24_hours')::boolean = ?", entity.StallPermanenceSemi, *req.Is24Hours)
+	}
 
 	// 12. Filter Event Specific Terms (Hanya Aktif untuk Temporary)
 	if req.EventOperatingDays != "" {
@@ -225,5 +228,46 @@ func (r *StallRepository) FindByOwnerID(ctx context.Context, req dto.GetOwnerSta
 	offset := (page - 1) * limit
 
 	err = query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&stalls).Error
+	return stalls, total, err
+}
+
+func (r *StallRepository) FindSimilar(ctx context.Context, currentStall *entity.Stall, req dto.GetSimilarStallsRequest) ([]entity.Stall, int64, error) {
+	var stalls []entity.Stall
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&entity.Stall{}).
+		Where("deleted_at IS NULL AND is_published = ?", true).
+		Where("id != ?", currentStall.ID)
+
+	// Filter Utama Kemiripan: Kota yang sama ATAU Properti/Permanensi yang sama
+	query = query.Where(
+		"LOWER(city) = LOWER(?) OR property_type = ? OR permanence_type = ?",
+		currentStall.City, currentStall.PropertyType, currentStall.PermanenceType,
+	)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 6 // Default 6 items untuk list rekomendasi
+	}
+	offset := (page - 1) * limit
+
+	// Ordering Prioritas: Lokasi Kota Sama -> Tipe Properti Sama -> Rating Tertinggi
+	orderByQuery := fmt.Sprintf(
+		"CASE WHEN LOWER(city) = LOWER('%s') THEN 1 ELSE 2 END ASC, "+
+			"CASE WHEN property_type = '%s' THEN 1 ELSE 2 END ASC, "+
+			"rating_avg DESC, created_at DESC",
+		strings.ReplaceAll(currentStall.City, "'", "''"),
+		strings.ReplaceAll(currentStall.PropertyType, "'", "''"),
+	)
+
+	err := query.Order(orderByQuery).Offset(offset).Limit(limit).Find(&stalls).Error
 	return stalls, total, err
 }

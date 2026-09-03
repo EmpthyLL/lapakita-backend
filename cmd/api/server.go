@@ -108,6 +108,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			// Public Routes
 			stallGroup.GET("", h.StallHandler.Search)
 			stallGroup.GET("/:id", h.StallHandler.GetByID)
+			stallGroup.GET("/:id/similar", h.StallHandler.GetSimilar)
 
 			// Protected Routes (Owner Only)
 			protectedStalls := stallGroup.Group("")

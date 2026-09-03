@@ -154,3 +154,26 @@ func (h *StallHandler) GetByOwner(c *gin.Context) {
 
 	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyStallSearchSuccess), stalls, meta)
 }
+
+// GET /api/v1/stalls/:id/similar
+func (h *StallHandler) GetSimilar(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	req := dto.GetSimilarStallsRequest{ID: id}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	stalls, meta, err := h.usecase.GetSimilar(c.Request.Context(), req)
+	if err != nil {
+		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyStallNotFound))
+		return
+	}
+
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyStallGetSimilarSuccess), stalls, meta)
+}

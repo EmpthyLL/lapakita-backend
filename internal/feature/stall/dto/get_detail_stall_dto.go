@@ -32,6 +32,26 @@ type FacilityImageDTO struct {
 	Caption string `json:"caption"`
 }
 
+type StallDimensions struct {
+	LengthMeters float64 `json:"lengthMeters"`
+	WidthMeters  float64 `json:"widthMeters"`
+}
+
+type StallOperatingHoursDetail struct {
+	OpeningTime string `json:"openingTime"`
+	ClosingTime string `json:"closingTime"`
+	Is24Hours   bool   `json:"is24Hours"`
+}
+
+type StallEventMeta struct {
+	EventName                      string `json:"eventName,omitempty"`
+	EventStartDate                 string `json:"eventStartDate"`
+	EventEndDate                   string `json:"eventEndDate"`
+	RegistrationDeadlineDaysBefore int    `json:"registrationDeadlineDaysBefore"`
+	TotalSlots                     int    `json:"totalSlots"`
+	AvailableSlots                 int    `json:"availableSlots"`
+}
+
 type StallMediaDTO struct {
 	MainImage         string             `json:"mainImage"`
 	FacilityImages    []FacilityImageDTO `json:"facilityImages"`
@@ -84,14 +104,11 @@ type PermanentStallDetail struct {
 	ReviewCount           int                 `json:"reviewCount"`
 	Owner                 OwnerProfileSummary `json:"owner"`
 
-	PermanenceType string  `json:"permanenceType"` // "permanent"
-	SizeSqm        float64 `json:"sizeSqm"`
-	Dimensions     struct {
-		LengthMeters float64 `json:"lengthMeters"`
-		WidthMeters  float64 `json:"widthMeters"`
-	} `json:"dimensions"`
-	FloorLevel int                 `json:"floorLevel"`
-	LeaseRules PermanentLeaseRules `json:"leaseRules"`
+	PermanenceType string              `json:"permanenceType"` // "permanent"
+	SizeSqm        float64             `json:"sizeSqm"`
+	Dimensions     StallDimensions     `json:"dimensions"`
+	FloorLevel     int                 `json:"floorLevel"`
+	LeaseRules     PermanentLeaseRules `json:"leaseRules"`
 }
 
 type SemiPermanentStallDetail struct {
@@ -112,14 +129,10 @@ type SemiPermanentStallDetail struct {
 	ReviewCount           int                 `json:"reviewCount"`
 	Owner                 OwnerProfileSummary `json:"owner"`
 
-	PermanenceType    string `json:"permanenceType"` // "semi-permanent"
-	ParentComplexName string `json:"parentComplexName"`
-	OperatingHours    struct {
-		OpeningTime string `json:"openingTime"`
-		ClosingTime string `json:"closingTime"`
-		Is24Hours   bool   `json:"is24Hours"`
-	} `json:"operatingHours"`
-	LeaseRules PermanentLeaseRules `json:"leaseRules"`
+	PermanenceType    string                    `json:"permanenceType"` // "semi-permanent"
+	ParentComplexName string                    `json:"parentComplexName"`
+	OperatingHours    StallOperatingHoursDetail `json:"operatingHours"`
+	LeaseRules        PermanentLeaseRules       `json:"leaseRules"`
 }
 
 type TemporaryStallDetail struct {
@@ -140,14 +153,7 @@ type TemporaryStallDetail struct {
 	ReviewCount           int                 `json:"reviewCount"`
 	Owner                 OwnerProfileSummary `json:"owner"`
 
-	PermanenceType string `json:"permanenceType"` // "temporary"
-	EventMeta      struct {
-		EventName                      string `json:"eventName,omitempty"`
-		EventStartDate                 string `json:"eventStartDate"`
-		EventEndDate                   string `json:"eventEndDate"`
-		RegistrationDeadlineDaysBefore int    `json:"registrationDeadlineDaysBefore"`
-		TotalSlots                     int    `json:"totalSlots"`
-		AvailableSlots                 int    `json:"availableSlots"`
-	} `json:"eventMeta"`
-	LeaseRules TemporaryLeaseRules `json:"leaseRules"`
+	PermanenceType string              `json:"permanenceType"` // "temporary"
+	EventMeta      StallEventMeta      `json:"eventMeta"`
+	LeaseRules     TemporaryLeaseRules `json:"leaseRules"`
 }

@@ -6,7 +6,7 @@ type GetOwnerStallsRequest struct {
 	api.BasePaginationRequest
 
 	// Required Owner Identifier
-	OwnerID string `form:"owner_id" binding:"required"`
+	OwnerID string `form:"owner_id"`
 
 	// Specific Search Filters
 	Title          string `form:"title"`           // Search by Title
