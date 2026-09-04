@@ -181,7 +181,7 @@ CREATE TABLE stalls (
     operating_hours JSONB DEFAULT NULL,                  -- e.g. {"opening_time": "10:00", "closing_time": "22:00", "is_24_hours": false}
 
     -- ── 2. TEMPORARY CONTEXT (Event Schedule & Slots) ──
-    event_schedule JSONB DEFAULT NULL,                   -- e.g. {"event_name": "Ramadan Fest", "start_date": "2026-03-20", "end_date": "2026-03-23", "registration_deadline_days": 5}
+    event_schedule JSONB DEFAULT NULL,                   -- e.g. {"event_name": "Ramadan Fest", "start_date": "2026-03-20", "end_date": "2026-03-23", "registration_deadline": "2026-03-15"}
     slot_info JSONB DEFAULT NULL,                        -- e.g. {"total_slots": 20, "available_slots": 6}
 
     -- Location Data

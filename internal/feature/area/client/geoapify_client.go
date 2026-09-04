@@ -31,7 +31,8 @@ func NewGeoapifyClient(cfg *config.Config, rdb *redis.Client) *GeoapifyClient {
 }
 
 // cleanComponent membersihkan prefix administrative baik bahasa Indonesia maupun Inggris
-func cleanComponent(val string) string {
+// cleanComponent membersihkan prefix & suffix administrative baik bahasa Indonesia maupun Inggris
+func cleanComponent(val string, countryCode string) string {
 	cleaned := strings.TrimSpace(val)
 
 	// Prefix Bahasa Inggris (Geoapify Output)
@@ -40,6 +41,13 @@ func cleanComponent(val string) string {
 	cleaned = strings.TrimPrefix(cleaned, "Province of ")
 	cleaned = strings.TrimPrefix(cleaned, "Special Region of ")
 	cleaned = strings.TrimPrefix(cleaned, "Special Capital Region of ")
+
+	// Khusus Indonesia (CountryCode == "ID")
+	if strings.ToUpper(countryCode) == "ID" {
+		// Hapus Suffix Bahasa Inggris yang sering ditempelkan Geoapify di akhir nama kota/kabupaten
+		cleaned = strings.TrimSuffix(cleaned, " City")
+		cleaned = strings.TrimSuffix(cleaned, " Regency")
+	}
 
 	// Prefix Bahasa Indonesia
 	cleaned = strings.TrimPrefix(cleaned, "Kota ")
@@ -163,8 +171,8 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 		p := f.Properties
 		countryCode := strings.ToUpper(p.CountryCode)
 
-		cityClean := translateIndonesianDirection(cleanComponent(p.City), countryCode)
-		stateClean := translateIndonesianDirection(cleanComponent(p.State), countryCode)
+		cityClean := translateIndonesianDirection(cleanComponent(p.City, countryCode), countryCode)
+		stateClean := translateIndonesianDirection(cleanComponent(p.State, countryCode), countryCode)
 		country := p.Country
 
 		entityType := "street"
@@ -180,7 +188,7 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 			continue
 		}
 
-		title = translateIndonesianDirection(cleanComponent(title), countryCode)
+		title = translateIndonesianDirection(cleanComponent(title, countryCode), countryCode)
 
 		var subtitleParts []string
 
@@ -406,8 +414,8 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 			StreetAddress:  street,
 			Suburb:         p.Suburb,
 			District:       p.District,
-			City:           translateIndonesianDirection(cleanComponent(p.City), countryCode),
-			Province:       translateIndonesianDirection(cleanComponent(p.State), countryCode),
+			City:           translateIndonesianDirection(cleanComponent(p.City, countryCode), countryCode),
+			Province:       translateIndonesianDirection(cleanComponent(p.State, countryCode), countryCode),
 			Country:        country,
 			CountryCode:    countryCode,
 			PostalCode:     p.Postcode,

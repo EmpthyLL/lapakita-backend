@@ -91,10 +91,10 @@ func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.Cr
 	var eventSched *entity.EventSchedule
 	if req.EventSchedule != nil {
 		eventSched = &entity.EventSchedule{
-			EventName:                req.EventSchedule.EventName,
-			StartDate:                req.EventSchedule.StartDate,
-			EndDate:                  req.EventSchedule.EndDate,
-			RegistrationDeadlineDays: req.EventSchedule.RegistrationDeadlineDays,
+			EventName:            req.EventSchedule.EventName,
+			StartDate:            req.EventSchedule.StartDate,
+			EndDate:              req.EventSchedule.EndDate,
+			RegistrationDeadline: req.EventSchedule.RegistrationDeadline,
 		}
 	}
 
@@ -328,6 +328,16 @@ func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) (
 	return responseList, meta, nil
 }
 
+func daysUntilDate(dateValue string) int {
+	deadline, err := time.ParseInLocation("2006-01-02", dateValue, time.Local)
+	if err != nil {
+		return 0
+	}
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	return int(deadline.Sub(today).Hours() / 24)
+}
+
 func (u *StallUsecase) GetSimilar(ctx context.Context, req dto.GetSimilarStallsRequest) ([]dto.CompactStallResponse, api.PaginationMeta, error) {
 	targetStall, err := u.repo.FindByID(ctx, req.ID)
 	if err != nil || targetStall == nil {
@@ -446,9 +456,9 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) dto.CompactStallRes
 		return dto.CompactStallResponse{SemiPermanentStallResponse: &res}
 
 	case entity.StallPermanenceTemporary:
-		deadlineDays := 0
+		registrationDeadlineDays := 0
 		if s.EventSchedule != nil {
-			deadlineDays = s.EventSchedule.RegistrationDeadlineDays
+			registrationDeadlineDays = daysUntilDate(s.EventSchedule.RegistrationDeadline)
 		}
 
 		durationDays := 1
@@ -464,7 +474,7 @@ func (u *StallUsecase) mapToCompactResponse(s *entity.Stall) dto.CompactStallRes
 			BaseStallResponse: base,
 			PermanenceType:    "temporary",
 		}
-		res.Event.RegistrationDeadlineDays = deadlineDays
+		res.Event.RegistrationDeadlineDays = registrationDeadlineDays
 		res.Event.DurationDays = durationDays
 		return dto.CompactStallResponse{TemporaryStallResponse: &res}
 
@@ -696,7 +706,7 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 			eventMeta.EventName = s.EventSchedule.EventName
 			eventMeta.EventStartDate = s.EventSchedule.StartDate
 			eventMeta.EventEndDate = s.EventSchedule.EndDate
-			eventMeta.RegistrationDeadlineDaysBefore = s.EventSchedule.RegistrationDeadlineDays
+			eventMeta.RegistrationDeadlineDaysBefore = daysUntilDate(s.EventSchedule.RegistrationDeadline)
 		}
 		if s.SlotInfo != nil {
 			eventMeta.TotalSlots = s.SlotInfo.TotalSlots

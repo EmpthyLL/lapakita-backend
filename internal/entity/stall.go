@@ -90,10 +90,10 @@ func (o *OperatingHours) Scan(value interface{}) error {
 }
 
 type EventSchedule struct {
-	EventName                string `json:"event_name"`
-	StartDate                string `json:"start_date"`
-	EndDate                  string `json:"end_date"`
-	RegistrationDeadlineDays int    `json:"registration_deadline_days"`
+	EventName            string `json:"event_name"`
+	StartDate            string `json:"start_date"`
+	EndDate              string `json:"end_date"`
+	RegistrationDeadline string `json:"registration_deadline"`
 }
 
 func (e EventSchedule) Value() (driver.Value, error) {

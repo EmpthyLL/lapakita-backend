@@ -14,10 +14,10 @@ type OperatingHoursDTO struct {
 }
 
 type EventScheduleDTO struct {
-	EventName                string `json:"event_name" binding:"required"`
-	StartDate                string `json:"start_date" binding:"required"`
-	EndDate                  string `json:"end_date" binding:"required"`
-	RegistrationDeadlineDays int    `json:"registration_deadline_days"`
+	EventName            string `json:"event_name" binding:"required"`
+	StartDate            string `json:"start_date" binding:"required"`
+	EndDate              string `json:"end_date" binding:"required"`
+	RegistrationDeadline string `json:"registration_deadline"`
 }
 
 type SlotInfoDTO struct {

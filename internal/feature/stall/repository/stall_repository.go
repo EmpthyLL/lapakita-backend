@@ -43,16 +43,62 @@ func (r *StallRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Model(&entity.Stall{}).Where("id = ?", id).Update("deleted_at", gorm.Expr("NOW()")).Error
 }
 
+func normalizeLocationPart(value string) string {
+	part := strings.ToLower(strings.TrimSpace(value))
+	part = strings.TrimPrefix(part, "kota ")
+	part = strings.TrimPrefix(part, "kabupaten ")
+	part = strings.TrimPrefix(part, "provinsi ")
+	part = strings.TrimSpace(part)
+
+	switch part {
+	case "java":
+		return "jawa"
+	case "west java", "java barat":
+		return "jawa barat"
+	case "central java", "java tengah":
+		return "jawa tengah"
+	case "east java", "java timur":
+		return "jawa timur"
+	default:
+		return part
+	}
+}
+
+func applyLocationFilter(query *gorm.DB, location string) *gorm.DB {
+	parts := strings.Split(location, ",")
+	for _, rawPart := range parts {
+		part := normalizeLocationPart(rawPart)
+		if part == "" || part == "indonesia" {
+			continue
+		}
+
+		if part == "jawa" {
+			query = query.Where(
+				"(LOWER(province) LIKE ? OR LOWER(province) LIKE ? OR LOWER(province) LIKE ?)",
+				"%jawa%", "%dki jakarta%", "%banten%",
+			)
+			continue
+		}
+
+		likePart := "%" + part + "%"
+		query = query.Where(
+			"(LOWER(street_address) LIKE ? OR LOWER(suburb) LIKE ? OR LOWER(district) LIKE ? OR LOWER(city) LIKE ? OR LOWER(province) LIKE ? OR LOWER(country) LIKE ? OR LOWER(country_code) LIKE ?)",
+			likePart, likePart, likePart, likePart, likePart, likePart, likePart,
+		)
+	}
+	return query
+}
+
 func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest) ([]entity.Stall, int64, error) {
 	var stalls []entity.Stall
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&entity.Stall{}).Where("deleted_at IS NULL AND is_published = ?", true)
+	query = query.Where("permanence_type != ? OR ((event_schedule->>'end_date')::date >= CURRENT_DATE)", entity.StallPermanenceTemporary)
 
 	// 1. Filter Combined Location
 	if req.Location != "" {
-		loc := "%" + strings.ToLower(req.Location) + "%"
-		query = query.Where("(LOWER(street_address) LIKE ? OR LOWER(suburb) LIKE ? OR LOWER(district) LIKE ? OR LOWER(city) LIKE ? OR LOWER(province) LIKE ?)", loc, loc, loc, loc, loc)
+		query = applyLocationFilter(query, req.Location)
 	}
 
 	// 2. Filter Permanence Type
@@ -135,8 +181,8 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 	if req.CancellationPolicy != "" {
 		query = query.Where("event_cancellation_policy = ?", req.CancellationPolicy)
 	}
-	if req.RegistrationDeadlineDays != nil {
-		query = query.Where("(event_schedule->>'registration_deadline_days')::int <= ?", *req.RegistrationDeadlineDays)
+	if req.RegistrationDeadline != "" {
+		query = query.Where("(event_schedule->>'registration_deadline')::date <= ?::date", req.RegistrationDeadline)
 	}
 
 	// 13. Filter Facilities
@@ -206,8 +252,7 @@ func (r *StallRepository) FindByOwnerID(ctx context.Context, req dto.GetOwnerSta
 		query = query.Where("placement = ?", req.Placement)
 	}
 	if req.Location != "" {
-		loc := "%" + strings.ToLower(req.Location) + "%"
-		query = query.Where("(LOWER(street_address) LIKE ? OR LOWER(suburb) LIKE ? OR LOWER(district) LIKE ? OR LOWER(city) LIKE ? OR LOWER(province) LIKE ?)", loc, loc, loc, loc, loc)
+		query = applyLocationFilter(query, req.Location)
 	}
 	if req.IsPublished != nil {
 		query = query.Where("is_published = ?", *req.IsPublished)
