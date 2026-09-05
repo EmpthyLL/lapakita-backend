@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thank You for Contacting Lapakita</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f1f5f9;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        color: #334155;
+      }
+      .email-container {
+        max-width: 520px;
+        margin: 30px auto;
+        background-color: #ffffff;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(6, 87, 189, 0.1);
+      }
+      .header {
+        background: linear-gradient(135deg, #0657bd 0%, #0891b2 100%);
+        padding: 32px 24px;
+        text-align: center;
+      }
+      .brand-title {
+        color: #ffffff;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin: 0;
+      }
+      .content {
+        padding: 36px 28px;
+        text-align: left;
+      }
+      .greeting {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 12px;
+      }
+      .description {
+        font-size: 15px;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+      .partner-badge {
+        display: inline-block;
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 20px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .inquiry-card {
+        background-color: #f8fafc;
+        border-left: 4px solid #0657bd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 28px;
+      }
+      .inquiry-card.partner-card {
+        border-left-color: #2be576;
+        background-color: #f0fdf4;
+      }
+      .inquiry-field {
+        font-size: 12px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+      .inquiry-val {
+        font-size: 14px;
+        color: #1e293b;
+        font-weight: 600;
+        margin-bottom: 14px;
+      }
+      .inquiry-val:last-child {
+        margin-bottom: 0;
+      }
+      .footer {
+        background-color: #f8fafc;
+        padding: 20px;
+        text-align: center;
+        font-size: 13px;
+        color: #94a3b8;
+        border-top: 1px solid #e2e8f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="header">
+        <h1 class="brand-title">LAPAKITA</h1>
+      </div>
+      <div class="content">
+        <div class="greeting">Hi {{.Name}},</div>
+
+        {{if .IsPartnership}}
+        <div class="partner-badge">🤝 Strategic Partnership Opportunity</div>
+        <p class="description">
+          Thank you for your interest in collaborating with <b>Lapakita</b>. We
+          have received your partnership proposal regarding
+          <b>{{.InquiryTypeLabel}}</b>. Our Strategic Partnership Team is
+          excited to explore synergies with your organization.
+        </p>
+        {{else}}
+        <p class="description">
+          Thank you for reaching out to <b>Lapakita</b>. We have received your
+          inquiry regarding <b>{{.InquiryTypeLabel}}</b> and our support team
+          will review and process your message shortly.
+        </p>
+        {{end}}
+
+        <div class="inquiry-card {{if .IsPartnership}}partner-card{{end}}">
+          {{if not .IsPartnership}}
+          <div class="inquiry-field">Persona</div>
+          <div class="inquiry-val">{{.PersonaLabel}}</div>
+          {{end}}
+
+          <div class="inquiry-field">
+            {{if .IsPartnership}}Partnership Category{{else}}Inquiry Type{{end}}
+          </div>
+          <div class="inquiry-val">{{.InquiryTypeLabel}}</div>
+
+          <div class="inquiry-field">Submitted Proposal / Message</div>
+          <div
+            class="inquiry-val"
+            style="font-weight: 400; white-space: pre-line"
+          >
+            {{.Message}}
+          </div>
+        </div>
+
+        <p class="description" style="font-size: 14px; margin-bottom: 0">
+          {{if .IsPartnership}} Our Partnerships Representative will review your
+          request and contact you within 1-2 business days to discuss potential
+          collaboration models. {{else}} We usually respond within 1-2 business
+          days. Thank you for your patience! {{end}}
+        </p>
+      </div>
+      <div class="footer">
+        &copy; 2026 Lapakita Platform. All rights reserved.<br />
+        This is an automated message, please do not reply.
+      </div>
+    </div>
+  </body>
+</html>

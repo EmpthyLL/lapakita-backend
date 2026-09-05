@@ -3,22 +3,26 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-
-	"lapakita-backend/internal/feature/cms/dto"
-	"lapakita-backend/internal/feature/cms/repository"
+	"lapakita-backend/internal/entity"
+	"lapakita-backend/internal/feature/public/dto"
+	"lapakita-backend/internal/feature/public/repository"
+	"lapakita-backend/pkg/mailer"
+	"time"
 )
 
-type CMSUsecase struct {
-	cmsRepo *repository.CMSRepository
+type PublicUsecase struct {
+	cmsRepo *repository.PublicRepository
+	mailer  *mailer.Mailer
 }
 
-func NewCMSUsecase(cmsRepo *repository.CMSRepository) *CMSUsecase {
-	return &CMSUsecase{
+func NewPublicUsecase(cmsRepo *repository.PublicRepository, mailer *mailer.Mailer) *PublicUsecase {
+	return &PublicUsecase{
 		cmsRepo: cmsRepo,
+		mailer:  mailer,
 	}
 }
 
-func (u *CMSUsecase) GetGroupedFAQs(ctx context.Context, lang string, roleType string, req *dto.FAQQueryRequest) ([]dto.FAQCategoryResponse, error) {
+func (u *PublicUsecase) GetGroupedFAQs(ctx context.Context, lang string, roleType string, req *dto.FAQQueryRequest) ([]dto.FAQCategoryResponse, error) {
 	activeLang := req.Lang
 	if activeLang == "" {
 		activeLang = lang
@@ -85,7 +89,7 @@ func (u *CMSUsecase) GetGroupedFAQs(ctx context.Context, lang string, roleType s
 	return result, nil
 }
 
-func (u *CMSUsecase) GetLegalDocument(ctx context.Context, lang string, docType string, req *dto.LegalDocumentQueryRequest) (*dto.LegalDocumentResponse, error) {
+func (u *PublicUsecase) GetLegalDocument(ctx context.Context, lang string, docType string, req *dto.LegalDocumentQueryRequest) (*dto.LegalDocumentResponse, error) {
 	activeLang := req.Lang
 	if activeLang == "" {
 		activeLang = lang
@@ -104,5 +108,34 @@ func (u *CMSUsecase) GetLegalDocument(ctx context.Context, lang string, docType 
 	return &dto.LegalDocumentResponse{
 		LastUpdatedAt: &doc.UpdatedAt,
 		Data:          sections,
+	}, nil
+}
+
+func (u *PublicUsecase) SubmitContactInquiry(ctx context.Context, req dto.SubmitContactInquiryRequest) (*dto.ContactInquiryResponse, error) {
+	inquiry := &entity.ContactInquiry{
+		Name:        req.Name,
+		Email:       req.Email,
+		Whatsapp:    req.Whatsapp,
+		Persona:     req.Persona,
+		InquiryType: req.InquiryType,
+		Message:     req.Message,
+		Status:      "unread",
+	}
+
+	if err := u.cmsRepo.CreateContactInquiry(ctx, inquiry); err != nil {
+		return nil, err
+	}
+
+	// Kirim email auto-reply secara asinkron (goroutine) agar tidak memblokir respon HTTP
+	go func(email, name, persona, inqType, msg string) {
+		_ = u.mailer.SendContactInquiryAutoReply(email, name, persona, inqType, msg)
+	}(inquiry.Email, inquiry.Name, inquiry.Persona, inquiry.InquiryType, inquiry.Message)
+
+	return &dto.ContactInquiryResponse{
+		ID:        inquiry.ID.String(),
+		Name:      inquiry.Name,
+		Email:     inquiry.Email,
+		Status:    inquiry.Status,
+		CreatedAt: inquiry.CreatedAt.Format(time.RFC3339),
 	}, nil
 }

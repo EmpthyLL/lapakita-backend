@@ -8,7 +8,7 @@ import (
 	"lapakita-backend/internal/feature/area"
 	"lapakita-backend/internal/feature/auth"
 	businesstype "lapakita-backend/internal/feature/business_type"
-	"lapakita-backend/internal/feature/cms"
+	"lapakita-backend/internal/feature/public"
 	"lapakita-backend/internal/feature/stall"
 	"lapakita-backend/pkg/cache"
 	"lapakita-backend/pkg/database"
@@ -36,7 +36,7 @@ var infrastructureSet = wire.NewSet(
 
 var featureSet = wire.NewSet(
 	area.AreaFeatureSet,
-	cms.CMSFeatureSet,
+	public.PublicFeatureSet,
 	businesstype.BusinessTypeFeatureSet,
 	auth.AuthFeatureSet,
 	stall.StallFeatureSet,

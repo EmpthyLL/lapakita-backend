@@ -8,15 +8,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type CMSRepository struct {
+type PublicRepository struct {
 	database *gorm.DB
 }
 
-func NewCMSRepository(db *gorm.DB) *CMSRepository {
-	return &CMSRepository{database: db}
+func NewPublicRepository(db *gorm.DB) *PublicRepository {
+	return &PublicRepository{database: db}
 }
 
-func (r *CMSRepository) GetFAQs(ctx context.Context, lang, roleType string) ([]entity.CMSPublicFAQ, error) {
+func (r *PublicRepository) GetFAQs(ctx context.Context, lang, roleType string) ([]entity.CMSPublicFAQ, error) {
 	var faqs []entity.CMSPublicFAQ
 	query := r.database.WithContext(ctx).Model(&entity.CMSPublicFAQ{})
 
@@ -34,7 +34,7 @@ func (r *CMSRepository) GetFAQs(ctx context.Context, lang, roleType string) ([]e
 	return faqs, nil
 }
 
-func (r *CMSRepository) GetLegalDocument(ctx context.Context, docType, lang string) (*entity.CMSLegalDocument, error) {
+func (r *PublicRepository) GetLegalDocument(ctx context.Context, docType, lang string) (*entity.CMSLegalDocument, error) {
 	var doc entity.CMSLegalDocument
 	err := r.database.WithContext(ctx).
 		Where("doc_type = ? AND lang = ?", docType, lang).
@@ -46,4 +46,8 @@ func (r *CMSRepository) GetLegalDocument(ctx context.Context, docType, lang stri
 		return nil, err
 	}
 	return &doc, nil
+}
+
+func (r *PublicRepository) CreateContactInquiry(ctx context.Context, inquiry *entity.ContactInquiry) error {
+	return r.database.WithContext(ctx).Create(inquiry).Error
 }

@@ -22,13 +22,15 @@ const (
 	KeyAreaDeviceIDRequired         MessageKey = "area.device_id_required"
 	KeyAreaHistoryDeleteItemSuccess MessageKey = "area.history_delete_item_success"
 
-	// CMS Feature Keys
-	KeyCMSFAQGetSuccess    MessageKey = "cms.faq.get_success"
-	KeyCMSFAQNotFound      MessageKey = "cms.faq.not_found"
-	KeyCMSFAQFailedToGet   MessageKey = "cms.faq.failed_to_get"
-	KeyCMSLegalGetSuccess  MessageKey = "cms.legal.get_success"
-	KeyCMSLegalNotFound    MessageKey = "cms.legal.not_found"
-	KeyCMSLegalFailedToGet MessageKey = "cms.legal.failed_to_get"
+	// Public Feature Keys
+	KeyPublicFAQGetSuccess               MessageKey = "public.faq.get_success"
+	KeyPublicFAQNotFound                 MessageKey = "public.faq.not_found"
+	KeyPublicFAQFailedToGet              MessageKey = "public.faq.failed_to_get"
+	KeyPublicLegalGetSuccess             MessageKey = "public.legal.get_success"
+	KeyPublicLegalNotFound               MessageKey = "public.legal.not_found"
+	KeyPublicLegalFailedToGet            MessageKey = "public.legal.failed_to_get"
+	KeyPublicContactInquirySubmitSuccess MessageKey = "public.contact_inquiry.submit_success"
+	KeyPublicContactInquirySubmitFailed  MessageKey = "public.contact_inquiry.submit_failed"
 
 	// Business Type Feature Keys
 	KeyBusinessTypeGetSuccess  MessageKey = "business_type.get_success"

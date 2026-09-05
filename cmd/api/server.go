@@ -5,7 +5,7 @@ import (
 	areaHandler "lapakita-backend/internal/feature/area/handler"
 	authHandler "lapakita-backend/internal/feature/auth/handler"
 	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
-	cmsHandler "lapakita-backend/internal/feature/cms/handler"
+	publicHandler "lapakita-backend/internal/feature/public/handler"
 	stallHandler "lapakita-backend/internal/feature/stall/handler"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/jwt"
@@ -17,7 +17,7 @@ import (
 
 type Handlers struct {
 	AreaHandler         *areaHandler.AreaHandler
-	CMSHandler          *cmsHandler.CMSHandler
+	PublicHandler       *publicHandler.PublicHandler
 	BusinessTypeHandler *businessTypeHandler.BusinessTypeHandler
 	AuthHandler         *authHandler.AuthHandler
 	StallHandler        *stallHandler.StallHandler
@@ -87,12 +87,13 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		}
 
 		// ---------------------------------------------------------------------
-		// 3. CMS ROUTES
+		// 3. Public ROUTES
 		// ---------------------------------------------------------------------
-		cmsGroup := apiGroup.Group("/cms")
+		publicGroup := apiGroup.Group("/public")
 		{
-			cmsGroup.GET("/faqs/:role_type", h.CMSHandler.GetFAQs)
-			cmsGroup.GET("/legals/:doc_type", h.CMSHandler.GetLegalDocument)
+			publicGroup.GET("/faqs/:role_type", h.PublicHandler.GetFAQs)
+			publicGroup.GET("/legals/:doc_type", h.PublicHandler.GetLegalDocument)
+			publicGroup.POST("/contact", h.PublicHandler.SubmitContactInquiry)
 		}
 
 		// ---------------------------------------------------------------------
