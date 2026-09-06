@@ -93,7 +93,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		{
 			publicGroup.GET("/faqs/:role_type", h.PublicHandler.GetFAQs)
 			publicGroup.GET("/legals/:doc_type", h.PublicHandler.GetLegalDocument)
-			publicGroup.POST("/contact", h.PublicHandler.SubmitContactInquiry)
+			publicGroup.POST("/contact", h.PublicHandler.SubmitContact)
 		}
 
 		// ---------------------------------------------------------------------

@@ -1,6 +1,6 @@
 package dto
 
-type SubmitContactInquiryRequest struct {
+type SubmitContactRequest struct {
 	Name        string  `json:"name" binding:"required,max=255"`
 	Email       string  `json:"email" binding:"required,email,max=255"`
 	Whatsapp    *string `json:"whatsapp" binding:"omitempty,max=32"`
@@ -9,7 +9,7 @@ type SubmitContactInquiryRequest struct {
 	Message     string  `json:"message" binding:"required"`
 }
 
-type ContactInquiryResponse struct {
+type ContactResponse struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`

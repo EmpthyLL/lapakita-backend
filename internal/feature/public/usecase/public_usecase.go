@@ -111,7 +111,7 @@ func (u *PublicUsecase) GetLegalDocument(ctx context.Context, lang string, docTy
 	}, nil
 }
 
-func (u *PublicUsecase) SubmitContactInquiry(ctx context.Context, req dto.SubmitContactInquiryRequest) (*dto.ContactInquiryResponse, error) {
+func (u *PublicUsecase) SubmitContact(ctx context.Context, req dto.SubmitContactRequest) (*dto.ContactResponse, error) {
 	inquiry := &entity.ContactInquiry{
 		Name:        req.Name,
 		Email:       req.Email,
@@ -128,10 +128,10 @@ func (u *PublicUsecase) SubmitContactInquiry(ctx context.Context, req dto.Submit
 
 	// Kirim email auto-reply secara asinkron (goroutine) agar tidak memblokir respon HTTP
 	go func(email, name, persona, inqType, msg string) {
-		_ = u.mailer.SendContactInquiryAutoReply(email, name, persona, inqType, msg)
+		_ = u.mailer.SendContactAutoReply(email, name, persona, inqType, msg)
 	}(inquiry.Email, inquiry.Name, inquiry.Persona, inquiry.InquiryType, inquiry.Message)
 
-	return &dto.ContactInquiryResponse{
+	return &dto.ContactResponse{
 		ID:        inquiry.ID.String(),
 		Name:      inquiry.Name,
 		Email:     inquiry.Email,

@@ -169,14 +169,14 @@ func resolveInquiryTypeLabel(inquiryType string) string {
 	return inquiryType
 }
 
-func (m *Mailer) SendContactInquiryAutoReply(toEmail string, name string, persona string, inquiryType string, message string) error {
+func (m *Mailer) SendContactAutoReply(toEmail string, name string, persona string, inquiryType string, message string) error {
 	workDir, err := os.Getwd()
 	if err != nil {
 		m.log.Error("[Mailer] Failed to get working directory", zap.Error(err))
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	tmplPath := filepath.Join(workDir, "pkg", "mailer", "template", "contact_us.html")
+	tmplPath := filepath.Join(workDir, "pkg", "mailer", "template", "contact_auto_reply.html")
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
 		m.log.Error("[Mailer] Failed to parse email template file",

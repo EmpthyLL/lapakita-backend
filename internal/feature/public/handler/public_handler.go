@@ -64,14 +64,14 @@ func (h *PublicHandler) GetLegalDocument(c *gin.Context) {
 	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyPublicLegalGetSuccess), res)
 }
 
-func (h *PublicHandler) SubmitContactInquiry(c *gin.Context) {
-	var req dto.SubmitContactInquiryRequest
+func (h *PublicHandler) SubmitContact(c *gin.Context) {
+	var req dto.SubmitContactRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
 	}
 
-	res, err := h.publicUsecase.SubmitContactInquiry(c.Request.Context(), req)
+	res, err := h.publicUsecase.SubmitContact(c.Request.Context(), req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyPublicContactInquirySubmitFailed))
 		return
