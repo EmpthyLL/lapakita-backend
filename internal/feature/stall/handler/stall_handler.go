@@ -58,7 +58,7 @@ func (h *StallHandler) GetByID(c *gin.Context) {
 
 // POST /api/v1/stalls (Protected)
 func (h *StallHandler) Create(c *gin.Context) {
-	ownerID, ok := middleware.GetUserIDFromContext(c)
+	ownerID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
@@ -81,7 +81,7 @@ func (h *StallHandler) Create(c *gin.Context) {
 
 // PUT /api/v1/stalls/:id (Protected)
 func (h *StallHandler) Update(c *gin.Context) {
-	ownerID, ok := middleware.GetUserIDFromContext(c)
+	ownerID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
@@ -106,7 +106,7 @@ func (h *StallHandler) Update(c *gin.Context) {
 
 // DELETE /api/v1/stalls/:id (Protected)
 func (h *StallHandler) Delete(c *gin.Context) {
-	ownerID, ok := middleware.GetUserIDFromContext(c)
+	ownerID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
@@ -129,7 +129,7 @@ func (h *StallHandler) Delete(c *gin.Context) {
 
 // GET /api/v1/stalls/my-stalls
 func (h *StallHandler) GetByOwner(c *gin.Context) {
-	ownerID, ok := middleware.GetUserIDFromContext(c)
+	ownerID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return

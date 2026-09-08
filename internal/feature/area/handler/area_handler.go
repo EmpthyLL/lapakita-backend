@@ -90,7 +90,7 @@ func (h *AreaHandler) SearchDetail(c *gin.Context) {
 }
 
 func helperExtractAuthAndDevice(c *gin.Context) (userID string, deviceID string) {
-	if parsedUUID, ok := middleware.GetUserIDFromContext(c); ok {
+	if parsedUUID, ok := middleware.GetUserID(c); ok {
 		userID = parsedUUID.String()
 	}
 	deviceID = c.GetHeader("X-Device-ID")

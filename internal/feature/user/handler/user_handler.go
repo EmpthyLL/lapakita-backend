@@ -6,11 +6,11 @@ import (
 
 	"lapakita-backend/internal/feature/user/dto"
 	"lapakita-backend/internal/feature/user/usecase"
+	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type UserHandler struct {
@@ -21,36 +21,14 @@ func NewUserHandler(userUsecase *usecase.UserUsecase) *UserHandler {
 	return &UserHandler{userUsecase: userUsecase}
 }
 
-// Helper internal untuk mengekstrak user_id dari JWT context
-func (h *UserHandler) getUserID(c *gin.Context) (uuid.UUID, bool) {
-	val, exists := c.Get("user_id")
-	if !exists {
-		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
-		return uuid.Nil, false
-	}
-
-	uidStr, ok := val.(string)
-	if !ok {
-		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
-		return uuid.Nil, false
-	}
-
-	uid, err := uuid.Parse(uidStr)
-	if err != nil {
-		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
-		return uuid.Nil, false
-	}
-
-	return uid, true
-}
-
 // -----------------------------------------------------------------------------
 // 1. GENERAL PROFILE
 // -----------------------------------------------------------------------------
 
 func (h *UserHandler) GetGeneralProfile(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -64,8 +42,9 @@ func (h *UserHandler) GetGeneralProfile(c *gin.Context) {
 }
 
 func (h *UserHandler) UpdateGeneralProfile(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -89,8 +68,9 @@ func (h *UserHandler) UpdateGeneralProfile(c *gin.Context) {
 // -----------------------------------------------------------------------------
 
 func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -104,8 +84,9 @@ func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
 }
 
 func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -125,8 +106,9 @@ func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
 }
 
 func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -153,8 +135,9 @@ func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
 }
 
 func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -170,7 +153,7 @@ func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneDeleteSuccess), nil)
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneDeleteSuccess))
 }
 
 // -----------------------------------------------------------------------------
@@ -178,8 +161,9 @@ func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
 // -----------------------------------------------------------------------------
 
 func (h *UserHandler) UpdatePassword(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -194,7 +178,7 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPasswordChangeSuccess), nil)
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPasswordChangeSuccess))
 }
 
 // -----------------------------------------------------------------------------
@@ -202,8 +186,9 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 // -----------------------------------------------------------------------------
 
 func (h *UserHandler) GetPersonaProfile(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -218,8 +203,9 @@ func (h *UserHandler) GetPersonaProfile(c *gin.Context) {
 }
 
 func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -240,12 +226,13 @@ func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
 }
 
 // -----------------------------------------------------------------------------
-// 5. LEGAL IDENTITY DOCUMENT (JSON Base64)
+// 5. LEGAL IDENTITY DOCUMENT
 // -----------------------------------------------------------------------------
 
 func (h *UserHandler) UploadDocument(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -265,8 +252,9 @@ func (h *UserHandler) UploadDocument(c *gin.Context) {
 }
 
 func (h *UserHandler) DeleteDocument(c *gin.Context) {
-	userID, ok := h.getUserID(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
@@ -275,5 +263,5 @@ func (h *UserHandler) DeleteDocument(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserDocumentDeleteSuccess), nil)
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserDocumentDeleteSuccess))
 }

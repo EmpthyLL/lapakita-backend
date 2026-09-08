@@ -73,8 +73,8 @@ func OptionalJWTAuthMiddleware(jwtService *jwt.JWTService) gin.HandlerFunc {
 	}
 }
 
-// GetUserIDFromContext helper function untuk mengambil userID secara aman
-func GetUserIDFromContext(c *gin.Context) (uuid.UUID, bool) {
+// GetUserID helper function untuk mengambil userID secara aman
+func GetUserID(c *gin.Context) (uuid.UUID, bool) {
 	val, exists := c.Get(CtxUserIDKey)
 	if !exists {
 		return uuid.Nil, false

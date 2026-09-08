@@ -72,7 +72,7 @@ func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 
 // PUT /api/v1/auth/complete-profile (Protected Route via JWT Middleware)
 func (h *AuthHandler) CompleteProfile(c *gin.Context) {
-	userID, ok := middleware.GetUserIDFromContext(c)
+	userID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
