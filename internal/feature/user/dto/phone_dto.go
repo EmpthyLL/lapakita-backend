@@ -6,9 +6,7 @@ type PhoneNumberItem struct {
 	Roles     []string `json:"roles"`
 }
 
-type GetPhoneNumbersResponse struct {
-	PhoneNumbers []PhoneNumberItem `json:"phone_numbers"`
-}
+type GetPhoneNumbersResponse []PhoneNumberItem
 
 type AddPhoneNumberRequest struct {
 	Number    string   `json:"number" binding:"required,max=32"`

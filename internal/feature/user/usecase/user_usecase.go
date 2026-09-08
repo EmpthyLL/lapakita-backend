@@ -28,8 +28,6 @@ func NewUserUsecase(repo *repository.UserRepository, imagekit *storage.ImageKitS
 		imagekit: imagekit,
 	}
 }
-
-// 1. General Profile
 func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (dto.GetGeneralProfileResponse, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -46,6 +44,7 @@ func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (
 		Name:             user.Name,
 		Email:            user.Email,
 		DefaultAvatarURL: avatar,
+		ActiveRole:       user.ActiveRole,
 		PrimaryPhone:     user.PhoneNumbers.GetPrimaryNumber(),
 	}, nil
 }
@@ -56,18 +55,34 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	// 1. Update nama & avatar
+	// 1. Update nama
 	user.Name = req.Name
-	if req.DefaultAvatarURL != nil {
-		user.DefaultAvatarURL = req.DefaultAvatarURL
+
+	// 2. Upload avatar ke ImageKit jika bertipe Base64 atau URL luar
+	if req.DefaultAvatarURL != nil && *req.DefaultAvatarURL != "" {
+		avatarSource := strings.TrimSpace(*req.DefaultAvatarURL)
+
+		// Cek jika avatar belum di-host di ImageKit Lapakita
+		if !strings.Contains(avatarSource, "ik.imagekit.io") {
+			fileName := fmt.Sprintf("avatar_%s.jpg", userID.String())
+			ikURL, err := u.imagekit.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
+			if err == nil && ikURL != "" {
+				avatarSource = ikURL
+			}
+		}
+		user.DefaultAvatarURL = &avatarSource
 	}
 
-	// 2. Jika phone_number dikirim di payload, set/tambahkan dan jadikan primary
+	// 3. Update active_role
+	if req.ActiveRole != nil && *req.ActiveRole != "" {
+		user.ActiveRole = *req.ActiveRole
+	}
+
+	// 4. Update/set phone_number dan jadikan primary jika dikirim di payload
 	if req.PhoneNumber != nil && *req.PhoneNumber != "" {
 		phone := *req.PhoneNumber
 		found := false
 
-		// Cek apakah nomor sudah ada di daftar
 		for i := range user.PhoneNumbers {
 			if user.PhoneNumbers[i].Number == phone {
 				user.PhoneNumbers[i].IsPrimary = true
@@ -77,9 +92,7 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 			}
 		}
 
-		// Jika nomor baru, tambahkan ke list dan set sebagai primary
 		if !found {
-			// Unset primary nomor lama
 			for i := range user.PhoneNumbers {
 				user.PhoneNumbers[i].IsPrimary = false
 			}
@@ -92,10 +105,12 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		}
 	}
 
+	// 5. Simpan perubahan ke DB
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
 		return dto.GetGeneralProfileResponse{}, err
 	}
 
+	// 6. Kembalikan profil terbaru yang sudah berisi URL ImageKit
 	return u.GetGeneralProfile(ctx, userID)
 }
 
@@ -103,10 +118,10 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID) (dto.GetPhoneNumbersResponse, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
-		return dto.GetPhoneNumbersResponse{}, errors.New(string(i18n.KeyUserNotFound))
+		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	items := make([]dto.PhoneNumberItem, 0, len(user.PhoneNumbers))
+	items := make(dto.GetPhoneNumbersResponse, 0, len(user.PhoneNumbers))
 	for _, p := range user.PhoneNumbers {
 		items = append(items, dto.PhoneNumberItem{
 			Number:    p.Number,
@@ -115,18 +130,18 @@ func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID) (dt
 		})
 	}
 
-	return dto.GetPhoneNumbersResponse{PhoneNumbers: items}, nil
+	return items, nil
 }
 
 func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) (dto.GetPhoneNumbersResponse, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
-		return dto.GetPhoneNumbersResponse{}, errors.New(string(i18n.KeyUserNotFound))
+		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 
 	for _, p := range user.PhoneNumbers {
 		if p.Number == req.Number {
-			return dto.GetPhoneNumbersResponse{}, errors.New(string(i18n.KeyUserPhoneDuplicate))
+			return nil, errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 
@@ -145,7 +160,7 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 
 	user.PhoneNumbers = append(user.PhoneNumbers, newItem)
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
-		return dto.GetPhoneNumbersResponse{}, err
+		return nil, err
 	}
 
 	return u.GetPhoneNumbers(ctx, userID)
@@ -154,16 +169,16 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, index int, req dto.UpdatePhoneNumberRequest) (dto.GetPhoneNumbersResponse, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
-		return dto.GetPhoneNumbersResponse{}, errors.New(string(i18n.KeyUserNotFound))
+		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 
 	if index < 0 || index >= len(user.PhoneNumbers) {
-		return dto.GetPhoneNumbersResponse{}, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
+		return nil, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 	}
 
 	for i, p := range user.PhoneNumbers {
 		if i != index && p.Number == req.Number {
-			return dto.GetPhoneNumbersResponse{}, errors.New(string(i18n.KeyUserPhoneDuplicate))
+			return nil, errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 
@@ -177,7 +192,7 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 	}
 
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
-		return dto.GetPhoneNumbersResponse{}, err
+		return nil, err
 	}
 
 	return u.GetPhoneNumbers(ctx, userID)
@@ -262,9 +277,18 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 		user.RoleProfiles = entity.RoleProfiles{}
 	}
 
+	avatarURL := req.AvatarURL
+	if avatarURL != "" && !strings.Contains(avatarURL, "ik.imagekit.io") {
+		fileName := fmt.Sprintf("persona_%s_%s.jpg", role, userID.String())
+		ikURL, err := u.imagekit.UploadFromURL(ctx, avatarURL, fileName, "/personas")
+		if err == nil && ikURL != "" {
+			avatarURL = ikURL
+		}
+	}
+
 	user.RoleProfiles[role] = entity.RoleProfileItem{
 		DisplayName: req.DisplayName,
-		AvatarURL:   req.AvatarURL,
+		AvatarURL:   avatarURL,
 	}
 
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
