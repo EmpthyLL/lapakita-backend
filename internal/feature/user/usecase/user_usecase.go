@@ -296,14 +296,14 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 		return dto.GetDocumentResponse{}, errors.New(string(i18n.KeyUserDocumentFileInvalid))
 	}
 
-	// 3. Terapkan Watermark di Memori
-	purpose := storage.PurposeType(req.PurposeType)
+	// 3. Set Purpose otomatis dari BE (misal: Stall/User Verification)
+	purpose := storage.PurposeStallVerification
 	watermarkedBytes, err := storage.ApplyWatermarkFromBytes(decodedBytes, purpose)
 	if err != nil {
 		return dto.GetDocumentResponse{}, errors.New(string(i18n.KeyUserDocumentWatermarkFailed))
 	}
 
-	// 4. Encode kembali ke Base64 agar dapat di-upload oleh ImageKitService.UploadFromURL
+	// 4. Upload ke ImageKit via Base64
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
 	fileName := fmt.Sprintf("ktp_%s.png", userID.String())
 
