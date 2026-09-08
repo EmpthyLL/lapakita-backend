@@ -46,6 +46,7 @@ func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (
 		Name:             user.Name,
 		Email:            user.Email,
 		DefaultAvatarURL: avatar,
+		PrimaryPhone:     user.PhoneNumbers.GetPrimaryNumber(),
 	}, nil
 }
 
@@ -55,9 +56,40 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserNotFound))
 	}
 
+	// 1. Update nama & avatar
 	user.Name = req.Name
-	if req.DefaultAvatarURL != "" {
-		user.DefaultAvatarURL = &req.DefaultAvatarURL
+	if req.DefaultAvatarURL != nil {
+		user.DefaultAvatarURL = req.DefaultAvatarURL
+	}
+
+	// 2. Jika phone_number dikirim di payload, set/tambahkan dan jadikan primary
+	if req.PhoneNumber != nil && *req.PhoneNumber != "" {
+		phone := *req.PhoneNumber
+		found := false
+
+		// Cek apakah nomor sudah ada di daftar
+		for i := range user.PhoneNumbers {
+			if user.PhoneNumbers[i].Number == phone {
+				user.PhoneNumbers[i].IsPrimary = true
+				found = true
+			} else {
+				user.PhoneNumbers[i].IsPrimary = false
+			}
+		}
+
+		// Jika nomor baru, tambahkan ke list dan set sebagai primary
+		if !found {
+			// Unset primary nomor lama
+			for i := range user.PhoneNumbers {
+				user.PhoneNumbers[i].IsPrimary = false
+			}
+
+			user.PhoneNumbers = append(user.PhoneNumbers, entity.PhoneNumberItem{
+				Number:    phone,
+				IsPrimary: true,
+				Roles:     []string{"primary_contact"},
+			})
+		}
 	}
 
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
