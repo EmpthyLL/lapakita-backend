@@ -33,7 +33,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
 }
 
 // POST /api/v1/auth/login
@@ -106,7 +106,7 @@ func (h *AuthHandler) SendOTP(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
 }
 
 // POST /api/v1/auth/otp/verify
@@ -140,7 +140,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyResetPasswordSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyResetPasswordSuccess))
 }
 
 // POST /api/v1/auth/refresh

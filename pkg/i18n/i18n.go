@@ -49,4 +49,5 @@ func Init() {
 	RegisterMessages(locale.PublicMessages)
 	RegisterMessages(locale.AuthMessages)
 	RegisterMessages(locale.StallMessages)
+	RegisterMessages(locale.UserMessages)
 }

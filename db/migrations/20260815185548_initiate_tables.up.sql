@@ -128,7 +128,7 @@ CREATE TABLE supplier_profiles (
     description TEXT,
     logo_url TEXT,
     
-    owner_ktp_photo_url TEXT NOT NULL,
+    supplier_ktp_photo_url TEXT NOT NULL,
     business_document_photo_url TEXT,
     
     is_verified_by_admin BOOLEAN DEFAULT FALSE,

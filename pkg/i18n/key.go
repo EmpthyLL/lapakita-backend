@@ -77,4 +77,41 @@ const (
 	KeyStallFailedToDelete    MessageKey = "stall.failed_to_delete"
 	KeyStallFailedToGet       MessageKey = "stall.failed_to_get"
 	KeyStallGetSimilarSuccess MessageKey = "stall.get_similar_success"
+
+	// User Keys
+	KeyUserProfileGetSuccess     MessageKey = "user.profile_get_success"
+	KeyUserProfileUpdateSuccess  MessageKey = "user.profile_update_success"
+	KeyUserProfileFailedToGet    MessageKey = "user.profile_failed_to_get"
+	KeyUserProfileFailedToUpdate MessageKey = "user.profile_failed_to_update"
+
+	KeyUserPhoneGetSuccess          MessageKey = "user.phone_get_success"
+	KeyUserPhoneAddSuccess          MessageKey = "user.phone_add_success"
+	KeyUserPhoneUpdateSuccess       MessageKey = "user.phone_update_success"
+	KeyUserPhoneDeleteSuccess       MessageKey = "user.phone_delete_success"
+	KeyUserPhoneDuplicate           MessageKey = "user.phone_duplicate"
+	KeyUserPhoneIndexInvalid        MessageKey = "user.phone_index_invalid"
+	KeyUserPhoneCannotDeletePrimary MessageKey = "user.phone_cannot_delete_primary"
+	KeyUserPhoneFailedToAdd         MessageKey = "user.phone_failed_to_add"
+	KeyUserPhoneFailedToUpdate      MessageKey = "user.phone_failed_to_update"
+	KeyUserPhoneFailedToDelete      MessageKey = "user.phone_failed_to_delete"
+
+	KeyUserPasswordChangeSuccess  MessageKey = "user.password_change_success"
+	KeyUserPasswordIncorrect      MessageKey = "user.password_incorrect"
+	KeyUserPasswordFailedToChange MessageKey = "user.password_failed_to_change"
+
+	KeyUserPersonaGetSuccess     MessageKey = "user.persona_get_success"
+	KeyUserPersonaUpdateSuccess  MessageKey = "user.persona_update_success"
+	KeyUserPersonaNotFound       MessageKey = "user.persona_not_found"
+	KeyUserPersonaRoleInvalid    MessageKey = "user.persona_role_invalid"
+	KeyUserPersonaFailedToGet    MessageKey = "user.persona_failed_to_get"
+	KeyUserPersonaFailedToUpdate MessageKey = "user.persona_failed_to_update"
+
+	KeyUserDocumentUploadSuccess   MessageKey = "user.document_upload_success"
+	KeyUserDocumentDeleteSuccess   MessageKey = "user.document_delete_success"
+	KeyUserDocumentNIKExists       MessageKey = "user.document_nik_exists"
+	KeyUserDocumentFileRequired    MessageKey = "user.document_file_required"
+	KeyUserDocumentFileInvalid     MessageKey = "user.document_file_invalid"
+	KeyUserDocumentWatermarkFailed MessageKey = "user.document_watermark_failed"
+	KeyUserDocumentFailedToUpload  MessageKey = "user.document_failed_to_upload"
+	KeyUserDocumentFailedToDelete  MessageKey = "user.document_failed_to_delete"
 )

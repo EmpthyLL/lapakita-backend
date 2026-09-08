@@ -124,7 +124,7 @@ func (h *StallHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyStallDeleteSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyStallDeleteSuccess))
 }
 
 // GET /api/v1/stalls/my-stalls

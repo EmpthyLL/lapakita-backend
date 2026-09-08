@@ -7,10 +7,10 @@ import (
 )
 
 // Standar Response Sukses / Generik
-type Response[T any] struct {
+type Response struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-	Data    *T     `json:"data,omitempty"`
+	Data    any    `json:"data,omitempty"`
 }
 
 // Standar Metadata Pagination
@@ -47,22 +47,22 @@ type ErrorResponse struct {
 // --- Helper Functions ---
 
 // Success mengirim respon sukses tanpa pagination (data bersifat opsional)
-func Success[T any](c *gin.Context, status int, message string, data ...T) {
+func Success(c *gin.Context, status int, message string, data ...any) {
 	c.Header("Content-Type", "application/json")
 	c.Status(status)
 
-	res := Response[T]{
+	res := Response{
 		Success: true,
 		Message: message,
 	}
 
-	if len(data) > 0 {
-		res.Data = &data[0]
+	if len(data) > 0 && data[0] != nil {
+		res.Data = data[0]
 	}
 
 	encoder := json.NewEncoder(c.Writer)
 	encoder.SetEscapeHTML(false)
-	encoder.Encode(res)
+	_ = encoder.Encode(res)
 }
 
 // SuccessWithPagination mengirim respon data ber-halaman

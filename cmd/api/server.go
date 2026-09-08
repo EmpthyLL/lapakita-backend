@@ -7,6 +7,7 @@ import (
 	businessTypeHandler "lapakita-backend/internal/feature/business_type/handler"
 	publicHandler "lapakita-backend/internal/feature/public/handler"
 	stallHandler "lapakita-backend/internal/feature/stall/handler"
+	userHandler "lapakita-backend/internal/feature/user/handler"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
@@ -21,6 +22,7 @@ type Handlers struct {
 	BusinessTypeHandler *businessTypeHandler.BusinessTypeHandler
 	AuthHandler         *authHandler.AuthHandler
 	StallHandler        *stallHandler.StallHandler
+	UserHandler         *userHandler.UserHandler
 }
 
 type Server struct {
@@ -104,6 +106,9 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			businessTypeGroup.GET("", h.BusinessTypeHandler.GetBusinessTypes)
 		}
 
+		// ---------------------------------------------------------------------
+		// 4. STALL ROUTES
+		// ---------------------------------------------------------------------
 		stallGroup := apiGroup.Group("/stalls")
 		{
 			// Public Routes
@@ -119,6 +124,49 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 				protectedStalls.POST("", h.StallHandler.Create)
 				protectedStalls.PUT("/:id", h.StallHandler.Update)
 				protectedStalls.DELETE("/:id", h.StallHandler.Delete)
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 6. USER / SETTINGS ROUTES (Protected)
+		// ---------------------------------------------------------------------
+		userGroup := apiGroup.Group("/users")
+		userGroup.Use(middleware.JWTAuthMiddleware(jwtService))
+		{
+			// General Profile
+			profileGroup := userGroup.Group("/profile")
+			{
+				profileGroup.GET("", h.UserHandler.GetGeneralProfile)
+				profileGroup.PUT("", h.UserHandler.UpdateGeneralProfile)
+			}
+
+			// Phone Numbers
+			phoneGroup := userGroup.Group("/phone")
+			{
+				phoneGroup.GET("", h.UserHandler.GetPhoneNumbers)
+				phoneGroup.POST("", h.UserHandler.AddPhoneNumber)
+				phoneGroup.PUT("/:index", h.UserHandler.UpdatePhoneNumber)
+				phoneGroup.DELETE("/:index", h.UserHandler.DeletePhoneNumber)
+			}
+
+			// Security & Password
+			passwordGroup := userGroup.Group("/password")
+			{
+				passwordGroup.PUT("", h.UserHandler.UpdatePassword)
+			}
+
+			// Persona Profile
+			personaGroup := userGroup.Group("/persona")
+			{
+				personaGroup.GET("/:role", h.UserHandler.GetPersonaProfile)
+				personaGroup.PUT("/:role", h.UserHandler.UpdatePersonaProfile)
+			}
+
+			// Legal Documents
+			documentGroup := userGroup.Group("/document")
+			{
+				documentGroup.POST("", h.UserHandler.UploadDocument)
+				documentGroup.DELETE("", h.UserHandler.DeleteDocument)
 			}
 		}
 	}

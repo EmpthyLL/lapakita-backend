@@ -135,7 +135,7 @@ func (h *AreaHandler) SaveHistory(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyAreaHistorySaveSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyAreaHistorySaveSuccess))
 }
 
 // DELETE /api/v1/areas/history
@@ -152,7 +152,7 @@ func (h *AreaHandler) ClearHistory(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyAreaHistoryDeleteSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyAreaHistoryDeleteSuccess))
 }
 
 // DELETE /api/v1/areas/history/item
@@ -175,5 +175,5 @@ func (h *AreaHandler) DeleteItemHistory(c *gin.Context) {
 		return
 	}
 
-	api.Success[any](c, http.StatusOK, i18n.T(c, i18n.KeyAreaHistoryDeleteItemSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyAreaHistoryDeleteItemSuccess))
 }
