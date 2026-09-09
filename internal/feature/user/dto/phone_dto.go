@@ -8,11 +8,19 @@ type GetPhoneNumbersRequest struct {
 }
 
 type PhoneNumberItem struct {
-	Number    string   `json:"number" binding:"required,max=32"`
+	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`
 	Roles     []string `json:"roles"`
 }
 
-type SavePhoneNumbersRequest struct {
-	PhoneNumbers []PhoneNumberItem `json:"phone_numbers" binding:"required"`
+type AddPhoneNumberRequest struct {
+	Number    string   `json:"number" binding:"required,max=32"`
+	IsPrimary bool     `json:"is_primary"`
+	Roles     []string `json:"roles" binding:"omitempty"`
+}
+
+type UpdatePhoneNumberRequest struct {
+	Number    string   `json:"number" binding:"required,max=32"`
+	IsPrimary bool     `json:"is_primary"`
+	Roles     []string `json:"roles" binding:"omitempty"`
 }

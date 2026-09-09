@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"lapakita-backend/internal/feature/user/dto"
 	"lapakita-backend/internal/feature/user/usecase"
@@ -88,25 +89,75 @@ func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
 	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneGetSuccess), res, meta)
 }
 
-func (h *UserHandler) SyncPhoneNumbers(c *gin.Context) {
+func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
 		return
 	}
 
-	var req dto.SavePhoneNumbersRequest
+	var req dto.AddPhoneNumberRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
 	}
 
-	if err := h.userUsecase.SyncPhoneNumbers(c.Request.Context(), userID, req); err != nil {
+	if err := h.userUsecase.AddPhoneNumber(c.Request.Context(), userID, req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
+		return
+	}
+
+	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserPhoneAddSuccess))
+}
+
+func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	indexStr := c.Param("index")
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyUserPhoneIndexInvalid))
+		return
+	}
+
+	var req dto.UpdatePhoneNumberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	if err := h.userUsecase.UpdatePhoneNumber(c.Request.Context(), userID, index, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
 	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneUpdateSuccess))
+}
+
+func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	indexStr := c.Param("index")
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyUserPhoneIndexInvalid))
+		return
+	}
+
+	if err := h.userUsecase.DeletePhoneNumber(c.Request.Context(), userID, index); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
+		return
+	}
+
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneDeleteSuccess))
 }
 
 // -----------------------------------------------------------------------------
