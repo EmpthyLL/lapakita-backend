@@ -16,6 +16,7 @@ type UploadDocumentRequest struct {
 }
 
 type GetDocumentResponse struct {
+	ID           string `json:"id"`
 	FullNameKTP  string `json:"full_name_ktp"`
 	NIK          string `json:"nik"`
 	KTPPhotoURL  string `json:"ktp_photo_url"`

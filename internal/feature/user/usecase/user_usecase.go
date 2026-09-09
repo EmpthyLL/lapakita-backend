@@ -357,6 +357,7 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 			domicile = *d.DomicileCity
 		}
 		res = append(res, dto.GetDocumentResponse{
+			ID:           d.ID.String(),
 			FullNameKTP:  d.FullNameKTP,
 			NIK:          d.NIK,
 			KTPPhotoURL:  d.KTPPhotoURL,
