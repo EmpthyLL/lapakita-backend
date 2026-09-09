@@ -144,9 +144,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			phoneGroup := userGroup.Group("/phone")
 			{
 				phoneGroup.GET("", h.UserHandler.GetPhoneNumbers)
-				phoneGroup.POST("", h.UserHandler.AddPhoneNumber)
-				phoneGroup.PUT("/:index", h.UserHandler.UpdatePhoneNumber)
-				phoneGroup.DELETE("/:index", h.UserHandler.DeletePhoneNumber)
+				phoneGroup.PUT("", h.UserHandler.SyncPhoneNumbers)
 			}
 
 			// Security & Password

@@ -182,78 +182,56 @@ func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req
 	return items, meta, nil
 }
 
-func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) error {
+// Replace/Merge AddPhoneNumber, UpdatePhoneNumber, & DeletePhoneNumber menjadi SyncPhoneNumbers
+func (u *UserUsecase) SyncPhoneNumbers(ctx context.Context, userID uuid.UUID, req dto.SavePhoneNumbersRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	for _, p := range user.PhoneNumbers {
-		if p.Number == req.Number {
+	// 1. Cek Apakah Kosong
+	if len(req.PhoneNumbers) == 0 {
+		return errors.New(string(i18n.KeyUserPhoneCannotBeEmpty))
+	}
+
+	primaryCount := 0
+	seenNumbers := make(map[string]bool)
+	newPhoneList := make(entity.PhoneNumbers, 0, len(req.PhoneNumbers))
+
+	for _, item := range req.PhoneNumbers {
+		cleanNum := strings.TrimSpace(item.Number)
+		if cleanNum == "" {
+			continue
+		}
+
+		// Cek Duplikasi Nomor di dalam Payload JSON
+		if seenNumbers[cleanNum] {
 			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
-	}
+		seenNumbers[cleanNum] = true
 
-	newItem := entity.PhoneNumberItem{
-		Number:    req.Number,
-		IsPrimary: req.IsPrimary,
-		Roles:     req.Roles,
-	}
-
-	if req.IsPrimary || len(user.PhoneNumbers) == 0 {
-		newItem.IsPrimary = true
-		for i := range user.PhoneNumbers {
-			user.PhoneNumbers[i].IsPrimary = false
+		if item.IsPrimary {
+			primaryCount++
 		}
+
+		newPhoneList = append(newPhoneList, entity.PhoneNumberItem{
+			Number:    cleanNum,
+			IsPrimary: item.IsPrimary,
+			Roles:     item.Roles,
+		})
 	}
 
-	user.PhoneNumbers = append(user.PhoneNumbers, newItem)
-	return u.repo.UpdateUser(ctx, user)
-}
-
-func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, index int, req dto.UpdatePhoneNumberRequest) error {
-	user, err := u.repo.FindByID(ctx, userID)
-	if err != nil || user == nil {
-		return errors.New(string(i18n.KeyUserNotFound))
+	// 2. Cek Apakah Tidak Ada Primary Sama Sekali
+	if primaryCount == 0 {
+		return errors.New(string(i18n.KeyUserPhonePrimaryRequired))
 	}
 
-	if index < 0 || index >= len(user.PhoneNumbers) {
-		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
+	// 3. Cek Apakah Primary Lebih Dari 1
+	if primaryCount > 1 {
+		return errors.New(string(i18n.KeyUserPhoneMultiplePrimaryNotAllowed))
 	}
 
-	for i, p := range user.PhoneNumbers {
-		if i != index && p.Number == req.Number {
-			return errors.New(string(i18n.KeyUserPhoneDuplicate))
-		}
-	}
-
-	user.PhoneNumbers[index].Number = req.Number
-	user.PhoneNumbers[index].Roles = req.Roles
-
-	if req.IsPrimary {
-		for i := range user.PhoneNumbers {
-			user.PhoneNumbers[i].IsPrimary = (i == index)
-		}
-	}
-
-	return u.repo.UpdateUser(ctx, user)
-}
-
-func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, index int) error {
-	user, err := u.repo.FindByID(ctx, userID)
-	if err != nil || user == nil {
-		return errors.New(string(i18n.KeyUserNotFound))
-	}
-
-	if index < 0 || index >= len(user.PhoneNumbers) {
-		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
-	}
-
-	if user.PhoneNumbers[index].IsPrimary {
-		return errors.New(string(i18n.KeyUserPhoneCannotDeletePrimary))
-	}
-
-	user.PhoneNumbers = append(user.PhoneNumbers[:index], user.PhoneNumbers[index+1:]...)
+	user.PhoneNumbers = newPhoneList
 	return u.repo.UpdateUser(ctx, user)
 }
 
