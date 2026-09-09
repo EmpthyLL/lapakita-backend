@@ -1,5 +1,13 @@
 package dto
 
+import "lapakita-backend/pkg/api"
+
+type GetDocumentRequest struct {
+	api.BasePaginationRequest
+	Name string `form:"name" binding:"omitempty"`
+	NIK  string `form:"nik" binding:"omitempty"`
+}
+
 type UploadDocumentRequest struct {
 	FullNameKTP  string `json:"full_name_ktp" binding:"required,max=255"`
 	NIK          string `json:"nik" binding:"required,len=16"`

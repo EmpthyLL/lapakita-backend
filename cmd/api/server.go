@@ -165,6 +165,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			// Legal Documents
 			documentGroup := userGroup.Group("/document")
 			{
+				documentGroup.GET("", h.UserHandler.GetDocument)
 				documentGroup.POST("", h.UserHandler.UploadDocument)
 				documentGroup.DELETE("", h.UserHandler.DeleteDocument)
 			}

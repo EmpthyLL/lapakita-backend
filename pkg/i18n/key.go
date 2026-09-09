@@ -106,6 +106,7 @@ const (
 	KeyUserPersonaFailedToGet    MessageKey = "user.persona_failed_to_get"
 	KeyUserPersonaFailedToUpdate MessageKey = "user.persona_failed_to_update"
 
+	KeyUserDocumentGetSuccess      MessageKey = "user.document_get_success"
 	KeyUserDocumentUploadSuccess   MessageKey = "user.document_upload_success"
 	KeyUserDocumentDeleteSuccess   MessageKey = "user.document_delete_success"
 	KeyUserDocumentNIKExists       MessageKey = "user.document_nik_exists"

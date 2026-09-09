@@ -34,6 +34,7 @@ var UserMessages = map[string]map[string]string{
 		"user.persona_failed_to_update": "Failed to update persona profile",
 
 		// Documents & Watermark
+		"user.document_get_success":      "Successfully retrieved identity documents",
 		"user.document_upload_success":   "Successfully uploaded identity document",
 		"user.document_delete_success":   "Successfully deleted identity document",
 		"user.document_nik_exists":       "This NIK is already registered to another account",
@@ -76,6 +77,7 @@ var UserMessages = map[string]map[string]string{
 		"user.persona_failed_to_update": "Gagal memperbarui profil persona",
 
 		// Documents & Watermark
+		"user.document_get_success":      "Berhasil mengambil dokumen identitas",
 		"user.document_upload_success":   "Berhasil mengunggah dokumen identitas",
 		"user.document_delete_success":   "Berhasil menghapus dokumen identitas",
 		"user.document_nik_exists":       "NIK KTP ini telah terdaftar pada akun lain",

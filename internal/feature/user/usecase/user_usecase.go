@@ -5,11 +5,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
+	"sort"
 	"strings"
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/user/dto"
 	"lapakita-backend/internal/feature/user/repository"
+	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 	"lapakita-backend/pkg/storage"
 
@@ -28,6 +31,8 @@ func NewUserUsecase(repo *repository.UserRepository, imagekit *storage.ImageKitS
 		imagekit: imagekit,
 	}
 }
+
+// 1. General Profile
 func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (dto.GetGeneralProfileResponse, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -55,14 +60,10 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	// 1. Update nama
 	user.Name = req.Name
 
-	// 2. Upload avatar ke ImageKit jika bertipe Base64 atau URL luar
 	if req.DefaultAvatarURL != nil && *req.DefaultAvatarURL != "" {
 		avatarSource := strings.TrimSpace(*req.DefaultAvatarURL)
-
-		// Cek jika avatar belum di-host di ImageKit Lapakita
 		if !strings.Contains(avatarSource, "ik.imagekit.io") {
 			fileName := fmt.Sprintf("avatar_%s.jpg", userID.String())
 			ikURL, err := u.imagekit.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
@@ -73,12 +74,10 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		user.DefaultAvatarURL = &avatarSource
 	}
 
-	// 3. Update active_role
 	if req.ActiveRole != nil && *req.ActiveRole != "" {
 		user.ActiveRole = *req.ActiveRole
 	}
 
-	// 4. Update/set phone_number dan jadikan primary jika dikirim di payload
 	if req.PhoneNumber != nil && *req.PhoneNumber != "" {
 		phone := *req.PhoneNumber
 		found := false
@@ -105,24 +104,65 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		}
 	}
 
-	// 5. Simpan perubahan ke DB
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
 		return dto.GetGeneralProfileResponse{}, err
 	}
 
-	// 6. Kembalikan profil terbaru yang sudah berisi URL ImageKit
 	return u.GetGeneralProfile(ctx, userID)
 }
 
 // 2. Phone Numbers
-func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID) (dto.GetPhoneNumbersResponse, error) {
+func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req dto.GetPhoneNumbersRequest) ([]dto.PhoneNumberItem, api.PaginationMeta, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
-		return nil, errors.New(string(i18n.KeyUserNotFound))
+		return nil, api.PaginationMeta{}, errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	items := make(dto.GetPhoneNumbersResponse, 0, len(user.PhoneNumbers))
+	req.SetDefaults()
+
+	var filtered []entity.PhoneNumberItem
 	for _, p := range user.PhoneNumbers {
+		if req.Number != "" && !strings.Contains(strings.ToLower(p.Number), strings.ToLower(req.Number)) {
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+
+	sort.SliceStable(filtered, func(i, j int) bool {
+		if filtered[i].IsPrimary {
+			return true
+		}
+		if filtered[j].IsPrimary {
+			return false
+		}
+		return false
+	})
+
+	totalItems := len(filtered)
+	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
+
+	startIndex := (req.Page - 1) * req.Limit
+	endIndex := startIndex + req.Limit
+
+	if startIndex >= totalItems {
+		meta := api.PaginationMeta{
+			TotalItems:  totalItems,
+			TotalPages:  totalPages,
+			CurrentPage: req.Page,
+			PerPage:     req.Limit,
+			HasNextPage: false,
+			HasPrevPage: req.Page > 1,
+		}
+		return []dto.PhoneNumberItem{}, meta, nil
+	}
+
+	if endIndex > totalItems {
+		endIndex = totalItems
+	}
+
+	pagedItems := filtered[startIndex:endIndex]
+	items := make([]dto.PhoneNumberItem, 0, len(pagedItems))
+	for _, p := range pagedItems {
 		items = append(items, dto.PhoneNumberItem{
 			Number:    p.Number,
 			IsPrimary: p.IsPrimary,
@@ -130,18 +170,27 @@ func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID) (dt
 		})
 	}
 
-	return items, nil
+	meta := api.PaginationMeta{
+		TotalItems:  totalItems,
+		TotalPages:  totalPages,
+		CurrentPage: req.Page,
+		PerPage:     req.Limit,
+		HasNextPage: req.Page < totalPages,
+		HasPrevPage: req.Page > 1,
+	}
+
+	return items, meta, nil
 }
 
-func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) (dto.GetPhoneNumbersResponse, error) {
+func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
-		return nil, errors.New(string(i18n.KeyUserNotFound))
+		return errors.New(string(i18n.KeyUserNotFound))
 	}
 
 	for _, p := range user.PhoneNumbers {
 		if p.Number == req.Number {
-			return nil, errors.New(string(i18n.KeyUserPhoneDuplicate))
+			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 
@@ -159,26 +208,22 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 	}
 
 	user.PhoneNumbers = append(user.PhoneNumbers, newItem)
-	if err := u.repo.UpdateUser(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return u.GetPhoneNumbers(ctx, userID)
+	return u.repo.UpdateUser(ctx, user)
 }
 
-func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, index int, req dto.UpdatePhoneNumberRequest) (dto.GetPhoneNumbersResponse, error) {
+func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, index int, req dto.UpdatePhoneNumberRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
-		return nil, errors.New(string(i18n.KeyUserNotFound))
+		return errors.New(string(i18n.KeyUserNotFound))
 	}
 
 	if index < 0 || index >= len(user.PhoneNumbers) {
-		return nil, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
+		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 	}
 
 	for i, p := range user.PhoneNumbers {
 		if i != index && p.Number == req.Number {
-			return nil, errors.New(string(i18n.KeyUserPhoneDuplicate))
+			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 
@@ -191,11 +236,7 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 		}
 	}
 
-	if err := u.repo.UpdateUser(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return u.GetPhoneNumbers(ctx, userID)
+	return u.repo.UpdateUser(ctx, user)
 }
 
 func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, index int) error {
@@ -299,17 +340,51 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 }
 
 // 5. Document Upload & Watermarking
-func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req dto.UploadDocumentRequest) (dto.GetDocumentResponse, error) {
-	// 1. Cek Unik NIK
-	existingIdentity, err := u.repo.FindIdentityByNIK(ctx, req.NIK)
+func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto.GetDocumentRequest) ([]dto.GetDocumentResponse, api.PaginationMeta, error) {
+	req.SetDefaults()
+
+	docs, totalItems, err := u.repo.GetDocument(ctx, userID, req.Name, req.NIK, req.Page, req.Limit)
 	if err != nil {
-		return dto.GetDocumentResponse{}, err
-	}
-	if existingIdentity != nil && existingIdentity.UserID != userID {
-		return dto.GetDocumentResponse{}, errors.New(string(i18n.KeyUserDocumentNIKExists))
+		return nil, api.PaginationMeta{}, err
 	}
 
-	// 2. Clean Base64 String
+	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
+
+	res := make([]dto.GetDocumentResponse, 0, len(docs))
+	for _, d := range docs {
+		domicile := ""
+		if d.DomicileCity != nil {
+			domicile = *d.DomicileCity
+		}
+		res = append(res, dto.GetDocumentResponse{
+			FullNameKTP:  d.FullNameKTP,
+			NIK:          d.NIK,
+			KTPPhotoURL:  d.KTPPhotoURL,
+			DomicileCity: domicile,
+		})
+	}
+
+	meta := api.PaginationMeta{
+		TotalItems:  int(totalItems),
+		TotalPages:  totalPages,
+		CurrentPage: req.Page,
+		PerPage:     req.Limit,
+		HasNextPage: req.Page < totalPages,
+		HasPrevPage: req.Page > 1,
+	}
+
+	return res, meta, nil
+}
+
+func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req dto.UploadDocumentRequest) error {
+	existingIdentity, err := u.repo.FindIdentityByNIK(ctx, req.NIK)
+	if err != nil {
+		return err
+	}
+	if existingIdentity != nil && existingIdentity.UserID != userID {
+		return errors.New(string(i18n.KeyUserDocumentNIKExists))
+	}
+
 	rawBase64 := req.KTPPhoto
 	if idx := strings.Index(rawBase64, ","); idx != -1 {
 		rawBase64 = rawBase64[idx+1:]
@@ -317,26 +392,23 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 
 	decodedBytes, err := base64.StdEncoding.DecodeString(rawBase64)
 	if err != nil {
-		return dto.GetDocumentResponse{}, errors.New(string(i18n.KeyUserDocumentFileInvalid))
+		return errors.New(string(i18n.KeyUserDocumentFileInvalid))
 	}
 
-	// 3. Set Purpose otomatis dari BE (misal: Stall/User Verification)
 	purpose := storage.PurposeStallVerification
 	watermarkedBytes, err := storage.ApplyWatermarkFromBytes(decodedBytes, purpose)
 	if err != nil {
-		return dto.GetDocumentResponse{}, errors.New(string(i18n.KeyUserDocumentWatermarkFailed))
+		return errors.New(string(i18n.KeyUserDocumentWatermarkFailed))
 	}
 
-	// 4. Upload ke ImageKit via Base64
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
 	fileName := fmt.Sprintf("ktp_%s.png", userID.String())
 
 	uploadedURL, err := u.imagekit.UploadFromURL(ctx, watermarkedBase64, fileName, "/users/identity_documents")
 	if err != nil {
-		return dto.GetDocumentResponse{}, errors.New(string(i18n.KeyUserDocumentFailedToUpload))
+		return errors.New(string(i18n.KeyUserDocumentFailedToUpload))
 	}
 
-	// 5. Simpan / Upsert ke Database
 	domicile := req.DomicileCity
 	identity := &entity.UserIdentityProfile{
 		UserID:       userID,
@@ -346,16 +418,7 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 		DomicileCity: &domicile,
 	}
 
-	if err := u.repo.UpsertIdentityProfile(ctx, identity); err != nil {
-		return dto.GetDocumentResponse{}, err
-	}
-
-	return dto.GetDocumentResponse{
-		FullNameKTP:  identity.FullNameKTP,
-		NIK:          identity.NIK,
-		KTPPhotoURL:  identity.KTPPhotoURL,
-		DomicileCity: domicile,
-	}, nil
+	return u.repo.UpsertIdentityProfile(ctx, identity)
 }
 
 func (u *UserUsecase) DeleteDocument(ctx context.Context, userID uuid.UUID) error {

@@ -74,13 +74,19 @@ func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.GetPhoneNumbers(c.Request.Context(), userID)
+	var req dto.GetPhoneNumbersRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	res, meta, err := h.userUsecase.GetPhoneNumbers(c.Request.Context(), userID, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneGetSuccess), res)
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneGetSuccess), res, meta)
 }
 
 func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
@@ -96,13 +102,12 @@ func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.AddPhoneNumber(c.Request.Context(), userID, req)
-	if err != nil {
+	if err := h.userUsecase.AddPhoneNumber(c.Request.Context(), userID, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserPhoneAddSuccess), res)
+	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserPhoneAddSuccess))
 }
 
 func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
@@ -125,13 +130,12 @@ func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.UpdatePhoneNumber(c.Request.Context(), userID, index, req)
-	if err != nil {
+	if err := h.userUsecase.UpdatePhoneNumber(c.Request.Context(), userID, index, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneUpdateSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneUpdateSuccess))
 }
 
 func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
@@ -229,6 +233,28 @@ func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
 // 5. LEGAL IDENTITY DOCUMENT
 // -----------------------------------------------------------------------------
 
+func (h *UserHandler) GetDocument(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	var req dto.GetDocumentRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	res, meta, err := h.userUsecase.GetDocument(c.Request.Context(), userID, req)
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
+		return
+	}
+
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyUserDocumentGetSuccess), res, meta)
+}
+
 func (h *UserHandler) UploadDocument(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -242,13 +268,12 @@ func (h *UserHandler) UploadDocument(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.UploadDocument(c.Request.Context(), userID, req)
-	if err != nil {
+	if err := h.userUsecase.UploadDocument(c.Request.Context(), userID, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
 
-	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserDocumentUploadSuccess), res)
+	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserDocumentUploadSuccess))
 }
 
 func (h *UserHandler) DeleteDocument(c *gin.Context) {

@@ -74,3 +74,29 @@ func (r *UserRepository) UpsertIdentityProfile(ctx context.Context, profile *ent
 func (r *UserRepository) DeleteIdentityProfile(ctx context.Context, userID uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entity.UserIdentityProfile{}).Error
 }
+
+func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, name string, nik string, page int, limit int) ([]entity.UserIdentityProfile, int64, error) {
+	var documents []entity.UserIdentityProfile
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&entity.UserIdentityProfile{}).Where("user_id = ?", userID)
+
+	if name != "" {
+		query = query.Where("full_name_ktp ILIKE ?", "%"+name+"%")
+	}
+	if nik != "" {
+		query = query.Where("nik ILIKE ?", "%"+nik+"%")
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * limit
+	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&documents).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return documents, total, nil
+}
