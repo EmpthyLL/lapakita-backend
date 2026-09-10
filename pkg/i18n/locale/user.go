@@ -10,9 +10,9 @@ var UserMessages = map[string]map[string]string{
 
 		// Phone Numbers
 		"user.phone_get_success":                  "Successfully retrieved phone numbers",
-		"user.phone_cannot_be_empty":              "Daftar nomor telepon tidak boleh kosong",
-		"user.phone_primary_required":             "Wajib memilih setidaknya satu nomor telepon utama",
-		"user.phone_multiple_primary_not_allowed": "Hanya satu nomor telepon yang boleh menjadi utama",
+		"user.phone_cannot_be_empty":              "Phone number list cannot be empty",
+		"user.phone_primary_required":             "At least one primary phone number is required",
+		"user.phone_multiple_primary_not_allowed": "Only one phone number can be set as primary",
 		"user.phone_add_success":                  "Successfully added phone number",
 		"user.phone_update_success":               "Successfully updated phone number",
 		"user.phone_delete_success":               "Successfully deleted phone number",
@@ -58,9 +58,9 @@ var UserMessages = map[string]map[string]string{
 
 		// Phone Numbers
 		"user.phone_get_success":                  "Berhasil mengambil daftar nomor telepon",
-		"user.phone_cannot_be_empty":              "Phone number list cannot be empty",
-		"user.phone_primary_required":             "At least one primary phone number is required",
-		"user.phone_multiple_primary_not_allowed": "Only one phone number can be set as primary",
+		"user.phone_cannot_be_empty":              "Daftar nomor telepon tidak boleh kosong",
+		"user.phone_primary_required":             "Wajib memilih setidaknya satu nomor telepon utama",
+		"user.phone_multiple_primary_not_allowed": "Hanya satu nomor telepon yang boleh menjadi utama",
 		"user.phone_add_success":                  "Berhasil menambahkan nomor telepon",
 		"user.phone_update_success":               "Berhasil memperbarui nomor telepon",
 		"user.phone_delete_success":               "Berhasil menghapus nomor telepon",
