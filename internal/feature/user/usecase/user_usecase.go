@@ -112,6 +112,8 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 }
 
 // 2. Phone Numbers
+
+// 1. Get Phone Numbers with DB Index & Sort Primary First
 func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req dto.GetPhoneNumbersRequest) ([]dto.PhoneNumberItem, api.PaginationMeta, error) {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -120,25 +122,32 @@ func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req
 
 	req.SetDefaults()
 
-	var filtered []entity.PhoneNumberItem
-	for _, p := range user.PhoneNumbers {
+	// Step A: Map array asli DB dengan menyimpan index aslinya
+	var indexedList []dto.PhoneNumberItem
+	for dbIdx, p := range user.PhoneNumbers {
 		if req.Number != "" && !strings.Contains(strings.ToLower(p.Number), strings.ToLower(req.Number)) {
 			continue
 		}
-		filtered = append(filtered, p)
+		indexedList = append(indexedList, dto.PhoneNumberItem{
+			Index:     dbIdx, // Index asli di DB disimpan di sini
+			Number:    p.Number,
+			IsPrimary: p.IsPrimary,
+			Roles:     p.Roles,
+		})
 	}
 
-	sort.SliceStable(filtered, func(i, j int) bool {
-		if filtered[i].IsPrimary {
+	// Step B: Sort visual agar Primary berada di atas (nilai `Index` asli tetap aman)
+	sort.SliceStable(indexedList, func(i, j int) bool {
+		if indexedList[i].IsPrimary {
 			return true
 		}
-		if filtered[j].IsPrimary {
+		if indexedList[j].IsPrimary {
 			return false
 		}
 		return false
 	})
 
-	totalItems := len(filtered)
+	totalItems := len(indexedList)
 	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
 
 	startIndex := (req.Page - 1) * req.Limit
@@ -160,15 +169,7 @@ func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req
 		endIndex = totalItems
 	}
 
-	pagedItems := filtered[startIndex:endIndex]
-	items := make([]dto.PhoneNumberItem, 0, len(pagedItems))
-	for _, p := range pagedItems {
-		items = append(items, dto.PhoneNumberItem{
-			Number:    p.Number,
-			IsPrimary: p.IsPrimary,
-			Roles:     p.Roles,
-		})
-	}
+	pagedItems := indexedList[startIndex:endIndex]
 
 	meta := api.PaginationMeta{
 		TotalItems:  totalItems,
@@ -179,7 +180,7 @@ func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req
 		HasPrevPage: req.Page > 1,
 	}
 
-	return items, meta, nil
+	return pagedItems, meta, nil
 }
 
 func (u *UserUsecase) validateRoleUniqueness(phoneNumbers entity.PhoneNumbers, targetIndex int, newRoles []string) error {
@@ -188,8 +189,6 @@ func (u *UserUsecase) validateRoleUniqueness(phoneNumbers entity.PhoneNumbers, t
 	}
 
 	roleMap := make(map[string]bool)
-
-	// 1. Cek duplikasi role di dalam request itu sendiri
 	for _, role := range newRoles {
 		cleanRole := strings.TrimSpace(role)
 		if cleanRole == "" {
@@ -201,10 +200,9 @@ func (u *UserUsecase) validateRoleUniqueness(phoneNumbers entity.PhoneNumbers, t
 		roleMap[cleanRole] = true
 	}
 
-	// 2. Cek apakah role sudah dipakai oleh nomor HP milik user yang lain
 	for i, item := range phoneNumbers {
 		if targetIndex >= 0 && i == targetIndex {
-			continue // Lewati jika sedang mengedit nomor yang sama
+			continue // Abaikan index yang sedang di-update
 		}
 
 		for _, existingRole := range item.Roles {
@@ -217,23 +215,56 @@ func (u *UserUsecase) validateRoleUniqueness(phoneNumbers entity.PhoneNumbers, t
 	return nil
 }
 
+func (u *UserUsecase) transferRolesToTarget(phoneNumbers entity.PhoneNumbers, targetIndex int, newRoles []string) entity.PhoneNumbers {
+	if len(newRoles) == 0 {
+		return phoneNumbers
+	}
+
+	// 1. Bersihkan dan buat map role baru yang diinginkan
+	targetRoleMap := make(map[string]bool)
+	cleanNewRoles := make([]string, 0, len(newRoles))
+
+	for _, r := range newRoles {
+		clean := strings.TrimSpace(r)
+		if clean != "" && !targetRoleMap[clean] {
+			targetRoleMap[clean] = true
+			cleanNewRoles = append(cleanNewRoles, clean)
+		}
+	}
+
+	// 2. Iterasi seluruh nomor HP lain milik user dan cabut role jika ada yang bentrok
+	for i := range phoneNumbers {
+		if targetIndex >= 0 && i == targetIndex {
+			continue // Dilewati untuk nomor yang sedang di-update
+		}
+
+		var updatedRoles []string
+		for _, existingRole := range phoneNumbers[i].Roles {
+			if !targetRoleMap[existingRole] {
+				updatedRoles = append(updatedRoles, existingRole)
+			}
+		}
+		phoneNumbers[i].Roles = updatedRoles
+	}
+
+	return phoneNumbers
+}
+
+// 2. Add Phone Number (Auto-Overwrite Role dari nomor lama)
 func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
 
-	// 1. Cek nomor duplikat
 	for _, p := range user.PhoneNumbers {
 		if p.Number == req.Number {
 			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 
-	// 2. Validasi keunikan role
-	if err := u.validateRoleUniqueness(user.PhoneNumbers, -1, req.Roles); err != nil {
-		return err
-	}
+	// Transfer/overwrite role jika sudah dipakai di nomor lain
+	user.PhoneNumbers = u.transferRolesToTarget(user.PhoneNumbers, -1, req.Roles)
 
 	newItem := entity.PhoneNumberItem{
 		Number:    req.Number,
@@ -241,7 +272,6 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 		Roles:     req.Roles,
 	}
 
-	// 3. Atur status primary (jika nomor pertama atau req.IsPrimary = true, unset primary nomor lain)
 	if req.IsPrimary || len(user.PhoneNumbers) == 0 {
 		newItem.IsPrimary = true
 		for i := range user.PhoneNumbers {
@@ -251,7 +281,6 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 
 	user.PhoneNumbers = append(user.PhoneNumbers, newItem)
 
-	// 4. Pastikan ada setidaknya 1 primary di akhir
 	hasPrimary := false
 	for _, p := range user.PhoneNumbers {
 		if p.IsPrimary {
@@ -266,6 +295,7 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 	return u.repo.UpdateUser(ctx, user)
 }
 
+// 3. Update Phone Number By Index Asli DB (Auto-Overwrite Role dari nomor lain)
 func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, index int, req dto.UpdatePhoneNumberRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -276,28 +306,33 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 	}
 
-	// 1. Cek nomor duplikat (abaikan index yang sedang di-update)
+	// Cek nomor duplikat (eksklusi index DB yang sedang di-update)
 	for i, p := range user.PhoneNumbers {
 		if i != index && p.Number == req.Number {
 			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 
-	// 2. Validasi keunikan role
-	if err := u.validateRoleUniqueness(user.PhoneNumbers, index, req.Roles); err != nil {
-		return err
+	isCurrentlyPrimary := user.PhoneNumbers[index].IsPrimary
+	if isCurrentlyPrimary && !req.IsPrimary {
+		hasOtherPrimary := false
+		for i, p := range user.PhoneNumbers {
+			if i != index && p.IsPrimary {
+				hasOtherPrimary = true
+				break
+			}
+		}
+		if !hasOtherPrimary {
+			return errors.New(string(i18n.KeyUserPhonePrimaryRequired))
+		}
 	}
 
-	// 3. Jika nomor ini sebelumnya primary dan pengguna mencoba mengubah IsPrimary jadi false,
-	// cegah kecuali jika ada nomor lain yang dipilih menjadi primary
-	if user.PhoneNumbers[index].IsPrimary && !req.IsPrimary {
-		return errors.New(string(i18n.KeyUserPhonePrimaryRequired))
-	}
+	// Transfer/overwrite role jika sudah dipakai di nomor lain
+	user.PhoneNumbers = u.transferRolesToTarget(user.PhoneNumbers, index, req.Roles)
 
 	user.PhoneNumbers[index].Number = req.Number
 	user.PhoneNumbers[index].Roles = req.Roles
 
-	// 4. Jika di-set primary, unset semua nomor lainnya
 	if req.IsPrimary {
 		for i := range user.PhoneNumbers {
 			user.PhoneNumbers[i].IsPrimary = (i == index)
@@ -307,6 +342,7 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 	return u.repo.UpdateUser(ctx, user)
 }
 
+// 4. Delete Phone Number By Index Asli DB
 func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, index int) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -317,14 +353,12 @@ func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, i
 		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 	}
 
-	// Cegah penghapusan nomor utama
 	if user.PhoneNumbers[index].IsPrimary {
 		return errors.New(string(i18n.KeyUserPhoneCannotDeletePrimary))
 	}
 
 	user.PhoneNumbers = append(user.PhoneNumbers[:index], user.PhoneNumbers[index+1:]...)
 
-	// Pastikan jika tersisa setidaknya 1 nomor, harus ada 1 yang bertindak sebagai primary
 	if len(user.PhoneNumbers) > 0 {
 		hasPrimary := false
 		for _, p := range user.PhoneNumbers {

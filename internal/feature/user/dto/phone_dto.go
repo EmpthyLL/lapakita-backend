@@ -8,6 +8,7 @@ type GetPhoneNumbersRequest struct {
 }
 
 type PhoneNumberItem struct {
+	Index     int      `json:"index"`
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`
 	Roles     []string `json:"roles"`

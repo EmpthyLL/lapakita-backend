@@ -16,7 +16,6 @@ type UserPayload struct {
 	ActiveRole            string                   `json:"active_role"`
 	SubscriptionPlan      string                   `json:"subscription_plan"`
 	SubscriptionExpiresAt *string                  `json:"subscription_expires_at"`
-	PhoneNumbers          []PhonePayload           `json:"phone_numbers"`
 	Personas              map[string]PersonaDetail `json:"personas"`
 	Token                 string                   `json:"token"`
 }

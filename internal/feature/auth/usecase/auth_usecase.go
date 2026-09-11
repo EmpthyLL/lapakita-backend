@@ -58,10 +58,8 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 	defaultPhone := user.PhoneNumbers.GetPrimaryNumber()
 
 	var defaultAvatarPtr *string
-	defaultAvatarStr := ""
 	if user.DefaultAvatarURL != nil && *user.DefaultAvatarURL != "" {
 		defaultAvatarPtr = user.DefaultAvatarURL
-		defaultAvatarStr = *user.DefaultAvatarURL
 	}
 
 	activePlan := user.SubscriptionPlan
@@ -76,44 +74,31 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 		}
 	}
 
-	phonePayloads := make([]dto.PhonePayload, 0)
-	roleToPhoneMap := make(map[string]string)
-
-	for _, p := range user.PhoneNumbers {
-		phonePayloads = append(phonePayloads, dto.PhonePayload{
-			Number:    p.Number,
-			IsPrimary: p.IsPrimary,
-			Roles:     p.Roles,
-		})
-
-		for _, role := range p.Roles {
-			if _, exists := roleToPhoneMap[role]; !exists {
-				roleToPhoneMap[role] = p.Number
-			}
-		}
-	}
-
 	personas := make(map[string]dto.PersonaDetail)
-	for roleKey, profile := range user.RoleProfiles {
-		phoneVal := roleToPhoneMap[roleKey]
-		if phoneVal == "" {
-			phoneVal = defaultPhone
-		}
 
-		avatarVal := profile.AvatarURL
-		if avatarVal == "" {
-			avatarVal = defaultAvatarStr
-		}
+	// 1. Ekstrak role dan nomor HP terkait langsung dari PhoneNumbers
+	for _, p := range user.PhoneNumbers {
+		for _, role := range p.Roles {
+			cleanRole := strings.TrimSpace(role)
+			if cleanRole == "" {
+				continue
+			}
 
-		nameVal := profile.DisplayName
-		if nameVal == "" {
-			nameVal = user.Name
-		}
+			// Ambil data dari RoleProfiles jika user sudah pernah menyimpan profil khusus role ini
+			displayName := ""
+			avatarURL := ""
 
-		personas[roleKey] = dto.PersonaDetail{
-			DisplayName: nameVal,
-			AvatarURL:   avatarVal,
-			Phone:       phoneVal,
+			if profile, exists := user.RoleProfiles[cleanRole]; exists {
+				displayName = profile.DisplayName
+				avatarURL = profile.AvatarURL
+			}
+
+			// Pasangkan persona ke nomor HP spesifik tempat role ini berada
+			personas[cleanRole] = dto.PersonaDetail{
+				DisplayName: displayName,
+				AvatarURL:   avatarURL,
+				Phone:       p.Number,
+			}
 		}
 	}
 
@@ -127,8 +112,7 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 		ActiveRole:            user.ActiveRole,
 		SubscriptionPlan:      activePlan,
 		SubscriptionExpiresAt: subExpiresAtPtr,
-		PhoneNumbers:          phonePayloads,
-		Personas:              personas,
+		Personas:              personas, // Kosong jika tidak ada role yang di-set di nomor HP
 	}
 }
 
