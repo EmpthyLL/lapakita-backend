@@ -439,7 +439,7 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 	avatarURL := req.AvatarURL
 	if avatarURL != "" && !strings.Contains(avatarURL, "ik.imagekit.io") {
 		fileName := fmt.Sprintf("persona_%s_%s.jpg", role, userID.String())
-		ikURL, err := u.imagekit.UploadFromURL(ctx, avatarURL, fileName, "/personas")
+		ikURL, err := u.imagekit.UploadFromURL(ctx, avatarURL, fileName, "/avatars")
 		if err == nil && ikURL != "" {
 			avatarURL = ikURL
 		}
@@ -461,7 +461,7 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto.GetDocumentRequest) ([]dto.GetDocumentResponse, api.PaginationMeta, error) {
 	req.SetDefaults()
 
-	docs, totalItems, err := u.repo.GetDocument(ctx, userID, req.Name, req.NIK, req.Page, req.Limit)
+	docs, totalItems, err := u.repo.GetDocument(ctx, userID, req.Name, req.DocumentNumber, req.Page, req.Limit)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}
@@ -475,11 +475,12 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 			domicile = *d.DomicileCity
 		}
 		res = append(res, dto.GetDocumentResponse{
-			ID:           d.ID.String(),
-			FullNameKTP:  d.FullNameKTP,
-			NIK:          d.NIK,
-			KTPPhotoURL:  d.KTPPhotoURL,
-			DomicileCity: domicile,
+			ID:               d.ID.String(),
+			DocumentType:     d.DocumentType,
+			FullNameIdentity: d.FullNameIdentity,
+			DocumentNumber:   d.DocumentNumber,
+			DocumentPhotoURL: d.DocumentPhotoURL,
+			DomicileCity:     domicile,
 		})
 	}
 
@@ -496,7 +497,7 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 }
 
 func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req dto.UploadDocumentRequest) error {
-	existingIdentity, err := u.repo.FindIdentityByNIK(ctx, req.NIK)
+	existingIdentity, err := u.repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
 	if err != nil {
 		return err
 	}
@@ -504,7 +505,7 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 		return errors.New(string(i18n.KeyUserDocumentNIKExists))
 	}
 
-	rawBase64 := req.KTPPhoto
+	rawBase64 := req.DocumentPhoto
 	if idx := strings.Index(rawBase64, ","); idx != -1 {
 		rawBase64 = rawBase64[idx+1:]
 	}
@@ -521,20 +522,21 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 	}
 
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
-	fileName := fmt.Sprintf("ktp_%s.png", userID.String())
+	fileName := fmt.Sprintf("%s_%s.jpg", req.DocumentType, userID.String())
 
-	uploadedURL, err := u.imagekit.UploadFromURL(ctx, watermarkedBase64, fileName, "/users/identity_documents")
+	uploadedURL, err := u.imagekit.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
 	if err != nil {
 		return errors.New(string(i18n.KeyUserDocumentFailedToUpload))
 	}
 
 	domicile := req.DomicileCity
 	identity := &entity.UserIdentityProfile{
-		UserID:       userID,
-		FullNameKTP:  req.FullNameKTP,
-		NIK:          req.NIK,
-		KTPPhotoURL:  uploadedURL,
-		DomicileCity: &domicile,
+		UserID:           userID,
+		DocumentType:     req.DocumentType,
+		FullNameIdentity: req.FullNameIdentity,
+		DocumentNumber:   req.DocumentNumber,
+		DocumentPhotoURL: uploadedURL,
+		DomicileCity:     &domicile,
 	}
 
 	return u.repo.UpsertIdentityProfile(ctx, identity)

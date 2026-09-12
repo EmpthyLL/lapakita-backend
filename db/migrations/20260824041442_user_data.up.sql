@@ -71,11 +71,24 @@ INSERT INTO users (
     'tenant', 'free', NULL
 );
 
--- 2. SEED USER IDENTITY PROFILES (KYC)
-INSERT INTO user_identity_profiles (id, user_id, full_name_ktp, nik, ktp_photo_url, domicile_city)
+-- 2. SEED USER IDENTITY PROFILES (LEGAL DOCUMENTS)
+INSERT INTO user_identity_profiles (
+    id, 
+    user_id, 
+    document_type, 
+    full_name_identity, 
+    document_number, 
+    document_photo_url, 
+    domicile_city
+)
 SELECT 
-    gen_random_uuid(), id, name, '327301' || floor(random() * 8999999999 + 1000000000)::text,
-    'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop', 'Bandung'
+    gen_random_uuid(), 
+    id, 
+    'ktp', 
+    name, 
+    '327301' || floor(random() * 8999999999 + 1000000000)::text,
+    'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop', 
+    'Bandung'
 FROM users;
 
 -- 3. SEED BANK ACCOUNTS

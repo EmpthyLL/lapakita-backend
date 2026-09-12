@@ -40,19 +40,21 @@ CREATE TABLE users (
 
 CREATE INDEX idx_users_email ON users(email);
 
--- Data Identitas Resmi User (KYC untuk Tenant & Stall Owner)
 CREATE TABLE user_identity_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    full_name_ktp VARCHAR(255) NOT NULL,
-    nik VARCHAR(16) UNIQUE NOT NULL,
-    ktp_photo_url TEXT NOT NULL, -- Foto KTP Ber-watermark
+    document_type VARCHAR(32) NOT NULL DEFAULT 'ktp',   -- 'ktp', 'passport', 'kitas'
+    full_name_identity VARCHAR(255) NOT NULL,           -- Nama lengkap sesuai dokumen
+    document_number VARCHAR(64) NOT NULL,              -- NIK (16 digit) atau No. Paspor
+    document_photo_url TEXT NOT NULL,                  -- Foto KTP / Paspor ber-watermark
     domicile_city VARCHAR(128),
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_user_identity_doc_num ON user_identity_profiles(document_number);
 
 CREATE INDEX idx_user_identity_profiles_user_id ON user_identity_profiles(user_id);
 

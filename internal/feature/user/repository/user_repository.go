@@ -40,9 +40,9 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, n
 		Update("password_hash", newPasswordHash).Error
 }
 
-func (r *UserRepository) FindIdentityByNIK(ctx context.Context, nik string) (*entity.UserIdentityProfile, error) {
+func (r *UserRepository) FindIdentityByDocumentNumber(ctx context.Context, docNumber string) (*entity.UserIdentityProfile, error) {
 	var profile entity.UserIdentityProfile
-	err := r.db.WithContext(ctx).First(&profile, "nik = ?", nik).Error
+	err := r.db.WithContext(ctx).First(&profile, "document_number = ?", docNumber).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -64,10 +64,11 @@ func (r *UserRepository) UpsertIdentityProfile(ctx context.Context, profile *ent
 
 	profile.ID = existing.ID
 	return r.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
-		"full_name_ktp": profile.FullNameKTP,
-		"nik":           profile.NIK,
-		"ktp_photo_url": profile.KTPPhotoURL,
-		"domicile_city": profile.DomicileCity,
+		"document_type":      profile.DocumentType,
+		"full_name_identity": profile.FullNameIdentity,
+		"document_number":    profile.DocumentNumber,
+		"document_photo_url": profile.DocumentPhotoURL,
+		"domicile_city":      profile.DomicileCity,
 	}).Error
 }
 
@@ -75,17 +76,17 @@ func (r *UserRepository) DeleteIdentityProfile(ctx context.Context, userID uuid.
 	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entity.UserIdentityProfile{}).Error
 }
 
-func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, name string, nik string, page int, limit int) ([]entity.UserIdentityProfile, int64, error) {
+func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, name string, docNumber string, page int, limit int) ([]entity.UserIdentityProfile, int64, error) {
 	var documents []entity.UserIdentityProfile
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&entity.UserIdentityProfile{}).Where("user_id = ?", userID)
 
 	if name != "" {
-		query = query.Where("full_name_ktp ILIKE ?", "%"+name+"%")
+		query = query.Where("full_name_identity ILIKE ?", "%"+name+"%")
 	}
-	if nik != "" {
-		query = query.Where("nik ILIKE ?", "%"+nik+"%")
+	if docNumber != "" {
+		query = query.Where("document_number ILIKE ?", "%"+docNumber+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {

@@ -59,13 +59,17 @@ func (s *ImageKitService) UploadFile(
 		return "", fmt.Errorf("open file: %w", err)
 	}
 	defer file.Close()
+	optimizedBytes, err := optimizeReader(file, imageProfileForFolder(folder))
+	if err != nil {
+		return "", fmt.Errorf("optimize image: %w", err)
+	}
 
 	targetFolder := s.helperBuildFolderPath(folder)
 
 	resp, err := s.client.Files.Upload(
 		ctx,
 		imagekit.FileUploadParams{
-			File:     file,
+			File:     bytes.NewReader(optimizedBytes),
 			FileName: fileHeader.Filename,
 			Folder:   imagekit.String(targetFolder),
 		},
@@ -136,13 +140,18 @@ func (s *ImageKitService) UploadFromURL(
 		fileReader = httpResp.Body
 	}
 
+	optimizedBytes, err := optimizeReader(fileReader, imageProfileForFolder(folder))
+	if err != nil {
+		return "", fmt.Errorf("optimize image: %w", err)
+	}
+
 	targetFolder := s.helperBuildFolderPath(folder)
 
 	// 3. Eksekusi Upload ke ImageKit menggunakan io.Reader
 	resp, err := s.client.Files.Upload(
 		ctx,
 		imagekit.FileUploadParams{
-			File:     fileReader,
+			File:     bytes.NewReader(optimizedBytes),
 			FileName: fileName,
 			Folder:   imagekit.String(targetFolder),
 		},

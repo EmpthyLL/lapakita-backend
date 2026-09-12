@@ -7,7 +7,6 @@ TRUNCATE TABLE cms_legal_documents;
 -- 1. TERMS AND CONDITIONS (EN & ID)
 -- =============================================================================
 
--- Terms & Conditions - English (en)
 INSERT INTO cms_legal_documents (id, doc_type, lang, title, description, sections_json)
 VALUES 
 (
@@ -16,7 +15,7 @@ VALUES
     'en',
     'Terms and Conditions',
     'These terms govern your use of Lapakita as a Tenant, Stall Owner, or Supplier. Please read them carefully before using the platform.',
-    '[
+    $json$[
       {
         "id": "platform-nature",
         "number": "1",
@@ -48,7 +47,7 @@ VALUES
           },
           {
             "title": "Pop-Up & Bazaar Event Booking & Lease Rules",
-            "body": "Temporary bazaar booths are bound by specific event schedules, registration deadlines, slot availability, and event-specific lease rules. Event lease rules configure operating days (''everyday'', ''weekends'', ''weekdays'', ''flexible''), attendance requirements (''mandatory_full'' or ''flexible_days''), and cancellation policies (''pro_rata'', ''deposit_refundable'', or ''non_refundable''). Tenants applying for bazaar booths agree to abide by these event terms."
+            "body": "Temporary bazaar booths are bound by specific event schedules, registration deadlines, slot availability, and event-specific lease rules. Event lease rules configure operating days ('everyday', 'weekends', 'weekdays', 'flexible'), attendance requirements ('mandatory_full' or 'flexible_days'), and cancellation policies ('pro_rata', 'deposit_refundable', or 'non_refundable'). Tenants applying for bazaar booths agree to abide by these event terms."
           }
         ]
       },
@@ -71,7 +70,7 @@ VALUES
           },
           {
             "title": "Refundable Anti-Spam Commitment Fee",
-            "body": "To protect Owners from application spam, Tenants with two (2) or more unpaid or cancelled approved applications within a 30-day window are flagged. Flagged Tenants are required to submit a temporary 35% commitment deposit when applying. This deposit is 100% REFUNDABLE and non-punitive: if the lease becomes active, 100% of the deposit is applied directly toward the Tenant''s initial rent and security deposit balance. If the application is cancelled or fails to proceed before the Start Date, the commitment deposit is fully refunded back to the Tenant''s account."
+            "body": "To protect Owners from application spam, Tenants with two (2) or more unpaid or cancelled approved applications within a 30-day window are flagged. Flagged Tenants are required to submit a temporary 35% commitment deposit when applying. This deposit is 100% REFUNDABLE and non-punitive: if the lease becomes active, 100% of the deposit is applied directly toward the Tenant's initial rent and security deposit balance. If the application is cancelled or fails to proceed before the Start Date, the commitment deposit is fully refunded back to the Tenant's account."
           }
         ]
       },
@@ -82,7 +81,7 @@ VALUES
         "subsections": [
           {
             "title": "Escrow Storage",
-            "body": "Security deposits are collected via a licensed Payment Gateway Escrow and held neutrally during the lease term. Deposits do not reside in the Owner''s personal bank account during active tenancy."
+            "body": "Security deposits are collected via a licensed Payment Gateway Escrow and held neutrally during the lease term. Deposits do not reside in the Owner's personal bank account during active tenancy."
           },
           {
             "title": "Usage Scope",
@@ -90,11 +89,11 @@ VALUES
           },
           {
             "title": "Damage Claim & Appeal Process",
-            "body": "Upon tenant exit, the Owner may submit a damage claim with itemized costs and timestamped photo evidence. The Tenant has a designated window to Accept or Appeal the claim. If Accepted, funds are disbursed to the Owner''s payout bank account, and the remainder is returned to the Tenant''s registered bank account. If Appealed, Lapakita Platform Support acts as a neutral administrative reviewer to inspect initial vs. final photo records and make a final binding deposit adjustment."
+            "body": "Upon tenant exit, the Owner may submit a damage claim with itemized costs and timestamped photo evidence. The Tenant has a designated window to Accept or Appeal the claim. If Accepted, funds are disbursed to the Owner's payout bank account, and the remainder is returned to the Tenant's registered bank account. If Appealed, Lapakita Platform Support acts as a neutral administrative reviewer to inspect initial vs. final photo records and make a final binding deposit adjustment."
           },
           {
             "title": "Deposit Limits & Major Property Damage",
-            "body": "The Security Deposit set by the Owner represents the maximum escrow guarantee recoverable directly through the platform. Lapakita is not liable for repair costs exceeding the deposited amount. In cases of severe property destruction or vandalism exceeding the deposit, Lapakita will disburse 100% of the available deposit to the Owner and provide verified KYC evidence to assist the Owner in formal legal proceedings. The offending Tenant''s account will be permanently blacklisted."
+            "body": "The Security Deposit set by the Owner represents the maximum escrow guarantee recoverable directly through the platform. Lapakita is not liable for repair costs exceeding the deposited amount. In cases of severe property destruction or vandalism exceeding the deposit, Lapakita will disburse 100% of the available deposit to the Owner and provide verified KYC evidence to assist the Owner in formal legal proceedings. The offending Tenant's account will be permanently blacklisted."
           }
         ]
       },
@@ -109,7 +108,7 @@ VALUES
           },
           {
             "title": "Historical Data Archive Rights",
-            "body": "All generated reports are compiled into structured JSON payloads and saved permanently in the user''s Report History archive. Users retain full rights to view, export, and download previously generated reports at any time, even if their subscription plan reverts to the Free tier. Regenerating new analysis reports requires an active subscription."
+            "body": "All generated reports are compiled into structured JSON payloads and saved permanently in the user's Report History archive. Users retain full rights to view, export, and download previously generated reports at any time, even if their subscription plan reverts to the Free tier. Regenerating new analysis reports requires an active subscription."
           }
         ]
       },
@@ -159,7 +158,7 @@ VALUES
           },
           {
             "title": "Utility Arrears Upon Exit",
-            "body": "If a Tenant vacates a stall with unpaid post-paid utility bills or unpaid local maintenance fees, the Owner is entitled to deduct the exact outstanding arrears amount from the Tenant''s escrow security deposit upon exit."
+            "body": "If a Tenant vacates a stall with unpaid post-paid utility bills or unpaid local maintenance fees, the Owner is entitled to deduct the exact outstanding arrears amount from the Tenant's escrow security deposit upon exit."
           }
         ]
       },
@@ -174,7 +173,7 @@ VALUES
           },
           {
             "title": "Manual Listing Reactivation",
-            "body": "Active or pending stalls are automatically hidden from the marketplace. Upon a tenant''s exit or contract cancellation, the stall does NOT automatically reappear. It is the Owner''s sole responsibility to manually reactivate/publish the listing once the physical space is clean and ready for new viewings."
+            "body": "Active or pending stalls are automatically hidden from the marketplace. Upon a tenant's exit or contract cancellation, the stall does NOT automatically reappear. It is the Owner's sole responsibility to manually reactivate/publish the listing once the physical space is clean and ready for new viewings."
           },
           {
             "title": "Abandoned Goods",
@@ -206,8 +205,27 @@ VALUES
             "body": "Owners and Suppliers must register a valid bank account for automated payout disbursements. Tenants must register a valid bank account to receive potential deposit refunds."
           }
         ]
-      }
-    ]'::jsonb
+      },
+      {
+          "id": "identity-verification",
+          "number": "12",
+          "title": "Identity Verification & Digital Contract Validity",
+          "subsections": [
+            {
+              "title": "Indonesian Citizens (WNI)",
+              "body": "Indonesian citizens acting as Tenants or Owners must submit a valid Indonesian Identity Card (KTP) and a National Identification Number (NIK) prior to executing digital lease contracts or publishing property listings."
+            },
+            {
+              "title": "Foreign Nationals (WNA)",
+              "body": "Foreign nationals operating on Lapakita must provide an active, valid international Passport and/or an official Indonesian Limited/Permanent Stay Permit (KITAS/KITAP). Foreign national ID cards from foreign jurisdictions other than an official Passport are not accepted for digital lease execution."
+            },
+            {
+              "title": "Peer-to-Peer Verification & Legal Enforceability",
+              "body": "Tenants and Stall Owners are responsible for inspecting and verifying each other's uploaded legal identity documents prior to signing a lease contract. Digital signatures and contracts executed on Lapakita using verified KTP or Passport identities carry full legal validity under Indonesian Electronic Information and Transactions (ITE) laws."
+            }
+          ]
+        }
+    ]$json$::jsonb
 ),
 -- Terms & Conditions - Indonesian (id)
 (
@@ -216,7 +234,7 @@ VALUES
     'id',
     'Syarat dan Ketentuan',
     'Ketentuan ini mengatur penggunaan Lapakita sebagai Penyewa, Pemilik Lapak, atau Supplier. Harap baca dengan cermat sebelum menggunakan platform.',
-    '[
+    $json$[
       {
         "id": "platform-nature",
         "number": "1",
@@ -248,7 +266,7 @@ VALUES
           },
           {
             "title": "Pemesanan & Aturan Sewa Event Bazaar Pop-Up",
-            "body": "Booth bazaar temporer terikat oleh jadwal acara spesifik, batas waktu pendaftaran, ketersediaan slot, dan aturan sewa khusus event. Aturan sewa event mengatur hari operasional (''everyday'', ''weekends'', ''weekdays'', ''flexible''), persyaratan kehadiran (''mandatory_full'' atau ''flexible_days''), dan kebijakan pembatalan (''pro_rata'', ''deposit_refundable'', atau ''non_refundable''). Penyewa yang mengajukan booth bazaar setuju untuk mematuhi ketentuan acara ini."
+            "body": "Booth bazaar temporer terikat oleh jadwal acara spesifik, batas waktu pendaftaran, ketersediaan slot, dan aturan sewa khusus event. Aturan sewa event mengatur hari operasional ('everyday', 'weekends', 'weekdays', 'flexible'), persyaratan kehadiran ('mandatory_full' atau 'flexible_days'), dan kebijakan pembatalan ('pro_rata', 'deposit_refundable', atau 'non_refundable'). Penyewa yang mengajukan booth bazaar setuju untuk mematuhi ketentuan acara ini."
           }
         ]
       },
@@ -406,8 +424,27 @@ VALUES
             "body": "Pemilik dan Supplier wajib mendaftarkan rekening bank yang valid untuk pencairan dana otomatis. Penyewa wajib mendaftarkan rekening bank yang valid untuk menerima potensi pengembalian deposit."
           }
         ]
+      },
+      {
+        "id": "identity-verification",
+        "number": "12",
+        "title": "Pemeriksaan Identitas & Keabsahan Kontrak Digital",
+        "subsections": [
+          {
+            "title": "Warga Negara Indonesia (WNI)",
+            "body": "Warga Negara Indonesia yang bertindak sebagai Penyewa atau Pemilik wajib melampirkan Kartu Tanda Penduduk (KTP) Indonesia yang berlaku dan Nomor Induk Kependudukan (NIK) sebelum menandatangani kontrak sewa digital atau mempublikasikan listing properti."
+          },
+          {
+            "title": "Warga Negara Asing (WNA)",
+            "body": "Warga Negara Asing yang beroperasi di Lapakita wajib melampirkan Paspor internasional resmi yang masih berlaku dan/atau Kartu Izin Tinggal Terbatas/Tetap (KITAS/KITAP) resmi dari Pemerintah Republik Indonesia. Kartu identitas lokal dari negara asal WNA selain Paspor tidak berlaku untuk pelaksanaan sewa digital."
+          },
+          {
+            "title": "Pemeriksaan Antar-Pihak & Kekuatan Hukum Kontrak",
+            "body": "Penyewa dan Pemilik Lapak bertanggung jawab untuk saling memeriksa dan memvalidasi dokumen identitas legal masing-masing pihak sebelum menandatangani perjanjian sewa. Tanda tangan digital dan kontrak yang dilaksanakan di Lapakita menggunakan identitas KTP atau Paspor memiliki kekuatan hukum penuh dan sah secara pembuktian sesuai dengan Undang-Undang Informasi dan Transaksi Elektronik (UU ITE) Republik Indonesia."
+          }
+        ]
       }
-    ]'::jsonb
+    ]$json$::jsonb
 )
 ON CONFLICT (doc_type, lang) DO UPDATE 
 SET title = EXCLUDED.title, description = EXCLUDED.description, sections_json = EXCLUDED.sections_json, updated_at = CURRENT_TIMESTAMP;
@@ -417,7 +454,6 @@ SET title = EXCLUDED.title, description = EXCLUDED.description, sections_json = 
 -- 2. PRIVACY POLICY (EN & ID)
 -- =============================================================================
 
--- Privacy Policy - English (en)
 INSERT INTO cms_legal_documents (id, doc_type, lang, title, description, sections_json)
 VALUES 
 (
@@ -425,8 +461,8 @@ VALUES
     'privacy',
     'en',
     'Privacy Policy',
-    'This policy explains what data Lapakita collects, how it''s used, and the protections in place across Tenant, Owner, and Supplier accounts.',
-    '[
+    'This policy explains what data Lapakita collects, how it is used, and the protections in place across Tenant, Owner, and Supplier accounts.',
+    $json$[
       {
         "id": "data-collected",
         "number": "1",
@@ -480,7 +516,7 @@ VALUES
           },
           {
             "title": "Privacy of Revenue Data",
-            "body": "Individual tenant revenue figures and POS ledgers are strictly private to the tenant''s business account. Stall Owners cannot view a tenant''s exact gross revenue or profit margins."
+            "body": "Individual tenant revenue figures and POS ledgers are strictly private to the tenant's business account. Stall Owners cannot view a tenant's exact gross revenue or profit margins."
           },
           {
             "title": "Secure Infrastructure",
@@ -498,16 +534,15 @@ VALUES
           }
         ]
       }
-    ]'::jsonb
+    ]$json$::jsonb
 ),
--- Privacy Policy - Indonesian (id)
 (
     gen_random_uuid(),
     'privacy',
     'id',
     'Kebijakan Privasi',
     'Kebijakan ini menjelaskan data apa yang dikumpulkan Lapakita, bagaimana data digunakan, dan perlindungan yang diterapkan untuk akun Penyewa, Pemilik, dan Supplier.',
-    '[
+    $json$[
       {
         "id": "data-collected",
         "number": "1",
@@ -579,7 +614,7 @@ VALUES
           }
         ]
       }
-    ]'::jsonb
+    ]$json$::jsonb
 )
 ON CONFLICT (doc_type, lang) DO UPDATE 
 SET title = EXCLUDED.title, description = EXCLUDED.description, sections_json = EXCLUDED.sections_json, updated_at = CURRENT_TIMESTAMP;
@@ -589,7 +624,6 @@ SET title = EXCLUDED.title, description = EXCLUDED.description, sections_json = 
 -- 3. COOKIES & LOCAL STORAGE POLICY (EN & ID)
 -- =============================================================================
 
--- Cookies Policy - English (en)
 INSERT INTO cms_legal_documents (id, doc_type, lang, title, description, sections_json)
 VALUES 
 (
@@ -598,7 +632,7 @@ VALUES
     'en',
     'Cookies & Local Storage Policy',
     'Lapakita uses minimal browser storage — strictly for essential functionality, never for invasive tracking or ad retargeting.',
-    '[
+    $json$[
       {
         "id": "what-we-store",
         "number": "1",
@@ -628,16 +662,15 @@ VALUES
           }
         ]
       }
-    ]'::jsonb
+    ]$json$::jsonb
 ),
--- Cookies Policy - Indonesian (id)
 (
     gen_random_uuid(),
     'cookies',
     'id',
     'Kebijakan Cookie & Penyimpanan Lokal',
     'Lapakita menggunakan penyimpanan browser minimal — murni untuk fungsionalitas esensial, tidak pernah untuk pelacakan invasif atau penargetan ulang iklan.',
-    '[
+    $json$[
       {
         "id": "what-we-store",
         "number": "1",
@@ -667,7 +700,7 @@ VALUES
           }
         ]
       }
-    ]'::jsonb
+    ]$json$::jsonb
 )
 ON CONFLICT (doc_type, lang) DO UPDATE 
 SET title = EXCLUDED.title, description = EXCLUDED.description, sections_json = EXCLUDED.sections_json, updated_at = CURRENT_TIMESTAMP;
