@@ -167,7 +167,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			{
 				documentGroup.GET("", h.UserHandler.GetDocument)
 				documentGroup.POST("", h.UserHandler.UploadDocument)
-				documentGroup.DELETE("", h.UserHandler.DeleteDocument)
+				documentGroup.DELETE("/:id", h.UserHandler.DeleteDocument)
 			}
 		}
 	}

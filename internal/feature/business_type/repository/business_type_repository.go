@@ -6,6 +6,8 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/business_type/dto"
+	"lapakita-backend/pkg/api"
+	"lapakita-backend/pkg/database"
 
 	"gorm.io/gorm"
 )
@@ -18,9 +20,9 @@ func NewBusinessTypeRepository(db *gorm.DB) *BusinessTypeRepository {
 	return &BusinessTypeRepository{db: db}
 }
 
-func (r *BusinessTypeRepository) GetBusinessTypes(ctx context.Context, lang string, req *dto.GetBusinessTypesRequest) ([]entity.BusinessType, int64, error) {
+func (r *BusinessTypeRepository) GetBusinessTypes(ctx context.Context, lang string, req *dto.GetBusinessTypesRequest) ([]entity.BusinessType, api.PaginationMeta, error) {
 	var businessTypes []entity.BusinessType
-	var total int64
+	var meta api.PaginationMeta
 
 	query := r.db.WithContext(ctx).Model(&entity.BusinessType{})
 
@@ -37,21 +39,21 @@ func (r *BusinessTypeRepository) GetBusinessTypes(ctx context.Context, lang stri
 		query = query.Where("group_name_lang->>'en' ILIKE ? OR group_name_lang->>'id' ILIKE ?", groupPattern, groupPattern)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (req.Page - 1) * req.Limit
+	// Clause pengurutan dinamis berdasarkan bahasa yang dikirim
 	orderClause := fmt.Sprintf("label_lang->>'%s' ASC", lang)
 
-	err := query.Order(orderClause).
-		Offset(offset).
-		Limit(req.Limit).
-		Find(&businessTypes).Error
-
+	// Eksekusi AutoPaginate (otomatis memproses limit, offset, selected_id, dan metadata)
+	err := database.AutoPaginate(
+		query,
+		req.BasePaginationRequest,
+		"business_types",
+		&businessTypes,
+		&meta,
+		orderClause,
+	)
 	if err != nil {
-		return nil, 0, err
+		return nil, api.PaginationMeta{}, err
 	}
 
-	return businessTypes, total, nil
+	return businessTypes, meta, nil
 }

@@ -37,8 +37,23 @@ VALUES
         ]
       },
       {
-        "id": "stall-permanence-bazaar",
+        "id": "identity-documents",
         "number": "3",
+        "title": "Legal Identity Documents & Cross-Border Guidelines",
+        "subsections": [
+          {
+            "title": "Supported Identity Documents",
+            "body": "Users may upload valid identity documents for digital contract execution. For domestic transactions within the same country, official government National ID cards (such as Indonesian KTP for WNI) are accepted. For cross-border transactions or non-resident users, an active international Passport or KITAS/KITAP is required."
+          },
+          {
+            "title": "Peer-to-Peer Document Review",
+            "body": "Lapakita facilitates the encrypted display of watermarked identity documents for mutual inspection between Tenants and Stall Owners. Users are advised to verify their counterparty's identity details prior to executing any digital lease agreement."
+          }
+        ]
+      },
+      {
+        "id": "stall-permanence-bazaar",
+        "number": "4",
         "title": "Stall Classification & Short-Term Bazaar Events",
         "subsections": [
           {
@@ -53,7 +68,7 @@ VALUES
       },
       {
         "id": "leasing-contracts",
-        "number": "4",
+        "number": "5",
         "title": "Stall Leasing, Contracts & Payment Timelines",
         "subsections": [
           {
@@ -76,7 +91,7 @@ VALUES
       },
       {
         "id": "escrow",
-        "number": "5",
+        "number": "6",
         "title": "Security Deposit & Escrow Handling",
         "subsections": [
           {
@@ -93,28 +108,32 @@ VALUES
           },
           {
             "title": "Deposit Limits & Major Property Damage",
-            "body": "The Security Deposit set by the Owner represents the maximum escrow guarantee recoverable directly through the platform. Lapakita is not liable for repair costs exceeding the deposited amount. In cases of severe property destruction or vandalism exceeding the deposit, Lapakita will disburse 100% of the available deposit to the Owner and provide verified KYC evidence to assist the Owner in formal legal proceedings. The offending Tenant's account will be permanently blacklisted."
+            "body": "The Security Deposit set by the Owner represents the maximum escrow guarantee recoverable directly through the platform. Lapakita is not liable for repair costs exceeding the deposited amount. In cases of severe property destruction or vandalism exceeding the deposit, Lapakita will disburse 100% of the available deposit to the Owner and provide verified identity document records to assist the Owner in formal legal proceedings. The offending Tenant's account will be permanently blacklisted."
           }
         ]
       },
       {
-        "id": "analytics-reports",
-        "number": "6",
-        "title": "Generated Reports & Data Analysis History",
+        "id": "utilities-electricity",
+        "number": "7",
+        "title": "Utilities, Electricity & Operational Expenses",
         "subsections": [
           {
-            "title": "Report Generation & Execution",
-            "body": "Subscribed users (Premium or Active Tier) may execute automated data analysis reports, including Tenant Multi-Timeline Business Forecasts, Owner Vacancy Loss Analyses, and Supplier Market Opportunity Gap Analyses."
+            "title": "Owner Provision",
+            "body": "Stall Owners are responsible for providing basic operational utility infrastructure, including electrical power capacity (kVA), water meters, or plumbing connections as advertised in the listing."
           },
           {
-            "title": "Historical Data Archive Rights",
-            "body": "All generated reports are compiled into structured JSON payloads and saved permanently in the user's Report History archive. Users retain full rights to view, export, and download previously generated reports at any time, even if their subscription plan reverts to the Free tier. Regenerating new analysis reports requires an active subscription."
+            "title": "Tenant Usage & Billing Responsibility",
+            "body": "Ongoing consumption of electricity, water, internet, trash disposal, or local market maintenance fees during the active lease term is the sole responsibility of the Tenant. Tenants must top up prepaid electricity tokens (PLN) or pay monthly utility bills directly."
+          },
+          {
+            "title": "Utility Arrears Upon Exit",
+            "body": "If a Tenant vacates a stall with unpaid post-paid utility bills or unpaid local maintenance fees, the Owner is entitled to deduct the exact outstanding arrears amount from the Tenant's escrow security deposit upon exit."
           }
         ]
       },
       {
         "id": "keys-access",
-        "number": "7",
+        "number": "8",
         "title": "Physical Keys, Duplication & Lock Cylinder Responsibility",
         "subsections": [
           {
@@ -140,25 +159,6 @@ VALUES
           {
             "title": "Lost Key Protocol — Total Key Loss",
             "body": "If all keys are lost and a locksmith must pick the lock, forge a new key from scratch, or replace the entire lock cylinder: the Owner is responsible for managing the lock replacement process and covering any structural/lock cylinder hardware costs, as the underlying asset owner. The Tenant pays only for the cost of the individual key(s) created for them, as penalty for their negligence."
-          }
-        ]
-      },
-      {
-        "id": "utilities-electricity",
-        "number": "8",
-        "title": "Utilities, Electricity & Operational Expenses",
-        "subsections": [
-          {
-            "title": "Owner Provision",
-            "body": "Stall Owners are responsible for providing basic operational utility infrastructure, including electrical power capacity (kVA), water meters, or plumbing connections as advertised in the listing."
-          },
-          {
-            "title": "Tenant Usage & Billing Responsibility",
-            "body": "Ongoing consumption of electricity, water, internet, trash disposal, or local market maintenance fees during the active lease term is the sole responsibility of the Tenant. Tenants must top up prepaid electricity tokens (PLN) or pay monthly utility bills directly."
-          },
-          {
-            "title": "Utility Arrears Upon Exit",
-            "body": "If a Tenant vacates a stall with unpaid post-paid utility bills or unpaid local maintenance fees, the Owner is entitled to deduct the exact outstanding arrears amount from the Tenant's escrow security deposit upon exit."
           }
         ]
       },
@@ -207,24 +207,20 @@ VALUES
         ]
       },
       {
-          "id": "identity-verification",
-          "number": "12",
-          "title": "Identity Verification & Digital Contract Validity",
-          "subsections": [
-            {
-              "title": "Indonesian Citizens (WNI)",
-              "body": "Indonesian citizens acting as Tenants or Owners must submit a valid Indonesian Identity Card (KTP) and a National Identification Number (NIK) prior to executing digital lease contracts or publishing property listings."
-            },
-            {
-              "title": "Foreign Nationals (WNA)",
-              "body": "Foreign nationals operating on Lapakita must provide an active, valid international Passport and/or an official Indonesian Limited/Permanent Stay Permit (KITAS/KITAP). Foreign national ID cards from foreign jurisdictions other than an official Passport are not accepted for digital lease execution."
-            },
-            {
-              "title": "Peer-to-Peer Verification & Legal Enforceability",
-              "body": "Tenants and Stall Owners are responsible for inspecting and verifying each other's uploaded legal identity documents prior to signing a lease contract. Digital signatures and contracts executed on Lapakita using verified KTP or Passport identities carry full legal validity under Indonesian Electronic Information and Transactions (ITE) laws."
-            }
-          ]
-        }
+        "id": "analytics-reports",
+        "number": "12",
+        "title": "Generated Reports & Data Analysis History",
+        "subsections": [
+          {
+            "title": "Report Generation & Execution",
+            "body": "Subscribed users (Premium or Active Tier) may execute automated data analysis reports, including Tenant Multi-Timeline Business Forecasts, Owner Vacancy Loss Analyses, and Supplier Market Opportunity Gap Analyses."
+          },
+          {
+            "title": "Historical Data Archive Rights",
+            "body": "All generated reports are compiled into structured JSON payloads and saved permanently in the user's Report History archive. Users retain full rights to view, export, and download previously generated reports at any time, even if their subscription plan reverts to the Free tier. Regenerating new analysis reports requires an active subscription."
+          }
+        ]
+      }
     ]$json$::jsonb
 ),
 -- Terms & Conditions - Indonesian (id)
@@ -256,8 +252,23 @@ VALUES
         ]
       },
       {
-        "id": "stall-permanence-bazaar",
+        "id": "identity-documents",
         "number": "3",
+        "title": "Dokumen Identitas Legal & Panduan Lintas Negara",
+        "subsections": [
+          {
+            "title": "Dokumen Identitas yang Didukung",
+            "body": "Pengguna dapat mengunggah dokumen identitas resmi yang berlaku untuk pelaksanaan kontrak digital. Untuk transaksi domestik dalam negara yang sama, Kartu Identitas Nasional resmi (seperti KTP untuk WNI) dapat digunakan. Untuk transaksi sewa lintas negara atau pengguna non-residen, pengguna wajib melampirkan Paspor internasional aktif atau KITAS/KITAP."
+          },
+          {
+            "title": "Pemeriksaan Dokumen Antar-Pihak",
+            "body": "Lapakita memfasilitasi penayangan dokumen identitas ber-watermark untuk diperiksa secara transparan antara Penyewa dan Pemilik Lapak. Pengguna disarankan untuk memeriksa detail identitas mitra sebelum menandatangani perjanjian sewa digital."
+          }
+        ]
+      },
+      {
+        "id": "stall-permanence-bazaar",
+        "number": "4",
         "title": "Klasifikasi Lapak & Acara Bazaar Jangka Pendek",
         "subsections": [
           {
@@ -272,7 +283,7 @@ VALUES
       },
       {
         "id": "leasing-contracts",
-        "number": "4",
+        "number": "5",
         "title": "Penyewaan Lapak, Kontrak & Batas Waktu Pembayaran",
         "subsections": [
           {
@@ -295,7 +306,7 @@ VALUES
       },
       {
         "id": "escrow",
-        "number": "5",
+        "number": "6",
         "title": "Deposit Jaminan & Penanganan Escrow",
         "subsections": [
           {
@@ -312,28 +323,32 @@ VALUES
           },
           {
             "title": "Batas Deposit & Kerusakan Properti Mayor",
-            "body": "Deposit Jaminan yang ditetapkan Pemilik merupakan batas jaminan escrow maksimum yang dapat dipulihkan langsung melalui platform. Lapakita tidak bertanggung jawab atas biaya perbaikan yang melebihi jumlah deposit. Dalam kasus perusakan properti secara berat yang melebihi deposit, Lapakita akan mencairkan 100% deposit yang tersedia kepada Pemilik dan menyerahkan bukti KYC terverifikasi untuk membantu Pemilik dalam proses hukum formal. Akun Penyewa yang melanggar akan di-blacklist permanen."
+            "body": "Deposit Jaminan yang ditetapkan Pemilik merupakan batas jaminan escrow maksimum yang dapat dipulihkan langsung melalui platform. Lapakita tidak bertanggung jawab atas biaya perbaikan yang melebihi jumlah deposit. Dalam kasus perusakan properti secara berat yang melebihi deposit, Lapakita akan mencairkan 100% deposit yang tersedia kepada Pemilik dan menyerahkan bukti dokumen identitas terverifikasi untuk membantu Pemilik dalam proses hukum formal. Akun Penyewa yang melanggar akan di-blacklist permanen."
           }
         ]
       },
       {
-        "id": "analytics-reports",
-        "number": "6",
-        "title": "Laporan Tergenerasi & Riwayat Analisis Data",
+        "id": "utilities-electricity",
+        "number": "7",
+        "title": "Utilitas, Listrik & Biaya Operasional",
         "subsections": [
           {
-            "title": "Generasi & Eksekusi Laporan",
-            "body": "Pengguna berlangganan (Tier Premium atau Aktif) dapat menjalankan laporan analisis data otomatis, termasuk Proyeksi Bisnis Multi-Timeline Penyewa, Analisis Kerugian Kekosongan Pemilik, dan Analisis Celah Peluang Pasar Supplier."
+            "title": "Penyediaan oleh Pemilik",
+            "body": "Pemilik Lapak bertanggung jawab menyediakan infrastruktur dasar utilitas operasional, termasuk kapasitas daya listrik (kVA), meteran air, atau sambungan pipa sesuai iklan listing."
           },
           {
-            "title": "Hak Arsip Riwayat Data",
-            "body": "Seluruh laporan yang dibuat dikompilasi menjadi payload JSON terstruktur dan disimpan permanen di arsip Riwayat Laporan pengguna. Pengguna memiliki hak penuh untuk melihat, mengekspor, dan mengunduh laporan yang telah dibuat kapan saja, bahkan jika paket langganan kembali ke tier Gratis. Membuat laporan analisis baru membutuhkan langganan aktif."
+            "title": "Penggunaan & Tagihan Penyewa",
+            "body": "Konsumsi listrik, air, internet, kebersihan, atau iuran pemeliharaan lingkungan selama masa sewa aktif menjadi tanggung jawab penuh Penyewa. Penyewa wajib mengisi ulang token listrik prabayar (PLN) atau membayar tagihan utilitas pascabayar secara langsung."
+          },
+          {
+            "title": "Tunggakan Utilitas Saat Keluar",
+            "body": "Jika Penyewa keluar dengan meninggalkan tunggakan tagihan utilitas atau iuran lingkungan yang belum dibayar, Pemilik berhak memotong nominal tunggakan tersebut dari deposit jaminan escrow Penyewa saat keluar."
           }
         ]
       },
       {
         "id": "keys-access",
-        "number": "7",
+        "number": "8",
         "title": "Kunci Fisik, Duplikasi & Tanggung Jawab Silinder Kunci",
         "subsections": [
           {
@@ -359,25 +374,6 @@ VALUES
           {
             "title": "Protokol Kunci Hilang — Kehilangan Kunci Total",
             "body": "Jika seluruh kunci hilang dan tukang kunci harus membongkar, membuat kunci baru dari nol, atau mengganti seluruh silinder kunci: Pemilik bertanggung jawab mengelola proses penggantian dan menanggung biaya perangkat keras silinder kunci sebagai pemilik aset. Penyewa hanya membayar biaya pembuatan kunci individu untuk mereka sebagai sanksi atas kelalaian."
-          }
-        ]
-      },
-      {
-        "id": "utilities-electricity",
-        "number": "8",
-        "title": "Utilitas, Listrik & Biaya Operasional",
-        "subsections": [
-          {
-            "title": "Penyediaan oleh Pemilik",
-            "body": "Pemilik Lapak bertanggung jawab menyediakan infrastruktur dasar utilitas operasional, termasuk kapasitas daya listrik (kVA), meteran air, atau sambungan pipa sesuai iklan listing."
-          },
-          {
-            "title": "Penggunaan & Tagihan Penyewa",
-            "body": "Konsumsi listrik, air, internet, kebersihan, atau iuran pemeliharaan lingkungan selama masa sewa aktif menjadi tanggung jawab penuh Penyewa. Penyewa wajib mengisi ulang token listrik prabayar (PLN) atau membayar tagihan utilitas pascabayar secara langsung."
-          },
-          {
-            "title": "Tunggakan Utilitas Saat Keluar",
-            "body": "Jika Penyewa keluar dengan meninggalkan tunggakan tagihan utilitas atau iuran lingkungan yang belum dibayar, Pemilik berhak memotong nominal tunggakan tersebut dari deposit jaminan escrow Penyewa saat keluar."
           }
         ]
       },
@@ -426,21 +422,17 @@ VALUES
         ]
       },
       {
-        "id": "identity-verification",
+        "id": "analytics-reports",
         "number": "12",
-        "title": "Pemeriksaan Identitas & Keabsahan Kontrak Digital",
+        "title": "Laporan Tergenerasi & Riwayat Analisis Data",
         "subsections": [
           {
-            "title": "Warga Negara Indonesia (WNI)",
-            "body": "Warga Negara Indonesia yang bertindak sebagai Penyewa atau Pemilik wajib melampirkan Kartu Tanda Penduduk (KTP) Indonesia yang berlaku dan Nomor Induk Kependudukan (NIK) sebelum menandatangani kontrak sewa digital atau mempublikasikan listing properti."
+            "title": "Generasi & Eksekusi Laporan",
+            "body": "Pengguna berlangganan (Tier Premium atau Aktif) dapat menjalankan laporan analisis data otomatis, termasuk Proyeksi Bisnis Multi-Timeline Penyewa, Analisis Kerugian Kekosongan Pemilik, dan Analisis Celah Peluang Pasar Supplier."
           },
           {
-            "title": "Warga Negara Asing (WNA)",
-            "body": "Warga Negara Asing yang beroperasi di Lapakita wajib melampirkan Paspor internasional resmi yang masih berlaku dan/atau Kartu Izin Tinggal Terbatas/Tetap (KITAS/KITAP) resmi dari Pemerintah Republik Indonesia. Kartu identitas lokal dari negara asal WNA selain Paspor tidak berlaku untuk pelaksanaan sewa digital."
-          },
-          {
-            "title": "Pemeriksaan Antar-Pihak & Kekuatan Hukum Kontrak",
-            "body": "Penyewa dan Pemilik Lapak bertanggung jawab untuk saling memeriksa dan memvalidasi dokumen identitas legal masing-masing pihak sebelum menandatangani perjanjian sewa. Tanda tangan digital dan kontrak yang dilaksanakan di Lapakita menggunakan identitas KTP atau Paspor memiliki kekuatan hukum penuh dan sah secara pembuktian sesuai dengan Undang-Undang Informasi dan Transaksi Elektronik (UU ITE) Republik Indonesia."
+            "title": "Hak Arsip Riwayat Data",
+            "body": "Seluruh laporan yang dibuat dikompilasi menjadi payload JSON terstruktur dan disimpan permanen di arsip Riwayat Laporan pengguna. Pengguna memiliki hak penuh untuk melihat, mengekspor, dan mengunduh laporan yang telah dibuat kapan saja, bahkan jika paket langganan kembali ke tier Gratis. Membuat laporan analisis baru membutuhkan langganan aktif."
           }
         ]
       }
@@ -473,8 +465,8 @@ VALUES
             "body": "Full name, email address, multi-phone contact numbers (WhatsApp), role-specific avatars, display names, and encrypted password credentials."
           },
           {
-            "title": "Verification Data (KYC)",
-            "body": "ID card (KTP) photo, NIK, OCR data, and official business document photos collected prior to lease signing, stall publishing, or supplier activation."
+            "title": "Verification & Identity Documents",
+            "body": "ID card (KTP) photo, Passport photo, document numbers, and official business document photos collected prior to lease signing, stall publishing, or supplier activation."
           },
           {
             "title": "Financial & Payout Data",
@@ -501,7 +493,7 @@ VALUES
             "body": "To compile historical business forecast analysis and store structured report history accessible via user dashboards."
           },
           {
-            "body": "To verify identity in cases of legal lease disputes or deposit appeals."
+            "body": "To allow peer-to-peer identity inspection between Tenants and Owners during digital contract execution or deposit appeals."
           }
         ]
       },
@@ -553,8 +545,8 @@ VALUES
             "body": "Nama lengkap, alamat email, nomor telepon kontak (WhatsApp), avatar per peran, nama tampilan, dan kredensial kata sandi terenkripsi."
           },
           {
-            "title": "Data Verifikasi (KYC)",
-            "body": "Foto KTP, NIK, data OCR, dan foto dokumen bisnis resmi yang dikumpulkan sebelum penandatanganan sewa, publikasi lapak, atau aktivasi supplier."
+            "title": "Dokumen Identitas Legal",
+            "body": "Foto KTP, foto Paspor, nomor identitas resmi, dan foto dokumen bisnis yang diunggah sebelum penandatanganan sewa, publikasi lapak, atau aktivasi supplier."
           },
           {
             "title": "Data Keuangan & Pencairan",
@@ -581,7 +573,7 @@ VALUES
             "body": "Untuk menyusun analisis proyeksi bisnis historis dan menyimpan riwayat laporan terstruktur yang dapat diakses melalui dashboard pengguna."
           },
           {
-            "body": "Untuk memverifikasi identitas dalam kasus sengketa sewa hukum atau banding deposit."
+            "body": "Untuk memungkinkan pemeriksaan identitas antar-pihak (Penyewa dan Pemilik Lapak) saat pelaksanaan kontrak digital atau sengketa deposit."
           }
         ]
       },

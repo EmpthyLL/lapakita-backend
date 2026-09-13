@@ -42,21 +42,20 @@ CREATE INDEX idx_users_email ON users(email);
 
 CREATE TABLE user_identity_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    document_type VARCHAR(32) NOT NULL DEFAULT 'ktp',   -- 'ktp', 'passport', 'kitas'
-    full_name_identity VARCHAR(255) NOT NULL,           -- Nama lengkap sesuai dokumen
-    document_number VARCHAR(64) NOT NULL,              -- NIK (16 digit) atau No. Paspor
-    document_photo_url TEXT NOT NULL,                  -- Foto KTP / Paspor ber-watermark
-    domicile_city VARCHAR(128),
+    document_type VARCHAR(32) NOT NULL DEFAULT 'national_id', -- 'national_id', 'passport', 'residence_permit'
+    full_name_identity VARCHAR(255) NOT NULL,                  -- Nama lengkap sesuai dokumen
+    document_number VARCHAR(64) NOT NULL,                      -- NIK / No. Paspor / No. Izin Tinggal
+    document_photo_url TEXT NOT NULL,                          -- Foto Dokumen ber-watermark
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexing untuk mempercepat pencarian query
 CREATE INDEX idx_user_identity_doc_num ON user_identity_profiles(document_number);
-
-CREATE INDEX idx_user_identity_profiles_user_id ON user_identity_profiles(user_id);
+CREATE INDEX idx_user_identity_user_id ON user_identity_profiles(user_id);
 
 -- Rekening Bank User (Penarikan Dana Escrow / Payout)
 CREATE TABLE bank_accounts (
@@ -254,29 +253,46 @@ CREATE INDEX idx_stalls_deleted_at ON stalls(deleted_at);
 
 CREATE TABLE lease_contracts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    -- Relasi Entitas Utama
     stall_id UUID NOT NULL REFERENCES stalls(id),
     tenant_user_id UUID NOT NULL REFERENCES users(id),
     stall_owner_id UUID NOT NULL REFERENCES users(id),
-    business_id UUID REFERENCES businesses(id),
+    business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
     
-    selected_period VARCHAR(32) NOT NULL,
+    -- Snapshots Identitas Dokumen Legal (Di-lock saat pengajuan)
+    tenant_identity_snapshot JSONB NOT NULL, 
+    owner_identity_snapshot JSONB NOT NULL, 
+
+    -- Rincian Nilai & Durasi Sewa
+    selected_period VARCHAR(32) NOT NULL,            -- e.g. "1_year", "3_months", "event_4_days"
     agreed_rent_rate NUMERIC(15, 2) NOT NULL,
     agreed_security_deposit NUMERIC(15, 2) NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    billing_cycle VARCHAR(32) NOT NULL,
+    billing_cycle VARCHAR(32) NOT NULL,               -- 'day', 'month', 'quarter', 'year'
+
+    -- Digital Signature Audit Trail
+    tenant_signature JSONB NOT NULL,
+    owner_signature JSONB DEFAULT NULL,
+    contract_hash_sha256 VARCHAR(64) DEFAULT NULL,
+
+    -- Status Kontrak Utama (Tanpa Atribut Escrow Ribet)
+    status VARCHAR(32) NOT NULL DEFAULT 'pending_approval', 
+    -- 'pending_approval', 'payment_pending', 'active', 'rejected', 'cancelled', 'completed'
     
-    status VARCHAR(32) DEFAULT 'pending_approval',
-    escrow_deposit_status VARCHAR(32) DEFAULT 'held',
-    deposit_claimed_amount NUMERIC(15, 2) DEFAULT 0.00,
+    -- Simple Deposit Refund Tracker
+    is_deposit_refunded BOOLEAN DEFAULT FALSE,
+    refunded_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_lease_contracts_tenant_user_id ON lease_contracts(tenant_user_id);
-CREATE INDEX idx_lease_contracts_stall_owner_id ON lease_contracts(stall_owner_id);
-CREATE INDEX idx_lease_contracts_stall_id ON lease_contracts(stall_id);
+CREATE INDEX idx_lease_contracts_tenant ON lease_contracts(tenant_user_id);
+CREATE INDEX idx_lease_contracts_owner ON lease_contracts(stall_owner_id);
+CREATE INDEX idx_lease_contracts_stall ON lease_contracts(stall_id);
+CREATE INDEX idx_lease_contracts_status ON lease_contracts(status);
 
 CREATE TABLE stall_reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -291,6 +307,68 @@ CREATE TABLE stall_reviews (
 );
 
 CREATE INDEX idx_stall_reviews_stall_id ON stall_reviews(stall_id);
+
+-- =============================================================================
+-- INSPEKSI, KLAIM KERUSAKAN & PERMINTAAN KUNCI LAPAK
+-- =============================================================================
+
+-- 1. INSPEKSI KONDISI LAPAK (Move-in / Move-out Check)
+CREATE TABLE stall_inspections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lease_contract_id UUID NOT NULL REFERENCES lease_contracts(id) ON DELETE CASCADE,
+    
+    inspector_role VARCHAR(16) NOT NULL,                 -- 'owner' atau 'tenant'
+    inspection_type VARCHAR(32) NOT NULL,                -- 'move_in' atau 'move_out'
+    notes TEXT,
+    photos JSONB NOT NULL DEFAULT '[]'::jsonb,           -- Bukti foto kondisi fisik
+    checked_items JSONB NOT NULL DEFAULT '{}'::jsonb,    -- e.g. {"lock_cylinder": "good", "electricity": "ok"}
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_stall_inspections_contract ON stall_inspections(lease_contract_id);
+
+
+-- 2. LAPORAN & KLAIM KERUSAKAN (Damage & Utility Arrears Claims)
+CREATE TABLE damage_claims (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lease_contract_id UUID NOT NULL REFERENCES lease_contracts(id) ON DELETE CASCADE,
+    
+    claim_reason TEXT NOT NULL,                          -- Rincian kerusakan / tunggakan utilitas
+    claimed_amount NUMERIC(15, 2) NOT NULL,             -- Nominal pemotongan deposit yang diminta Owner
+    proof_photos JSONB NOT NULL DEFAULT '[]'::jsonb,     -- Bukti foto kerusakan
+    
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',       -- 'pending', 'accepted_by_tenant', 'appealed', 'resolved'
+    tenant_response_notes TEXT DEFAULT NULL,
+    
+    resolved_amount NUMERIC(15, 2) DEFAULT NULL,         -- Nominal kesepakatan akhir
+    resolved_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_damage_claims_contract ON damage_claims(lease_contract_id);
+CREATE INDEX idx_damage_claims_status ON damage_claims(status);
+
+
+-- 3. PERMINTAAN KUNCI & AKSES (Key Handover & Loss Management)
+CREATE TABLE key_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lease_contract_id UUID NOT NULL REFERENCES lease_contracts(id) ON DELETE CASCADE,
+    
+    request_type VARCHAR(32) NOT NULL,                  -- 'initial_handover', 'duplicate_spare', 'lost_key'
+    notes TEXT,
+    fee_amount NUMERIC(15, 2) DEFAULT 0.00,             -- Biaya jika duplikat / ganti silinder akibat kelalaian
+    
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',       -- 'pending', 'approved', 'completed', 'rejected'
+    handled_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_key_requests_contract ON key_requests(lease_contract_id);
 
 -- =============================================================================
 -- 6. POS CASHIER SYSTEM

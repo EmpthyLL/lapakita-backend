@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"lapakita-backend/internal/entity"
+	"lapakita-backend/internal/feature/user/dto"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -40,6 +41,7 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, n
 		Update("password_hash", newPasswordHash).Error
 }
 
+// Check jika nomor dokumen ini sudah dipakai di manapun (Global Check)
 func (r *UserRepository) FindIdentityByDocumentNumber(ctx context.Context, docNumber string) (*entity.UserIdentityProfile, error) {
 	var profile entity.UserIdentityProfile
 	err := r.db.WithContext(ctx).First(&profile, "document_number = ?", docNumber).Error
@@ -52,49 +54,49 @@ func (r *UserRepository) FindIdentityByDocumentNumber(ctx context.Context, docNu
 	return &profile, nil
 }
 
-func (r *UserRepository) UpsertIdentityProfile(ctx context.Context, profile *entity.UserIdentityProfile) error {
-	var existing entity.UserIdentityProfile
-	err := r.db.WithContext(ctx).First(&existing, "user_id = ?", profile.UserID).Error
+// Check khusus apakah user spesifik ini sudah pernah menambahkan document_number tersebut
+func (r *UserRepository) FindIdentityByUserIDAndDocNumber(ctx context.Context, userID uuid.UUID, docNumber string) (*entity.UserIdentityProfile, error) {
+	var profile entity.UserIdentityProfile
+	err := r.db.WithContext(ctx).First(&profile, "user_id = ? AND document_number = ?", userID, docNumber).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return r.db.WithContext(ctx).Create(profile).Error
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
-
-	profile.ID = existing.ID
-	return r.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
-		"document_type":      profile.DocumentType,
-		"full_name_identity": profile.FullNameIdentity,
-		"document_number":    profile.DocumentNumber,
-		"document_photo_url": profile.DocumentPhotoURL,
-		"domicile_city":      profile.DomicileCity,
-	}).Error
+	return &profile, nil
 }
 
-func (r *UserRepository) DeleteIdentityProfile(ctx context.Context, userID uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entity.UserIdentityProfile{}).Error
+func (r *UserRepository) CreateIdentityProfile(ctx context.Context, profile *entity.UserIdentityProfile) error {
+	return r.db.WithContext(ctx).Create(profile).Error
 }
 
-func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, name string, docNumber string, page int, limit int) ([]entity.UserIdentityProfile, int64, error) {
+func (r *UserRepository) DeleteIdentityProfile(ctx context.Context, userID uuid.UUID, documentID uuid.UUID) error {
+	return r.db.WithContext(ctx).Where("id = ? AND user_id = ?", documentID, userID).Delete(&entity.UserIdentityProfile{}).Error
+}
+
+func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, req dto.GetDocumentRequest) ([]entity.UserIdentityProfile, int64, error) {
 	var documents []entity.UserIdentityProfile
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&entity.UserIdentityProfile{}).Where("user_id = ?", userID)
 
-	if name != "" {
-		query = query.Where("full_name_identity ILIKE ?", "%"+name+"%")
+	if req.Name != "" {
+		query = query.Where("full_name_identity ILIKE ?", "%"+req.Name+"%")
 	}
-	if docNumber != "" {
-		query = query.Where("document_number ILIKE ?", "%"+docNumber+"%")
+	if req.DocumentNumber != "" {
+		query = query.Where("document_number ILIKE ?", "%"+req.DocumentNumber+"%")
+	}
+	if req.DocumentType != "" {
+		query = query.Where("document_type = ?", req.DocumentType)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	offset := (page - 1) * limit
-	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&documents).Error
+	offset := (req.Page - 1) * req.Limit
+	err := query.Offset(offset).Limit(req.Limit).Order("created_at DESC").Find(&documents).Error
 	if err != nil {
 		return nil, 0, err
 	}

@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/user/dto"
@@ -461,7 +462,7 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto.GetDocumentRequest) ([]dto.GetDocumentResponse, api.PaginationMeta, error) {
 	req.SetDefaults()
 
-	docs, totalItems, err := u.repo.GetDocument(ctx, userID, req.Name, req.DocumentNumber, req.Page, req.Limit)
+	docs, totalItems, err := u.repo.GetDocument(ctx, userID, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}
@@ -470,17 +471,12 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 
 	res := make([]dto.GetDocumentResponse, 0, len(docs))
 	for _, d := range docs {
-		domicile := ""
-		if d.DomicileCity != nil {
-			domicile = *d.DomicileCity
-		}
 		res = append(res, dto.GetDocumentResponse{
 			ID:               d.ID.String(),
 			DocumentType:     d.DocumentType,
 			FullNameIdentity: d.FullNameIdentity,
 			DocumentNumber:   d.DocumentNumber,
 			DocumentPhotoURL: d.DocumentPhotoURL,
-			DomicileCity:     domicile,
 		})
 	}
 
@@ -497,11 +493,21 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 }
 
 func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req dto.UploadDocumentRequest) error {
-	existingIdentity, err := u.repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
+	// 1. Cek apakah user ini SUDAH PERNAH mengunggah document_number yang sama
+	existingUserDoc, err := u.repo.FindIdentityByUserIDAndDocNumber(ctx, userID, req.DocumentNumber)
 	if err != nil {
 		return err
 	}
-	if existingIdentity != nil && existingIdentity.UserID != userID {
+	if existingUserDoc != nil {
+		return errors.New(string(i18n.KeyUserDocumentNumberAlreadyAdded))
+	}
+
+	// 2. Cek apakah document_number ini sudah dipakai oleh USER LAIN
+	existingGlobalDoc, err := u.repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
+	if err != nil {
+		return err
+	}
+	if existingGlobalDoc != nil && existingGlobalDoc.UserID != userID {
 		return errors.New(string(i18n.KeyUserDocumentNIKExists))
 	}
 
@@ -522,26 +528,24 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 	}
 
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
-	fileName := fmt.Sprintf("%s_%s.jpg", req.DocumentType, userID.String())
+	fileName := fmt.Sprintf("%s_%s_%d.jpg", req.DocumentType, userID.String(), time.Now().Unix())
 
 	uploadedURL, err := u.imagekit.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
 	if err != nil {
 		return errors.New(string(i18n.KeyUserDocumentFailedToUpload))
 	}
 
-	domicile := req.DomicileCity
 	identity := &entity.UserIdentityProfile{
 		UserID:           userID,
 		DocumentType:     req.DocumentType,
 		FullNameIdentity: req.FullNameIdentity,
 		DocumentNumber:   req.DocumentNumber,
 		DocumentPhotoURL: uploadedURL,
-		DomicileCity:     &domicile,
 	}
 
-	return u.repo.UpsertIdentityProfile(ctx, identity)
+	return u.repo.CreateIdentityProfile(ctx, identity)
 }
 
-func (u *UserUsecase) DeleteDocument(ctx context.Context, userID uuid.UUID) error {
-	return u.repo.DeleteIdentityProfile(ctx, userID)
+func (u *UserUsecase) DeleteDocument(ctx context.Context, userID uuid.UUID, documentID uuid.UUID) error {
+	return u.repo.DeleteIdentityProfile(ctx, userID, documentID)
 }

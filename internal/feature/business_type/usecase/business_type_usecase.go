@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"math"
 
 	"lapakita-backend/internal/feature/business_type/dto"
 	"lapakita-backend/internal/feature/business_type/repository"
@@ -27,24 +26,12 @@ func (u *BusinessTypeUsecase) GetBusinessTypes(ctx context.Context, lang string,
 		activeLang = "en"
 	}
 
-	items, total, err := u.repo.GetBusinessTypes(ctx, activeLang, req)
+	items, meta, err := u.repo.GetBusinessTypes(ctx, activeLang, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}
 
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
-
-	var responses []dto.BusinessTypeResponse
+	responses := make([]dto.BusinessTypeResponse, 0, len(items))
 	for _, item := range items {
 		labelMap := make(map[string]string)
 		groupMap := make(map[string]string)
@@ -73,15 +60,6 @@ func (u *BusinessTypeUsecase) GetBusinessTypes(ctx context.Context, lang string,
 			PermanencePresets:          item.PermanencePresets,
 			RecommendedLandmarks:       item.RecommendedLandmarks,
 		})
-	}
-
-	meta := api.PaginationMeta{
-		TotalItems:  int(total),
-		TotalPages:  totalPages,
-		CurrentPage: page,
-		PerPage:     limit,
-		HasNextPage: page < totalPages,
-		HasPrevPage: page > 1,
 	}
 
 	return responses, meta, nil

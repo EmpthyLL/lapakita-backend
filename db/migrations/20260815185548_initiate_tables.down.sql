@@ -31,6 +31,12 @@ DROP TABLE IF EXISTS pos_categories CASCADE;
 DROP TABLE IF EXISTS pos_staff_accounts CASCADE;
 
 -- 6. Drop Stall Reviews & Lease Contracts
+DROP TABLE IF EXISTS key_requests CASCADE;
+
+DROP TABLE IF EXISTS damage_claims CASCADE;
+
+DROP TABLE IF EXISTS stall_inspections CASCADE;
+
 DROP TABLE IF EXISTS stall_reviews CASCADE;
 
 DROP TABLE IF EXISTS lease_contracts CASCADE;

@@ -10,6 +10,8 @@ import (
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
+	"github.com/google/uuid"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -283,7 +285,14 @@ func (h *UserHandler) DeleteDocument(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.DeleteDocument(c.Request.Context(), userID); err != nil {
+	docIDStr := c.Param("id")
+	docID, err := uuid.Parse(docIDStr)
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	if err := h.userUsecase.DeleteDocument(c.Request.Context(), userID, docID); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}

@@ -27,7 +27,6 @@ func NewMailer(cfg *config.Config, log *logger.Logger) *Mailer {
 	}
 }
 
-// Helper internal untuk meng-embed file logo dari /assets/ ke dalam Gomail Message
 func (m *Mailer) attachEmbeddedLogo(msg *gomail.Message, workDir string) string {
 	candidatePaths := []string{
 		filepath.Join(workDir, "assets", "ic_logo_name.png"),
@@ -51,15 +50,25 @@ func (m *Mailer) attachEmbeddedLogo(msg *gomail.Message, workDir string) string 
 	return filepath.Base(foundPath)
 }
 
+// resolveTemplatePath mencari path file template di lokasi utama atau fallback
+func (m *Mailer) resolveTemplatePath(workDir string, fileName string) string {
+	primaryPath := filepath.Join(workDir, "assets", "templates", fileName)
+	if _, err := os.Stat(primaryPath); err == nil {
+		return primaryPath
+	}
+
+	return filepath.Join(workDir, "pkg", "mailer", "template", fileName)
+}
+
 func (m *Mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error {
 	var templateFile string
 	var subject string
 
 	if mode == "register" {
-		templateFile = "otp_register.html"
+		templateFile = "register_otp.html"
 		subject = "Verify Your Lapakita Registration"
 	} else {
-		templateFile = "otp_reset_password.html"
+		templateFile = "reset_password_otp.html"
 		subject = "Reset Your Lapakita Password"
 	}
 
@@ -69,18 +78,18 @@ func (m *Mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	tmplPath := filepath.Join(workDir, "assets", "templates", templateFile)
-	if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
-		tmplPath = filepath.Join(workDir, "pkg", "mailer", "template", templateFile)
-	}
+	layoutPath := m.resolveTemplatePath(workDir, "layout.html")
+	contentPath := m.resolveTemplatePath(workDir, templateFile)
 
-	tmpl, err := template.ParseFiles(tmplPath)
+	// Parse layout dan template spesifik secara bersamaan
+	tmpl, err := template.ParseFiles(layoutPath, contentPath)
 	if err != nil {
-		m.log.Error("[Mailer] Failed to parse template file",
-			zap.String("path", tmplPath),
+		m.log.Error("[Mailer] Failed to parse template files",
+			zap.String("layout", layoutPath),
+			zap.String("content", contentPath),
 			zap.Error(err),
 		)
-		return fmt.Errorf("failed to parse email template: %w", err)
+		return fmt.Errorf("failed to parse email templates: %w", err)
 	}
 
 	msg := gomail.NewMessage()
@@ -88,7 +97,6 @@ func (m *Mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error
 	msg.SetHeader("To", toEmail)
 	msg.SetHeader("Subject", subject)
 
-	// 1. Embed logo dan dapatkan nama filenya untuk CID
 	logoFileName := m.attachEmbeddedLogo(msg, workDir)
 
 	data := struct {
@@ -96,13 +104,14 @@ func (m *Mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error
 		OTPCode string
 		Email   string
 	}{
-		LogoCID: logoFileName, // Hasilnya: "ic_logo_name.png"
+		LogoCID: logoFileName,
 		OTPCode: otpCode,
 		Email:   toEmail,
 	}
 
 	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
+	// Eksekusi layout.html yang menjadi root wrapper
+	if err := tmpl.ExecuteTemplate(&body, "layout.html", data); err != nil {
 		m.log.Error("[Mailer] Failed to execute template", zap.Error(err))
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
@@ -194,15 +203,14 @@ func (m *Mailer) SendContactAutoReply(toEmail string, name string, persona strin
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	tmplPath := filepath.Join(workDir, "assets", "templates", "contact_auto_reply.html")
-	if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
-		tmplPath = filepath.Join(workDir, "pkg", "mailer", "template", "contact_auto_reply.html")
-	}
+	layoutPath := m.resolveTemplatePath(workDir, "layout.html")
+	contentPath := m.resolveTemplatePath(workDir, "contact_auto_reply.html")
 
-	tmpl, err := template.ParseFiles(tmplPath)
+	tmpl, err := template.ParseFiles(layoutPath, contentPath)
 	if err != nil {
-		m.log.Error("[Mailer] Failed to parse email template file",
-			zap.String("path", tmplPath),
+		m.log.Error("[Mailer] Failed to parse email template files",
+			zap.String("layout", layoutPath),
+			zap.String("content", contentPath),
 			zap.Error(err),
 		)
 		return fmt.Errorf("failed to parse email template: %w", err)
@@ -239,7 +247,7 @@ func (m *Mailer) SendContactAutoReply(toEmail string, name string, persona strin
 	msg.SetHeader("Subject", subject)
 
 	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
+	if err := tmpl.ExecuteTemplate(&body, "layout.html", data); err != nil {
 		m.log.Error("[Mailer] Failed to execute template", zap.Error(err))
 		return fmt.Errorf("failed to execute template: %w", err)
 	}

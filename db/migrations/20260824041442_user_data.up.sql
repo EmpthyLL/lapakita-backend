@@ -78,17 +78,15 @@ INSERT INTO user_identity_profiles (
     document_type, 
     full_name_identity, 
     document_number, 
-    document_photo_url, 
-    domicile_city
+    document_photo_url
 )
 SELECT 
     gen_random_uuid(), 
     id, 
-    'ktp', 
+    'national_id',
     name, 
     '327301' || floor(random() * 8999999999 + 1000000000)::text,
-    'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop', 
-    'Bandung'
+    'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop'
 FROM users;
 
 -- 3. SEED BANK ACCOUNTS
