@@ -296,28 +296,9 @@ func (u *StallUsecase) Delete(ctx context.Context, ownerID uuid.UUID, id uuid.UU
 }
 
 func (u *StallUsecase) Search(ctx context.Context, req dto.SearchStallRequest) ([]dto.CompactStallResponse, api.PaginationMeta, error) {
-	stalls, total, err := u.repo.Search(ctx, req)
+	stalls, meta, err := u.repo.Search(ctx, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
-	}
-
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-	totalPages := int((total + int64(limit) - 1) / int64(limit))
-
-	meta := api.PaginationMeta{
-		TotalItems:  int(total),
-		TotalPages:  totalPages,
-		CurrentPage: page,
-		PerPage:     limit,
-		HasNextPage: page < totalPages,
-		HasPrevPage: page > 1,
 	}
 
 	responseList := make([]dto.CompactStallResponse, 0, len(stalls))
@@ -344,28 +325,9 @@ func (u *StallUsecase) GetSimilar(ctx context.Context, req dto.GetSimilarStallsR
 		return nil, api.PaginationMeta{}, errors.New("stall not found")
 	}
 
-	stalls, total, err := u.repo.FindSimilar(ctx, targetStall, req)
+	stalls, meta, err := u.repo.FindSimilar(ctx, targetStall, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
-	}
-
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 6
-	}
-	totalPages := int((total + int64(limit) - 1) / int64(limit))
-
-	meta := api.PaginationMeta{
-		TotalItems:  int(total),
-		TotalPages:  totalPages,
-		CurrentPage: page,
-		PerPage:     limit,
-		HasNextPage: page < totalPages,
-		HasPrevPage: page > 1,
 	}
 
 	responseList := make([]dto.CompactStallResponse, 0, len(stalls))
@@ -377,28 +339,9 @@ func (u *StallUsecase) GetSimilar(ctx context.Context, req dto.GetSimilarStallsR
 }
 
 func (u *StallUsecase) GetByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]dto.CompactStallResponse, api.PaginationMeta, error) {
-	stalls, total, err := u.repo.FindByOwnerID(ctx, req)
+	stalls, meta, err := u.repo.FindByOwnerID(ctx, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
-	}
-
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-	totalPages := int((total + int64(limit) - 1) / int64(limit))
-
-	meta := api.PaginationMeta{
-		TotalItems:  int(total),
-		TotalPages:  totalPages,
-		CurrentPage: page,
-		PerPage:     limit,
-		HasNextPage: page < totalPages,
-		HasPrevPage: page > 1,
 	}
 
 	responseList := make([]dto.CompactStallResponse, 0, len(stalls))

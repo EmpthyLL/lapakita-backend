@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math"
-	"sort"
 	"strings"
 	"time"
 
@@ -113,72 +111,13 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 }
 
 // 2. Phone Numbers
-
-// 1. Get Phone Numbers with DB Index & Sort Primary First
 func (u *UserUsecase) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, req dto.GetPhoneNumbersRequest) ([]dto.PhoneNumberItem, api.PaginationMeta, error) {
-	user, err := u.repo.FindByID(ctx, userID)
-	if err != nil || user == nil {
-		return nil, api.PaginationMeta{}, errors.New(string(i18n.KeyUserNotFound))
-	}
-
-	req.SetDefaults()
-
-	// Step A: Map array asli DB dengan menyimpan index aslinya
-	var indexedList []dto.PhoneNumberItem
-	for dbIdx, p := range user.PhoneNumbers {
-		if req.Number != "" && !strings.Contains(strings.ToLower(p.Number), strings.ToLower(req.Number)) {
-			continue
+	pagedItems, meta, err := u.repo.GetPhoneNumbers(ctx, userID, &req)
+	if err != nil {
+		if err.Error() == "user not found" {
+			return nil, api.PaginationMeta{}, errors.New(string(i18n.KeyUserNotFound))
 		}
-		indexedList = append(indexedList, dto.PhoneNumberItem{
-			Index:     dbIdx, // Index asli di DB disimpan di sini
-			Number:    p.Number,
-			IsPrimary: p.IsPrimary,
-			Roles:     p.Roles,
-		})
-	}
-
-	// Step B: Sort visual agar Primary berada di atas (nilai `Index` asli tetap aman)
-	sort.SliceStable(indexedList, func(i, j int) bool {
-		if indexedList[i].IsPrimary {
-			return true
-		}
-		if indexedList[j].IsPrimary {
-			return false
-		}
-		return false
-	})
-
-	totalItems := len(indexedList)
-	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
-
-	startIndex := (req.Page - 1) * req.Limit
-	endIndex := startIndex + req.Limit
-
-	if startIndex >= totalItems {
-		meta := api.PaginationMeta{
-			TotalItems:  totalItems,
-			TotalPages:  totalPages,
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
-			HasNextPage: false,
-			HasPrevPage: req.Page > 1,
-		}
-		return []dto.PhoneNumberItem{}, meta, nil
-	}
-
-	if endIndex > totalItems {
-		endIndex = totalItems
-	}
-
-	pagedItems := indexedList[startIndex:endIndex]
-
-	meta := api.PaginationMeta{
-		TotalItems:  totalItems,
-		TotalPages:  totalPages,
-		CurrentPage: req.Page,
-		PerPage:     req.Limit,
-		HasNextPage: req.Page < totalPages,
-		HasPrevPage: req.Page > 1,
+		return nil, api.PaginationMeta{}, err
 	}
 
 	return pagedItems, meta, nil
@@ -460,14 +399,10 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 
 // 5. Document Upload & Watermarking
 func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto.GetDocumentRequest) ([]dto.GetDocumentResponse, api.PaginationMeta, error) {
-	req.SetDefaults()
-
-	docs, totalItems, err := u.repo.GetDocument(ctx, userID, req)
+	docs, meta, err := u.repo.GetDocument(ctx, userID, &req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}
-
-	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
 
 	res := make([]dto.GetDocumentResponse, 0, len(docs))
 	for _, d := range docs {
@@ -478,15 +413,6 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 			DocumentNumber:   d.DocumentNumber,
 			DocumentPhotoURL: d.DocumentPhotoURL,
 		})
-	}
-
-	meta := api.PaginationMeta{
-		TotalItems:  int(totalItems),
-		TotalPages:  totalPages,
-		CurrentPage: req.Page,
-		PerPage:     req.Limit,
-		HasNextPage: req.Page < totalPages,
-		HasPrevPage: req.Page > 1,
 	}
 
 	return res, meta, nil

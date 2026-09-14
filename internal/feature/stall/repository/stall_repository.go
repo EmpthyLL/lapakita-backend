@@ -9,6 +9,8 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/stall/dto"
+	"lapakita-backend/pkg/api"
+	"lapakita-backend/pkg/database"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -43,25 +45,59 @@ func (r *StallRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Model(&entity.Stall{}).Where("id = ?", id).Update("deleted_at", gorm.Expr("NOW()")).Error
 }
 
-func normalizeLocationPart(value string) string {
-	part := strings.ToLower(strings.TrimSpace(value))
-	part = strings.TrimPrefix(part, "kota ")
-	part = strings.TrimPrefix(part, "kabupaten ")
-	part = strings.TrimPrefix(part, "provinsi ")
-	part = strings.TrimSpace(part)
+func cleanLocationComponent(val string) string {
+	cleaned := strings.TrimSpace(val)
 
-	switch part {
-	case "java":
-		return "jawa"
-	case "west java", "java barat":
-		return "jawa barat"
-	case "central java", "java tengah":
-		return "jawa tengah"
-	case "east java", "java timur":
-		return "jawa timur"
-	default:
-		return part
+	cleaned = strings.TrimPrefix(cleaned, "City of ")
+	cleaned = strings.TrimPrefix(cleaned, "Regency of ")
+	cleaned = strings.TrimPrefix(cleaned, "Province of ")
+	cleaned = strings.TrimPrefix(cleaned, "Special Region of ")
+	cleaned = strings.TrimPrefix(cleaned, "Special Capital Region of ")
+
+	cleaned = strings.TrimPrefix(cleaned, "Kota ")
+	cleaned = strings.TrimPrefix(cleaned, "Kabupaten ")
+	cleaned = strings.TrimPrefix(cleaned, "Provinsi ")
+	cleaned = strings.TrimPrefix(cleaned, "Propinsi ")
+	cleaned = strings.TrimPrefix(cleaned, "Daerah Khusus Ibukota ")
+	cleaned = strings.TrimPrefix(cleaned, "Daerah Istimewa ")
+
+	cleaned = strings.TrimSuffix(cleaned, " City")
+	cleaned = strings.TrimSuffix(cleaned, " Regency")
+
+	return strings.TrimSpace(cleaned)
+}
+
+func translateDirection(val string) string {
+	if val == "" {
+		return val
 	}
+
+	directions := map[string]string{
+		"North ":     " Utara",
+		"South ":     " Selatan",
+		"West ":      " Barat",
+		"East ":      " Timur",
+		"Central ":   " Tengah",
+		"Southeast ": " Tenggara",
+		"Southwest ": " Barat Daya",
+		"Northeast ": " Timur Laut",
+		"Northwest ": " Barat Daya",
+	}
+
+	for engPrefix, idSuffix := range directions {
+		if strings.HasPrefix(val, engPrefix) {
+			baseName := strings.TrimPrefix(val, engPrefix)
+			return baseName + idSuffix
+		}
+	}
+
+	return val
+}
+
+func normalizeLocationPart(value string) string {
+	cleaned := cleanLocationComponent(value)
+	translated := translateDirection(cleaned)
+	return strings.ToLower(strings.TrimSpace(translated))
 }
 
 func applyLocationFilter(query *gorm.DB, location string) *gorm.DB {
@@ -69,14 +105,6 @@ func applyLocationFilter(query *gorm.DB, location string) *gorm.DB {
 	for _, rawPart := range parts {
 		part := normalizeLocationPart(rawPart)
 		if part == "" || part == "indonesia" {
-			continue
-		}
-
-		if part == "jawa" {
-			query = query.Where(
-				"(LOWER(province) LIKE ? OR LOWER(province) LIKE ? OR LOWER(province) LIKE ?)",
-				"%jawa%", "%dki jakarta%", "%banten%",
-			)
 			continue
 		}
 
@@ -89,44 +117,37 @@ func applyLocationFilter(query *gorm.DB, location string) *gorm.DB {
 	return query
 }
 
-func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest) ([]entity.Stall, int64, error) {
+func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest) ([]entity.Stall, api.PaginationMeta, error) {
 	var stalls []entity.Stall
-	var total int64
+	var meta api.PaginationMeta
 
 	query := r.db.WithContext(ctx).Model(&entity.Stall{}).Where("deleted_at IS NULL AND is_published = ?", true)
 	query = query.Where("permanence_type != ? OR ((event_schedule->>'end_date')::date >= CURRENT_DATE)", entity.StallPermanenceTemporary)
 
-	// 1. Filter Combined Location
 	if req.Location != "" {
 		query = applyLocationFilter(query, req.Location)
 	}
 
-	// 2. Filter Permanence Type
 	if req.PermanenceType != "" {
 		query = query.Where("permanence_type = ?", req.PermanenceType)
 	}
 
-	// 3. Filter Placement
 	if req.Placement != "" {
 		query = query.Where("placement = ?", req.Placement)
 	}
 
-	// 4. Filter Property Types
 	if len(req.PropertyType) > 0 {
 		query = query.Where("property_type IN ?", req.PropertyType)
 	}
 
-	// 5. Filter Business Type (HANYA BERLAKU UNTUK TEMPORARY STALL atau jika allowed_business_type_ids TIDAK KOSONG)
 	if req.BusinessType != "" {
 		query = query.Where("(permanence_type != 'temporary' OR (allowed_business_type_ids ::jsonb @> ? OR jsonb_array_length(allowed_business_type_ids) = 0))", fmt.Sprintf(`["%s"]`, req.BusinessType))
 	}
 
-	// 6. Filter Payment Cycle
 	if req.PaymentCycle != "" {
 		query = query.Where("allowed_payment_cycles ::jsonb @> ?", fmt.Sprintf(`["%s"]`, req.PaymentCycle))
 	}
 
-	// 7. Filter Nearby Landmark Entries (JSONB Array Search)
 	for _, lm := range req.LandmarkEntries {
 		if lm.Landmark != "" {
 			lmSearch := "%" + strings.ToLower(lm.Landmark) + "%"
@@ -139,7 +160,6 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		}
 	}
 
-	// 8. Filter Capital & Rent Range
 	if req.Capital != nil && *req.Capital > 0 {
 		query = query.Where("(monthly_rate <= ? OR daily_rate <= ? OR yearly_rate <= ?)", *req.Capital, *req.Capital, *req.Capital)
 	}
@@ -147,12 +167,10 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		query = query.Where("monthly_rate BETWEEN ? AND ?", req.RentRange[0], req.RentRange[1])
 	}
 
-	// 9. Filter Security Deposit Range
 	if req.DepositRange[1] > 0 {
 		query = query.Where("security_deposit BETWEEN ? AND ?", req.DepositRange[0], req.DepositRange[1])
 	}
 
-	// 10. Filter Size Range & Floor Count Range
 	if req.SizeRange[1] > 0 {
 		query = query.Where("size_sqm BETWEEN ? AND ?", req.SizeRange[0], req.SizeRange[1])
 	}
@@ -160,7 +178,6 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		query = query.Where("floor_level BETWEEN ? AND ?", req.FloorCountRange[0], req.FloorCountRange[1])
 	}
 
-	// 11. Filter Operating Hours
 	if req.OpeningTime != "" {
 		query = query.Where("(operating_hours->>'opening_time') <= ?", req.OpeningTime)
 	}
@@ -171,7 +188,6 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		query = query.Where("permanence_type = ? AND (operating_hours->>'is_24_hours')::boolean = ?", entity.StallPermanenceSemi, *req.Is24Hours)
 	}
 
-	// 12. Filter Event Specific Terms (Hanya Aktif untuk Temporary)
 	if req.EventOperatingDays != "" {
 		query = query.Where("event_operating_days = ?", req.EventOperatingDays)
 	}
@@ -185,56 +201,52 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 		query = query.Where("(event_schedule->>'registration_deadline')::date <= ?::date", req.RegistrationDeadline)
 	}
 
-	// 13. Filter Facilities
 	for _, facility := range req.Facilities {
 		query = query.Where("facility_values ::jsonb @> ?", fmt.Sprintf(`["%s"]`, facility))
 	}
 
-	// Count Total Matching Stalls
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// Pagination Setup
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-	offset := (page - 1) * limit
-
-	// 14. Sorting Options
+	// Dynamic Order Clause
+	var orderClause string
 	switch req.SortBy {
 	case "price-asc":
-		query = query.Order("COALESCE(monthly_rate, daily_rate, yearly_rate) ASC")
+		orderClause = "COALESCE(monthly_rate, daily_rate, yearly_rate) ASC"
 	case "price-desc":
-		query = query.Order("COALESCE(monthly_rate, daily_rate, yearly_rate) DESC")
+		orderClause = "COALESCE(monthly_rate, daily_rate, yearly_rate) DESC"
 	case "rating":
-		query = query.Where("rating_avg >= 4.8").Order("rating_avg DESC")
+		query = query.Where("rating_avg >= 4.8")
+		orderClause = "rating_avg DESC"
 	case "reviews":
-		query = query.Order("review_count DESC")
+		orderClause = "review_count DESC"
 	case "size-desc":
-		query = query.Order("size_sqm DESC")
+		orderClause = "size_sqm DESC"
 	case "recommended":
-		query = query.Order("rating_avg DESC, review_count DESC")
+		orderClause = "rating_avg DESC, review_count DESC"
 	default:
-		query = query.Order("created_at DESC")
+		orderClause = "created_at DESC"
 	}
 
-	err := query.Offset(offset).Limit(limit).Find(&stalls).Error
-	return stalls, total, err
+	err := database.AutoPaginate(
+		query,
+		req.BasePaginationRequest,
+		"stalls",
+		&stalls,
+		&meta,
+		orderClause,
+	)
+	if err != nil {
+		return nil, api.PaginationMeta{}, err
+	}
+
+	return stalls, meta, nil
 }
 
-func (r *StallRepository) FindByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]entity.Stall, int64, error) {
+func (r *StallRepository) FindByOwnerID(ctx context.Context, req dto.GetOwnerStallsRequest) ([]entity.Stall, api.PaginationMeta, error) {
 	var stalls []entity.Stall
-	var total int64
+	var meta api.PaginationMeta
 
 	ownerUUID, err := uuid.Parse(req.OwnerID)
 	if err != nil {
-		return nil, 0, err
+		return nil, api.PaginationMeta{}, err
 	}
 
 	query := r.db.WithContext(ctx).Model(&entity.Stall{}).Where("deleted_at IS NULL AND stall_owner_id = ?", ownerUUID)
@@ -258,53 +270,34 @@ func (r *StallRepository) FindByOwnerID(ctx context.Context, req dto.GetOwnerSta
 		query = query.Where("is_published = ?", *req.IsPublished)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+	err = database.AutoPaginate(
+		query,
+		req.BasePaginationRequest,
+		"stalls",
+		&stalls,
+		&meta,
+		"created_at DESC",
+	)
+	if err != nil {
+		return nil, api.PaginationMeta{}, err
 	}
 
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-	offset := (page - 1) * limit
-
-	err = query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&stalls).Error
-	return stalls, total, err
+	return stalls, meta, nil
 }
 
-func (r *StallRepository) FindSimilar(ctx context.Context, currentStall *entity.Stall, req dto.GetSimilarStallsRequest) ([]entity.Stall, int64, error) {
+func (r *StallRepository) FindSimilar(ctx context.Context, currentStall *entity.Stall, req dto.GetSimilarStallsRequest) ([]entity.Stall, api.PaginationMeta, error) {
 	var stalls []entity.Stall
-	var total int64
+	var meta api.PaginationMeta
 
 	query := r.db.WithContext(ctx).Model(&entity.Stall{}).
 		Where("deleted_at IS NULL AND is_published = ?", true).
 		Where("id != ?", currentStall.ID)
 
-	// Filter Utama Kemiripan: Kota yang sama ATAU Properti/Permanensi yang sama
 	query = query.Where(
 		"LOWER(city) = LOWER(?) OR property_type = ? OR permanence_type = ?",
 		currentStall.City, currentStall.PropertyType, currentStall.PermanenceType,
 	)
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	page := req.Page
-	if page <= 0 {
-		page = 1
-	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 6 // Default 6 items untuk list rekomendasi
-	}
-	offset := (page - 1) * limit
-
-	// Ordering Prioritas: Lokasi Kota Sama -> Tipe Properti Sama -> Rating Tertinggi
 	orderByQuery := fmt.Sprintf(
 		"CASE WHEN LOWER(city) = LOWER('%s') THEN 1 ELSE 2 END ASC, "+
 			"CASE WHEN property_type = '%s' THEN 1 ELSE 2 END ASC, "+
@@ -313,6 +306,17 @@ func (r *StallRepository) FindSimilar(ctx context.Context, currentStall *entity.
 		strings.ReplaceAll(currentStall.PropertyType, "'", "''"),
 	)
 
-	err := query.Order(orderByQuery).Offset(offset).Limit(limit).Find(&stalls).Error
-	return stalls, total, err
+	err := database.AutoPaginate(
+		query,
+		req.BasePaginationRequest,
+		"stalls",
+		&stalls,
+		&meta,
+		orderByQuery,
+	)
+	if err != nil {
+		return nil, api.PaginationMeta{}, err
+	}
+
+	return stalls, meta, nil
 }
