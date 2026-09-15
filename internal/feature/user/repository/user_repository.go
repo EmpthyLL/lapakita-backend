@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"math"
 	"sort"
 	"strings"
 
@@ -86,108 +85,47 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 
 	req.SetDefaults()
 
-	var indexedList []dto.PhoneNumberItem
-	var selectedItem *dto.PhoneNumberItem
-
-	// 1. Filter Search & Map Index Asli DB
+	// 1. Map ke DTO & Filter Search (Bersih tanpa modifikasi array ganda)
+	var filteredList []dto.PhoneNumberItem
 	for dbIdx, p := range user.PhoneNumbers {
 		if req.Number != "" && !strings.Contains(strings.ToLower(p.Number), strings.ToLower(req.Number)) {
 			continue
 		}
 
-		item := dto.PhoneNumberItem{
+		filteredList = append(filteredList, dto.PhoneNumberItem{
 			Index:     dbIdx,
 			Number:    p.Number,
 			IsPrimary: p.IsPrimary,
 			Roles:     p.Roles,
-		}
-
-		// SelectedID berupa string nomor HP (e.g., "+628123456789" atau "08123456789")
-		if req.SelectedID != "" && p.Number == req.SelectedID {
-			itemCopy := item
-			selectedItem = &itemCopy
-			continue
-		}
-
-		indexedList = append(indexedList, item)
+		})
 	}
 
-	// 2. Sort Primary First
-	sort.SliceStable(indexedList, func(i, j int) bool {
-		if indexedList[i].IsPrimary {
+	// 2. Sort Visual: Primary selalu di atas
+	sort.SliceStable(filteredList, func(i, j int) bool {
+		if filteredList[i].IsPrimary {
 			return true
 		}
-		if indexedList[j].IsPrimary {
+		if filteredList[j].IsPrimary {
 			return false
 		}
 		return false
 	})
 
-	// 3. Inject Selected Item ke Posisi Terdepan (Page 1 Anchor)
-	if selectedItem != nil {
-		indexedList = append([]dto.PhoneNumberItem{*selectedItem}, indexedList...)
-	}
+	var resultSlice []dto.PhoneNumberItem
+	var meta api.PaginationMeta
 
-	totalItems := len(indexedList)
-	if totalItems == 0 {
-		meta := api.PaginationMeta{
-			TotalItems:  0,
-			TotalPages:  0,
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
-			HasNextPage: false,
-			HasPrevPage: false,
-		}
-		return []dto.PhoneNumberItem{}, meta, nil
-	}
+	// 3. Eksekusi AutoPaginateSlice (Pencocokan presisi string nomor HP)
+	database.AutoPaginateSlice(
+		filteredList,
+		req.BasePaginationRequest,
+		&resultSlice,
+		&meta,
+		func(item dto.PhoneNumberItem, selectedID string) bool {
+			return item.Number == selectedID
+		},
+	)
 
-	// 4. In-Memory Slicing (Direction UP/DOWN handling)
-	var startIndex, endIndex int
-
-	if req.Page > 1 {
-		startIndex = (req.Page - 1) * req.Limit
-		endIndex = startIndex + req.Limit
-	} else if req.Page < 1 {
-		pageOffset := (-req.Page) * req.Limit
-		startIndex = pageOffset - req.Limit
-		endIndex = pageOffset
-	} else {
-		startIndex = 0
-		endIndex = req.Limit
-	}
-
-	if startIndex < 0 {
-		startIndex = 0
-	}
-	if startIndex >= totalItems {
-		meta := api.PaginationMeta{
-			TotalItems:  totalItems,
-			TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
-			HasNextPage: false,
-			HasPrevPage: req.Page > 1 || req.Page < 0,
-		}
-		return []dto.PhoneNumberItem{}, meta, nil
-	}
-
-	if endIndex > totalItems {
-		endIndex = totalItems
-	}
-
-	pagedItems := indexedList[startIndex:endIndex]
-	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
-
-	meta := api.PaginationMeta{
-		TotalItems:  totalItems,
-		TotalPages:  totalPages,
-		CurrentPage: req.Page,
-		PerPage:     req.Limit,
-		HasNextPage: endIndex < totalItems,
-		HasPrevPage: req.Page > 1 || req.Page < 0,
-	}
-
-	return pagedItems, meta, nil
+	return resultSlice, meta, nil
 }
 
 func (r *UserRepository) CreateIdentityProfile(ctx context.Context, profile *entity.UserIdentityProfile) error {
