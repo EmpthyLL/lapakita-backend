@@ -24,7 +24,7 @@ CREATE TABLE users (
     default_avatar_url TEXT,
     
     -- Telepon Kontak (Multi-Nomor: Primary, Secondary, WhatsApp)
-    phone_numbers JSONB NOT NULL DEFAULT '[{"number": "", "is_primary": true, "roles": []}]'::jsonb,
+    phone_numbers JSONB NOT NULL DEFAULT '[{"dial_code": "+62", "number": "", "is_primary": true, "roles": []}]'::jsonb,
     
     -- Profil Kustom Per Role (Avatar & Display Name Independen Per Role)
     role_profiles JSONB DEFAULT '{}'::jsonb,

@@ -56,6 +56,7 @@ func generateOTP() string {
 // helperBuildUserPayload khusus menyusun UserPayload tanpa melakukan pembuatan Token JWT baru
 func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload {
 	defaultPhone := user.PhoneNumbers.GetPrimaryNumber()
+	defaultDialCode := user.PhoneNumbers.GetPrimaryDialCode()
 
 	var defaultAvatarPtr *string
 	if user.DefaultAvatarURL != nil && *user.DefaultAvatarURL != "" {
@@ -97,6 +98,7 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 			personas[cleanRole] = dto.PersonaDetail{
 				DisplayName: displayName,
 				AvatarURL:   avatarURL,
+				DialCode:    p.DialCode,
 				Phone:       p.Number,
 			}
 		}
@@ -107,6 +109,7 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 		DefaultName:           user.Name,
 		DefaultAvatarURL:      defaultAvatarPtr,
 		DefaultPhone:          defaultPhone,
+		DefaultDialCode:       defaultDialCode,
 		Email:                 user.Email,
 		IsPasswordSet:         user.PasswordHash != "",
 		ActiveRole:            user.ActiveRole,
@@ -157,6 +160,7 @@ func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) err
 		"name":          req.Name,
 		"email":         req.Email,
 		"password_hash": string(hashedPassword),
+		"dial_code":     req.DialCode,
 		"phone":         req.Phone,
 	})
 
@@ -290,6 +294,7 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 
 	user.PhoneNumbers = entity.PhoneNumbers{
 		{
+			DialCode:  req.DialCode,
 			Number:    req.Phone,
 			IsPrimary: true,
 			Roles:     []string{},
@@ -363,6 +368,7 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 			SubscriptionPlan: "free",
 			PhoneNumbers: entity.PhoneNumbers{
 				{
+					DialCode:  regData["dial_code"],
 					Number:    regData["phone"],
 					IsPrimary: true,
 					Roles:     []string{},

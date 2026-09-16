@@ -17,13 +17,14 @@ type NearbyLandmarkDTO struct {
 }
 
 type OwnerProfileSummary struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Contact     string  `json:"contact"`
-	AvatarURL   string  `json:"avatarUrl"`
-	Rating      float64 `json:"rating"`
-	ReviewCount int     `json:"reviewCount"`
-	JoinedYear  string  `json:"joinedYear"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	ContactDialCode string  `json:"contactDialCode"`
+	Contact         string  `json:"contact"`
+	AvatarURL       string  `json:"avatarUrl"`
+	Rating          float64 `json:"rating"`
+	ReviewCount     int     `json:"reviewCount"`
+	JoinedYear      string  `json:"joinedYear"`
 }
 
 type FacilityImageDTO struct {

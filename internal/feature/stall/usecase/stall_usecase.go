@@ -499,6 +499,7 @@ func (u *StallUsecase) mapToDetailResponse(s *entity.Stall, owner *entity.User) 
 
 	if owner != nil {
 		ownerSummary.Name = owner.Name
+		ownerSummary.ContactDialCode = owner.PhoneNumbers.GetDialCodeForRole("owner")
 		ownerSummary.Contact = owner.PhoneNumbers.GetNumberForRole("owner")
 
 		avatarURL := ""

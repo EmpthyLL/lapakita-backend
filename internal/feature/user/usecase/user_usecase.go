@@ -49,6 +49,7 @@ func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (
 		Email:            user.Email,
 		DefaultAvatarURL: avatar,
 		ActiveRole:       user.ActiveRole,
+		PrimaryDialCode:  user.PhoneNumbers.GetPrimaryDialCode(),
 		PrimaryPhone:     user.PhoneNumbers.GetPrimaryNumber(),
 	}, nil
 }
@@ -77,12 +78,13 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		user.ActiveRole = *req.ActiveRole
 	}
 
-	if req.PhoneNumber != nil && *req.PhoneNumber != "" {
+	if req.PhoneNumber != nil && *req.PhoneNumber != "" && req.DialCode != nil && *req.DialCode != "" {
 		phone := *req.PhoneNumber
+		dialCode := *req.DialCode
 		found := false
 
 		for i := range user.PhoneNumbers {
-			if user.PhoneNumbers[i].Number == phone {
+			if user.PhoneNumbers[i].Number == phone && user.PhoneNumbers[i].DialCode == dialCode {
 				user.PhoneNumbers[i].IsPrimary = true
 				found = true
 			} else {
@@ -96,6 +98,7 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 			}
 
 			user.PhoneNumbers = append(user.PhoneNumbers, entity.PhoneNumberItem{
+				DialCode:  dialCode,
 				Number:    phone,
 				IsPrimary: true,
 				Roles:     []string{"primary_contact"},
@@ -198,7 +201,7 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 	}
 
 	for _, p := range user.PhoneNumbers {
-		if p.Number == req.Number {
+		if p.DialCode == req.DialCode && p.Number == req.Number {
 			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
@@ -207,6 +210,7 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 	user.PhoneNumbers = u.transferRolesToTarget(user.PhoneNumbers, -1, req.Roles)
 
 	newItem := entity.PhoneNumberItem{
+		DialCode:  req.DialCode,
 		Number:    req.Number,
 		IsPrimary: req.IsPrimary,
 		Roles:     req.Roles,
@@ -248,7 +252,7 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 
 	// Cek nomor duplikat (eksklusi index DB yang sedang di-update)
 	for i, p := range user.PhoneNumbers {
-		if i != index && p.Number == req.Number {
+		if i != index && p.DialCode == req.DialCode && p.Number == req.Number {
 			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
@@ -271,6 +275,7 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 	user.PhoneNumbers = u.transferRolesToTarget(user.PhoneNumbers, index, req.Roles)
 
 	user.PhoneNumbers[index].Number = req.Number
+	user.PhoneNumbers[index].DialCode = req.DialCode
 	user.PhoneNumbers[index].Roles = req.Roles
 
 	if req.IsPrimary {

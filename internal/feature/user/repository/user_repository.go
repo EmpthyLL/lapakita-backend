@@ -88,12 +88,16 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 	// 1. Map ke DTO & Filter Search (Bersih tanpa modifikasi array ganda)
 	var filteredList []dto.PhoneNumberItem
 	for dbIdx, p := range user.PhoneNumbers {
+		if req.DialCode != "" && !strings.EqualFold(p.DialCode, req.DialCode) {
+			continue
+		}
 		if req.Number != "" && !strings.Contains(strings.ToLower(p.Number), strings.ToLower(req.Number)) {
 			continue
 		}
 
 		filteredList = append(filteredList, dto.PhoneNumberItem{
 			Index:     dbIdx,
+			DialCode:  p.DialCode,
 			Number:    p.Number,
 			IsPrimary: p.IsPrimary,
 			Roles:     p.Roles,

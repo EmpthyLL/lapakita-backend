@@ -12,6 +12,7 @@ import (
 
 // PhoneNumberItem mewakili struktur satu item nomor telepon
 type PhoneNumberItem struct {
+	DialCode  string   `json:"dial_code"`
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`
 	Roles     []string `json:"roles"` // e.g. ["tenant", "owner"]
@@ -57,6 +58,18 @@ func (p PhoneNumbers) GetPrimaryNumber() string {
 	return ""
 }
 
+func (p PhoneNumbers) GetPrimaryDialCode() string {
+	for _, num := range p {
+		if num.IsPrimary {
+			return num.DialCode
+		}
+	}
+	if len(p) > 0 {
+		return p[0].DialCode
+	}
+	return ""
+}
+
 // GetNumberForRole mengembalikan nomor spesifik untuk role/persona tertentu
 func (p PhoneNumbers) GetNumberForRole(role string) string {
 	for _, num := range p {
@@ -67,6 +80,17 @@ func (p PhoneNumbers) GetNumberForRole(role string) string {
 		}
 	}
 	return p.GetPrimaryNumber()
+}
+
+func (p PhoneNumbers) GetDialCodeForRole(role string) string {
+	for _, num := range p {
+		for _, r := range num.Roles {
+			if r == role {
+				return num.DialCode
+			}
+		}
+	}
+	return p.GetPrimaryDialCode()
 }
 
 // SetPrimaryNumber mengubah status primary ke nomor tertentu dan me-reset nomor lainnya

@@ -4,5 +4,6 @@ type RegisterRequest struct {
 	Name     string `json:"name" binding:"required,min=2"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
+	DialCode string `json:"dial_code" binding:"required,max=8"`
 	Phone    string `json:"phone" binding:"required"`
 }
