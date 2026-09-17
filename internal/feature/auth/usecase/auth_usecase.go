@@ -55,8 +55,10 @@ func generateOTP() string {
 
 // helperBuildUserPayload khusus menyusun UserPayload tanpa melakukan pembuatan Token JWT baru
 func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload {
-	defaultPhone := user.PhoneNumbers.GetPrimaryNumber()
-	defaultDialCode := user.PhoneNumbers.GetPrimaryDialCode()
+	defaultPhone := dto.PhoneNumber{
+		DialCode: user.PhoneNumbers.GetPrimaryDialCode(),
+		Number:   user.PhoneNumbers.GetPrimaryNumber(),
+	}
 
 	var defaultAvatarPtr *string
 	if user.DefaultAvatarURL != nil && *user.DefaultAvatarURL != "" {
@@ -98,8 +100,7 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 			personas[cleanRole] = dto.PersonaDetail{
 				DisplayName: displayName,
 				AvatarURL:   avatarURL,
-				DialCode:    p.DialCode,
-				Phone:       p.Number,
+				Phone:       dto.PhoneNumber{DialCode: p.DialCode, Number: p.Number},
 			}
 		}
 	}
@@ -109,7 +110,6 @@ func (u *AuthUsecase) helperBuildUserPayload(user *entity.User) dto.UserPayload 
 		DefaultName:           user.Name,
 		DefaultAvatarURL:      defaultAvatarPtr,
 		DefaultPhone:          defaultPhone,
-		DefaultDialCode:       defaultDialCode,
 		Email:                 user.Email,
 		IsPasswordSet:         user.PasswordHash != "",
 		ActiveRole:            user.ActiveRole,

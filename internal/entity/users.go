@@ -70,6 +70,18 @@ func (p PhoneNumbers) GetPrimaryDialCode() string {
 	return ""
 }
 
+func (p PhoneNumbers) GetPrimaryIndex() int {
+	for index, num := range p {
+		if num.IsPrimary {
+			return index
+		}
+	}
+	if len(p) > 0 {
+		return 0
+	}
+	return -1
+}
+
 // GetNumberForRole mengembalikan nomor spesifik untuk role/persona tertentu
 func (p PhoneNumbers) GetNumberForRole(role string) string {
 	for _, num := range p {

@@ -1,18 +1,16 @@
 package dto
 
 type PersonaDetail struct {
-	DisplayName string `json:"display_name"`
-	AvatarURL   string `json:"avatar_url"`
-	DialCode    string `json:"dial_code"`
-	Phone       string `json:"phone"`
+	DisplayName string      `json:"display_name"`
+	AvatarURL   string      `json:"avatar_url"`
+	Phone       PhoneNumber `json:"phone"`
 }
 
 type UserPayload struct {
 	ID                    string                   `json:"id"`
 	DefaultName           string                   `json:"default_name"`
 	DefaultAvatarURL      *string                  `json:"default_avatar_url"`
-	DefaultPhone          string                   `json:"default_phone"`
-	DefaultDialCode       string                   `json:"default_dial_code"`
+	DefaultPhone          PhoneNumber              `json:"default_phone"`
 	Email                 string                   `json:"email"`
 	IsPasswordSet         bool                     `json:"is_password_set"`
 	ActiveRole            string                   `json:"active_role"`
@@ -20,6 +18,11 @@ type UserPayload struct {
 	SubscriptionExpiresAt *string                  `json:"subscription_expires_at"`
 	Personas              map[string]PersonaDetail `json:"personas"`
 	Token                 string                   `json:"token"`
+}
+
+type PhoneNumber struct {
+	DialCode string `json:"dial_code"`
+	Number   string `json:"number"`
 }
 
 type PhonePayload struct {

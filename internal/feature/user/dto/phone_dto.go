@@ -9,7 +9,7 @@ type GetPhoneNumbersRequest struct {
 }
 
 type PhoneNumberItem struct {
-	Index     int      `json:"index"`
+	Index     int      `json:"phone_number_index"`
 	DialCode  string   `json:"dial_code"`
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`

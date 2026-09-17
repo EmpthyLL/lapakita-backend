@@ -49,8 +49,11 @@ func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (
 		Email:            user.Email,
 		DefaultAvatarURL: avatar,
 		ActiveRole:       user.ActiveRole,
-		PrimaryDialCode:  user.PhoneNumbers.GetPrimaryDialCode(),
-		PrimaryPhone:     user.PhoneNumbers.GetPrimaryNumber(),
+		Phone: dto.PhoneNumber{
+			Index:    user.PhoneNumbers.GetPrimaryIndex(),
+			DialCode: user.PhoneNumbers.GetPrimaryDialCode(),
+			Number:   user.PhoneNumbers.GetPrimaryNumber(),
+		},
 	}, nil
 }
 
@@ -78,31 +81,13 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		user.ActiveRole = *req.ActiveRole
 	}
 
-	if req.PhoneNumber != nil && *req.PhoneNumber != "" && req.DialCode != nil && *req.DialCode != "" {
-		phone := *req.PhoneNumber
-		dialCode := *req.DialCode
-		found := false
-
-		for i := range user.PhoneNumbers {
-			if user.PhoneNumbers[i].Number == phone && user.PhoneNumbers[i].DialCode == dialCode {
-				user.PhoneNumbers[i].IsPrimary = true
-				found = true
-			} else {
-				user.PhoneNumbers[i].IsPrimary = false
-			}
+	if req.PrimaryPhoneIndex != nil {
+		if *req.PrimaryPhoneIndex < 0 || *req.PrimaryPhoneIndex >= len(user.PhoneNumbers) {
+			return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 		}
 
-		if !found {
-			for i := range user.PhoneNumbers {
-				user.PhoneNumbers[i].IsPrimary = false
-			}
-
-			user.PhoneNumbers = append(user.PhoneNumbers, entity.PhoneNumberItem{
-				DialCode:  dialCode,
-				Number:    phone,
-				IsPrimary: true,
-				Roles:     []string{"primary_contact"},
-			})
+		for i := range user.PhoneNumbers {
+			user.PhoneNumbers[i].IsPrimary = i == *req.PrimaryPhoneIndex
 		}
 	}
 
