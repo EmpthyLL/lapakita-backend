@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strconv"
 	"strings"
 
 	"lapakita-backend/internal/entity"
@@ -88,10 +89,8 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 	// 1. Map ke DTO & Filter Search (Bersih tanpa modifikasi array ganda)
 	var filteredList []dto.PhoneNumberItem
 	for dbIdx, p := range user.PhoneNumbers {
-		if req.DialCode != "" && !strings.EqualFold(p.DialCode, req.DialCode) {
-			continue
-		}
-		if req.Number != "" && !strings.Contains(strings.ToLower(p.Number), strings.ToLower(req.Number)) {
+		phoneNumber := p.DialCode + p.Number
+		if req.Search != "" && !strings.Contains(strings.ToLower(phoneNumber), strings.ToLower(req.Search)) {
 			continue
 		}
 
@@ -125,7 +124,8 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 		&resultSlice,
 		&meta,
 		func(item dto.PhoneNumberItem, selectedID string) bool {
-			return item.Number == selectedID
+			selectedIndex, err := strconv.Atoi(selectedID)
+			return err == nil && item.Index == selectedIndex
 		},
 	)
 

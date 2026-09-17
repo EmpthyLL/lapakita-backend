@@ -17,7 +17,7 @@ type UpdateGeneralProfileRequest struct {
 }
 
 type PhoneNumber struct {
-	Index    int    `json:"index"`
+	Index    int    `json:"index" `
 	DialCode string `json:"dial_code"`
 	Number   string `json:"number"`
 }
