@@ -9,9 +9,9 @@ INSERT INTO users (
     '$2y$10$sx24hehVBn7WMmORcfhQW.X/pCE7iW4sBF3pgBuDrZPkM2IZmtrIW',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
     '[
-        {"dial_code": "+62", "number": "81122334455", "is_primary": true, "roles": ["owner"]},
-        {"dial_code": "+62", "number": "81199887766", "is_primary": false, "roles": ["supplier"]},
-        {"dial_code": "+62", "number": "81100112233", "is_primary": false, "roles": []}
+        {"label": "Kontak Utama Usaha", "dial_code": "+62", "number": "81122334455", "is_primary": true, "roles": ["owner"]},
+        {"label": "WhatsApp Logistik", "dial_code": "+62", "number": "81199887766", "is_primary": false, "roles": ["supplier"]},
+        {"label": "Nomor Cadangan", "dial_code": "+62", "number": "81100112233", "is_primary": false, "roles": []}
     ]'::jsonb,
     '{
         "owner": {
@@ -30,7 +30,7 @@ INSERT INTO users (
     '$2y$10$sx24hehVBn7WMmORcfhQW.X/pCE7iW4sBF3pgBuDrZPkM2IZmtrIW',
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
     '[
-        {"dial_code": "+62", "number": "81234567890", "is_primary": true, "roles": ["owner"]}
+        {"label": "Nomor Pribadi", "dial_code": "+62", "number": "81234567890", "is_primary": true, "roles": ["owner"]}
     ]'::jsonb,
     '{
         "owner": {
@@ -45,8 +45,8 @@ INSERT INTO users (
     '$2y$10$sx24hehVBn7WMmORcfhQW.X/pCE7iW4sBF3pgBuDrZPkM2IZmtrIW',
     'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&h=200&fit=crop',
     '[
-        {"dial_code": "+62", "number": "81399887766", "is_primary": true, "roles": ["owner", "tenant"]},
-        {"dial_code": "+62", "number": "81311112222", "is_primary": false, "roles": []}
+        {"label": "Hotline Event", "dial_code": "+62", "number": "81399887766", "is_primary": true, "roles": ["owner", "tenant"]},
+        {"label": "Kantor Operasional", "dial_code": "+62", "number": "81311112222", "is_primary": false, "roles": []}
     ]'::jsonb,
     '{
         "owner": {
@@ -65,7 +65,7 @@ INSERT INTO users (
     '$2y$10$sx24hehVBn7WMmORcfhQW.X/pCE7iW4sBF3pgBuDrZPkM2IZmtrIW',
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
     '[
-        {"dial_code": "+62", "number": "85611223344", "is_primary": true, "roles": []}
+        {"label": "Nomor Utama", "dial_code": "+62", "number": "85611223344", "is_primary": true, "roles": []}
     ]'::jsonb,
     '{}'::jsonb,
     'tenant', 'free', NULL
@@ -75,7 +75,9 @@ INSERT INTO users (
 INSERT INTO user_identity_profiles (
     id, 
     user_id, 
+    country_code,
     document_type, 
+    document_label,
     full_name_identity, 
     document_number, 
     document_photo_url
@@ -83,7 +85,9 @@ INSERT INTO user_identity_profiles (
 SELECT 
     gen_random_uuid(), 
     id, 
+    'ID',
     'national_id',
+    'KTP Utama',
     name, 
     '327301' || floor(random() * 8999999999 + 1000000000)::text,
     'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop'

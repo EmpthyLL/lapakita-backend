@@ -44,7 +44,9 @@ CREATE TABLE user_identity_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
+    country_code VARCHAR(8) NOT NULL DEFAULT 'ID',            -- Kode negara (ISO Alpha-2 e.g. 'ID', 'US')
     document_type VARCHAR(32) NOT NULL DEFAULT 'national_id', -- 'national_id', 'passport', 'residence_permit'
+    document_label VARCHAR(100) NOT NULL DEFAULT 'KTP',       -- Label tampilan (e.g. 'KTP Utama', 'Paspor Indonesia')
     full_name_identity VARCHAR(255) NOT NULL,                  -- Nama lengkap sesuai dokumen
     document_number VARCHAR(64) NOT NULL,                      -- NIK / No. Paspor / No. Izin Tinggal
     document_photo_url TEXT NOT NULL,                          -- Foto Dokumen ber-watermark

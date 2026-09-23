@@ -10,7 +10,9 @@ import (
 type UserIdentityProfile struct {
 	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	UserID           uuid.UUID `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
+	CountryCode      string    `gorm:"type:varchar(8);not null;default:'ID'" json:"country_code"`
 	DocumentType     string    `gorm:"type:varchar(32);not null;default:'national_id'" json:"document_type"`
+	DocumentLabel    string    `gorm:"type:varchar(100);not null;default:'KTP'" json:"document_label"`
 	FullNameIdentity string    `gorm:"type:varchar(255);not null" json:"full_name_identity"`
 	DocumentNumber   string    `gorm:"type:varchar(64);not null" json:"document_number"`
 	DocumentPhotoURL string    `gorm:"type:text;not null" json:"document_photo_url"`
@@ -25,6 +27,12 @@ func (UserIdentityProfile) TableName() string {
 func (u *UserIdentityProfile) BeforeCreate(tx *gorm.DB) (err error) {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
+	}
+	if u.CountryCode == "" {
+		u.CountryCode = "ID"
+	}
+	if u.DocumentLabel == "" {
+		u.DocumentLabel = "KTP"
 	}
 	return
 }

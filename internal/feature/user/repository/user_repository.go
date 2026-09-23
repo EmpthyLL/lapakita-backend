@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"sort"
-	"strconv"
 	"strings"
 
 	"lapakita-backend/internal/entity"
@@ -86,16 +85,45 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 
 	req.SetDefaults()
 
-	// 1. Map ke DTO & Filter Search (Bersih tanpa modifikasi array ganda)
 	var filteredList []dto.PhoneNumberItem
+	cleanSearch := strings.ToLower(strings.TrimSpace(req.Search))
+	cleanDial := strings.TrimSpace(req.DialCode)
+	cleanRole := strings.ToLower(strings.TrimSpace(req.Role))
+
 	for dbIdx, p := range user.PhoneNumbers {
-		phoneNumber := p.DialCode + p.Number
-		if req.Search != "" && !strings.Contains(strings.ToLower(phoneNumber), strings.ToLower(req.Search)) {
+		fullNum := p.DialCode + p.Number
+
+		// Filter DialCode
+		if cleanDial != "" && p.DialCode != cleanDial {
 			continue
+		}
+
+		// Filter Role
+		if cleanRole != "" {
+			hasRole := false
+			for _, r := range p.Roles {
+				if strings.ToLower(r) == cleanRole {
+					hasRole = true
+					break
+				}
+			}
+			if !hasRole {
+				continue
+			}
+		}
+
+		// Combined Search (Label OR Full Number OR Raw Number)
+		if cleanSearch != "" {
+			labelMatch := strings.Contains(strings.ToLower(p.Label), cleanSearch)
+			numMatch := strings.Contains(strings.ToLower(p.Number), cleanSearch) || strings.Contains(strings.ToLower(fullNum), cleanSearch)
+			if !labelMatch && !numMatch {
+				continue
+			}
 		}
 
 		filteredList = append(filteredList, dto.PhoneNumberItem{
 			Index:     dbIdx,
+			Label:     p.Label,
 			DialCode:  p.DialCode,
 			Number:    p.Number,
 			IsPrimary: p.IsPrimary,
@@ -103,7 +131,6 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 		})
 	}
 
-	// 2. Sort Visual: Primary selalu di atas
 	sort.SliceStable(filteredList, func(i, j int) bool {
 		if filteredList[i].IsPrimary {
 			return true
@@ -117,15 +144,13 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 	var resultSlice []dto.PhoneNumberItem
 	var meta api.PaginationMeta
 
-	// 3. Eksekusi AutoPaginateSlice (Pencocokan presisi string nomor HP)
 	database.AutoPaginateSlice(
 		filteredList,
 		req.BasePaginationRequest,
 		&resultSlice,
 		&meta,
 		func(item dto.PhoneNumberItem, selectedID string) bool {
-			selectedIndex, err := strconv.Atoi(selectedID)
-			return err == nil && item.Index == selectedIndex
+			return item.Number == selectedID || (item.DialCode+item.Number) == selectedID
 		},
 	)
 
@@ -146,14 +171,20 @@ func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, req 
 
 	query := r.db.WithContext(ctx).Model(&entity.UserIdentityProfile{}).Where("user_id = ?", userID)
 
-	if req.Name != "" {
-		query = query.Where("full_name_identity ILIKE ?", "%"+req.Name+"%")
+	if req.Search != "" {
+		pattern := "%" + strings.TrimSpace(req.Search) + "%"
+		query = query.Where(
+			"(document_label ILIKE ? OR full_name_identity ILIKE ? OR document_number ILIKE ?)",
+			pattern, pattern, pattern,
+		)
 	}
-	if req.DocumentNumber != "" {
-		query = query.Where("document_number ILIKE ?", "%"+req.DocumentNumber+"%")
-	}
+
 	if req.DocumentType != "" {
 		query = query.Where("document_type = ?", req.DocumentType)
+	}
+
+	if req.CountryCode != "" {
+		query = query.Where("country_code = ?", strings.ToUpper(req.CountryCode))
 	}
 
 	err := database.AutoPaginate(

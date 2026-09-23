@@ -130,7 +130,7 @@ func (u *UserUsecase) validateRoleUniqueness(phoneNumbers entity.PhoneNumbers, t
 
 	for i, item := range phoneNumbers {
 		if targetIndex >= 0 && i == targetIndex {
-			continue // Abaikan index yang sedang di-update
+			continue
 		}
 
 		for _, existingRole := range item.Roles {
@@ -148,7 +148,6 @@ func (u *UserUsecase) transferRolesToTarget(phoneNumbers entity.PhoneNumbers, ta
 		return phoneNumbers
 	}
 
-	// 1. Bersihkan dan buat map role baru yang diinginkan
 	targetRoleMap := make(map[string]bool)
 	cleanNewRoles := make([]string, 0, len(newRoles))
 
@@ -160,10 +159,9 @@ func (u *UserUsecase) transferRolesToTarget(phoneNumbers entity.PhoneNumbers, ta
 		}
 	}
 
-	// 2. Iterasi seluruh nomor HP lain milik user dan cabut role jika ada yang bentrok
 	for i := range phoneNumbers {
 		if targetIndex >= 0 && i == targetIndex {
-			continue // Dilewati untuk nomor yang sedang di-update
+			continue
 		}
 
 		var updatedRoles []string
@@ -178,7 +176,6 @@ func (u *UserUsecase) transferRolesToTarget(phoneNumbers entity.PhoneNumbers, ta
 	return phoneNumbers
 }
 
-// 2. Add Phone Number (Auto-Overwrite Role dari nomor lama)
 func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -191,10 +188,10 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 		}
 	}
 
-	// Transfer/overwrite role jika sudah dipakai di nomor lain
 	user.PhoneNumbers = u.transferRolesToTarget(user.PhoneNumbers, -1, req.Roles)
 
 	newItem := entity.PhoneNumberItem{
+		Label:     req.Label,
 		DialCode:  req.DialCode,
 		Number:    req.Number,
 		IsPrimary: req.IsPrimary,
@@ -224,7 +221,6 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 	return u.repo.UpdateUser(ctx, user)
 }
 
-// 3. Update Phone Number By Index Asli DB (Auto-Overwrite Role dari nomor lain)
 func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, index int, req dto.UpdatePhoneNumberRequest) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -235,7 +231,6 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 	}
 
-	// Cek nomor duplikat (eksklusi index DB yang sedang di-update)
 	for i, p := range user.PhoneNumbers {
 		if i != index && p.DialCode == req.DialCode && p.Number == req.Number {
 			return errors.New(string(i18n.KeyUserPhoneDuplicate))
@@ -256,9 +251,9 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 		}
 	}
 
-	// Transfer/overwrite role jika sudah dipakai di nomor lain
 	user.PhoneNumbers = u.transferRolesToTarget(user.PhoneNumbers, index, req.Roles)
 
+	user.PhoneNumbers[index].Label = req.Label
 	user.PhoneNumbers[index].Number = req.Number
 	user.PhoneNumbers[index].DialCode = req.DialCode
 	user.PhoneNumbers[index].Roles = req.Roles
@@ -272,7 +267,6 @@ func (u *UserUsecase) UpdatePhoneNumber(ctx context.Context, userID uuid.UUID, i
 	return u.repo.UpdateUser(ctx, user)
 }
 
-// 4. Delete Phone Number By Index Asli DB
 func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, index int) error {
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
@@ -398,7 +392,9 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 	for _, d := range docs {
 		res = append(res, dto.GetDocumentResponse{
 			ID:               d.ID.String(),
+			CountryCode:      d.CountryCode,
 			DocumentType:     d.DocumentType,
+			DocumentLabel:    d.DocumentLabel,
 			FullNameIdentity: d.FullNameIdentity,
 			DocumentNumber:   d.DocumentNumber,
 			DocumentPhotoURL: d.DocumentPhotoURL,
@@ -409,7 +405,6 @@ func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto
 }
 
 func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req dto.UploadDocumentRequest) error {
-	// 1. Cek apakah user ini SUDAH PERNAH mengunggah document_number yang sama
 	existingUserDoc, err := u.repo.FindIdentityByUserIDAndDocNumber(ctx, userID, req.DocumentNumber)
 	if err != nil {
 		return err
@@ -418,7 +413,6 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 		return errors.New(string(i18n.KeyUserDocumentNumberAlreadyAdded))
 	}
 
-	// 2. Cek apakah document_number ini sudah dipakai oleh USER LAIN
 	existingGlobalDoc, err := u.repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
 	if err != nil {
 		return err
@@ -453,7 +447,9 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 
 	identity := &entity.UserIdentityProfile{
 		UserID:           userID,
+		CountryCode:      req.CountryCode,
 		DocumentType:     req.DocumentType,
+		DocumentLabel:    req.DocumentLabel,
 		FullNameIdentity: req.FullNameIdentity,
 		DocumentNumber:   req.DocumentNumber,
 		DocumentPhotoURL: uploadedURL,

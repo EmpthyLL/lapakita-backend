@@ -12,6 +12,7 @@ import (
 
 // PhoneNumberItem mewakili struktur satu item nomor telepon
 type PhoneNumberItem struct {
+	Label     string   `json:"label"` // e.g. "Nomor Pribadi", "WhatsApp Usaha", "Kontak Darurat"
 	DialCode  string   `json:"dial_code"`
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`
