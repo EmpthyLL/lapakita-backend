@@ -298,6 +298,7 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 			Number:    req.Phone,
 			IsPrimary: true,
 			Roles:     []string{},
+			Label:     "Primary Number",
 		},
 	}
 
@@ -372,6 +373,7 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 					Number:    regData["phone"],
 					IsPrimary: true,
 					Roles:     []string{},
+					Label:     "Primary Number",
 				},
 			},
 			RoleProfiles: entity.RoleProfiles{},
