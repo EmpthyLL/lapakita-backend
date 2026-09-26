@@ -27,6 +27,7 @@ type ImageKitService struct {
 func NewImageKitService(cfg *config.Config, log *logger.Logger) *ImageKitService {
 	client := imagekit.NewClient(
 		option.WithPrivateKey(cfg.ImageKitPrivateKey),
+		option.WithBaseURL(cfg.ImageKitUrlEndpoint),
 	)
 
 	return &ImageKitService{

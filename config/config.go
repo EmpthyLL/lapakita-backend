@@ -46,6 +46,13 @@ type Config struct {
 	PaymentClientKey    string `mapstructure:"PAYMENT_CLIENT_KEY"`
 	PaymentIsProduction bool   `mapstructure:"PAYMENT_IS_PRODUCTION"`
 
+	// SeaweedFS
+	SeaweedFSEndpoint   string `mapstructure:"SEAWEEDFS_ENDPOINT"`
+	SeaweedFSAccessKey  string `mapstructure:"SEAWEEDFS_ACCESS_KEY"`
+	SeaweedFSSecretKey  string `mapstructure:"SEAWEEDFS_SECRET_KEY"`
+	SeaweedFSBucketName string `mapstructure:"SEAWEEDFS_BUCKET_NAME"`
+	SeaweedFSUseSSL     bool   `mapstructure:"SEAWEEDFS_USE_SSL"`
+
 	// Redis
 	RedisHost     string `mapstructure:"REDIS_HOST"`
 	RedisPort     string `mapstructure:"REDIS_PORT"`

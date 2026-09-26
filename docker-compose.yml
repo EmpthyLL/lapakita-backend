@@ -35,19 +35,35 @@ services:
     restart: always
 
   # minio:
-  #   image: minio/minio:latest
+  #   image: ghcr.io/minio/minio:latest
   #   container_name: minio_storage
   #   ports:
-  #     - "9000:9000" # API Port
-  #     - "9001:9001" # Web Console Port
+  #     - "9000:9000"
+  #     - "9001:9001"
   #   environment:
   #     MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
   #     MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
   #   volumes:
   #     - minio_data:/data
   #   command: server /data --console-address ":9001"
+  #   restart: always
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweed_storage
+    ports:
+      - "8333:8333" # S3 API Port
+      - "9333:9333" # Master Server Port
+    command: >
+      server
+      -s3
+      -s3.port=8333
+      -dir=/data
+    volumes:
+      - seaweed_data:/data
+    restart: always
 
 volumes:
   postgres_data:
   redis_data:
   # minio_data:
+  seaweed_data:
