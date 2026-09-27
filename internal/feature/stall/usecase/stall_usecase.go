@@ -21,14 +21,14 @@ import (
 type StallUsecase struct {
 	repo     *repository.StallRepository
 	userRepo *authRepo.AuthRepository
-	imagekit *storage.ImageKitService
+	seaweed  *storage.SeaweedFSService
 }
 
-func NewStallUsecase(repo *repository.StallRepository, userRepo *authRepo.AuthRepository, imagekit *storage.ImageKitService) *StallUsecase {
+func NewStallUsecase(repo *repository.StallRepository, userRepo *authRepo.AuthRepository, seaweed *storage.SeaweedFSService) *StallUsecase {
 	return &StallUsecase{
 		repo:     repo,
 		userRepo: userRepo,
-		imagekit: imagekit,
+		seaweed:  seaweed,
 	}
 }
 
@@ -42,7 +42,7 @@ func (u *StallUsecase) uploadMediaToImageKit(ctx context.Context, source string,
 	}
 
 	fileName := fmt.Sprintf("stall_%s.jpg", uuid.New().String())
-	ikURL, err := u.imagekit.UploadFromURL(ctx, cleanSource, fileName, folder)
+	ikURL, err := u.seaweed.UploadFromURL(ctx, cleanSource, fileName, folder)
 	if err != nil {
 		return cleanSource
 	}

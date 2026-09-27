@@ -10,18 +10,19 @@ import (
 	"net/http"
 	"path"
 	"strings"
-	"time"
 
 	"lapakita-backend/config"
 	"lapakita-backend/pkg/logger"
 
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	s3Config "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.uber.org/zap"
 )
 
-type MinioService struct {
-	client     *minio.Client
+type SeaweedFSService struct {
+	client     *s3.Client
 	bucketName string
 	endpoint   string
 	appName    string
@@ -29,58 +30,57 @@ type MinioService struct {
 	log        *logger.Logger
 }
 
-func NewMinioService(cfg *config.Config, log *logger.Logger) (*MinioService, error) {
-	client, err := minio.New(cfg.MinioEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.MinioAccessKey, cfg.MinioSecretKey, ""),
-		Secure: cfg.MinioUseSSL,
-	})
+func NewSeaweedFSService(cfg *config.Config, log *logger.Logger) (*SeaweedFSService, error) {
+	scheme := "http"
+	if cfg.SeaweedFSUseSSL {
+		scheme = "https"
+	}
+	customEndpoint := fmt.Sprintf("%s://%s", scheme, cfg.SeaweedFSEndpoint)
+
+	s3Cfg, err := s3Config.LoadDefaultConfig(context.Background(),
+		s3Config.WithRegion("us-east-1"), // Region dummy wajib untuk S3
+		s3Config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			cfg.SeaweedFSAccessKey,
+			cfg.SeaweedFSSecretKey,
+			"",
+		)),
+	)
 	if err != nil {
-		log.Error("[MinIO] Failed to initialize MinIO client", zap.Error(err))
-		return nil, fmt.Errorf("minio init: %w", err)
+		log.Error("[SeaweedFS] Failed to load S3 configuration", zap.Error(err))
+		return nil, fmt.Errorf("seaweedfs config: %w", err)
 	}
 
-	svc := &MinioService{
+	client := s3.NewFromConfig(s3Cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(customEndpoint)
+		o.UsePathStyle = true // Wajib untuk S3 lokal
+	})
+
+	svc := &SeaweedFSService{
 		client:     client,
-		bucketName: cfg.MinioBucketName,
-		endpoint:   cfg.MinioEndpoint,
+		bucketName: cfg.SeaweedFSBucketName,
+		endpoint:   cfg.SeaweedFSEndpoint,
 		appName:    strings.ToLower(strings.TrimSpace(cfg.AppName)),
-		useSSL:     cfg.MinioUseSSL,
+		useSSL:     cfg.SeaweedFSUseSSL,
 		log:        log,
 	}
 
+	// Buat bucket secara otomatis jika belum ada di SeaweedFS
 	ctx := context.Background()
-	exists, err := client.BucketExists(ctx, cfg.MinioBucketName)
+	_, err = client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(cfg.SeaweedFSBucketName)})
 	if err != nil {
-		log.Error("[MinIO] Failed to check bucket existence", zap.Error(err))
-		return nil, fmt.Errorf("minio bucket check: %w", err)
-	}
-
-	if !exists {
-		err = client.MakeBucket(ctx, cfg.MinioBucketName, minio.MakeBucketOptions{})
-		if err != nil {
-			log.Error("[MinIO] Failed to create bucket", zap.Error(err))
-			return nil, fmt.Errorf("minio make bucket: %w", err)
+		_, createErr := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(cfg.SeaweedFSBucketName)})
+		if createErr != nil {
+			log.Warn("[SeaweedFS] Bucket creation check failed", zap.Error(createErr))
+		} else {
+			log.Info("[SeaweedFS] Bucket created successfully", zap.String("bucket", cfg.SeaweedFSBucketName))
 		}
-
-		// Set policy public read agar aset dapat diakses publik oleh browser/FE
-		policy := fmt.Sprintf(`{
-			"Version": "2012-10-17",
-			"Statement": [{
-				"Effect": "Allow",
-				"Principal": {"AWS": ["*"]},
-				"Action": ["s3:GetObject"],
-				"Resource": ["arn:aws:s3:::%s/*"]
-			}]
-		}`, cfg.MinioBucketName)
-		_ = client.SetBucketPolicy(ctx, cfg.MinioBucketName, policy)
-		log.Info("[MinIO] Bucket created successfully with public-read policy", zap.String("bucket", cfg.MinioBucketName))
 	}
 
 	return svc, nil
 }
 
 // helperBuildObjectKey menyusun path folder dan file key dengan prefix nama aplikasi dari config
-func (s *MinioService) helperBuildObjectKey(folder string, fileName string) string {
+func (s *SeaweedFSService) helperBuildObjectKey(folder string, fileName string) string {
 	cleanFolder := strings.TrimPrefix(folder, "/")
 	if s.appName != "" {
 		if cleanFolder == "" {
@@ -92,14 +92,14 @@ func (s *MinioService) helperBuildObjectKey(folder string, fileName string) stri
 	return path.Join(cleanFolder, fileName)
 }
 
-func (s *MinioService) UploadFile(
+func (s *SeaweedFSService) UploadFile(
 	ctx context.Context,
 	fileHeader *multipart.FileHeader,
 	folder string,
 ) (string, error) {
 	file, err := fileHeader.Open()
 	if err != nil {
-		s.log.Error("[MinIO] Failed to open uploaded file", zap.Error(err))
+		s.log.Error("[SeaweedFS] Failed to open uploaded file", zap.Error(err))
 		return "", fmt.Errorf("open file: %w", err)
 	}
 	defer file.Close()
@@ -112,16 +112,19 @@ func (s *MinioService) UploadFile(
 	objectKey := s.helperBuildObjectKey(folder, fileHeader.Filename)
 	contentType := http.DetectContentType(optimizedBytes)
 
-	_, err = s.client.PutObject(ctx, s.bucketName, objectKey, bytes.NewReader(optimizedBytes), int64(len(optimizedBytes)), minio.PutObjectOptions{
-		ContentType: contentType,
+	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
+		Key:         aws.String(objectKey),
+		Body:        bytes.NewReader(optimizedBytes),
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
-		s.log.Error("[MinIO] Failed to upload file",
+		s.log.Error("[SeaweedFS] Failed to upload file",
 			zap.String("filename", fileHeader.Filename),
 			zap.String("key", objectKey),
 			zap.Error(err),
 		)
-		return "", fmt.Errorf("upload minio: %w", err)
+		return "", fmt.Errorf("upload seaweedfs: %w", err)
 	}
 
 	scheme := "http"
@@ -130,7 +133,7 @@ func (s *MinioService) UploadFile(
 	}
 	fileURL := fmt.Sprintf("%s://%s/%s/%s", scheme, s.endpoint, s.bucketName, objectKey)
 
-	s.log.Info("[MinIO] File uploaded successfully",
+	s.log.Info("[SeaweedFS] File uploaded successfully",
 		zap.String("url", fileURL),
 		zap.String("key", objectKey),
 	)
@@ -138,8 +141,8 @@ func (s *MinioService) UploadFile(
 	return fileURL, nil
 }
 
-// UploadFromURL memproses input gambar (Base64 atau HTTP URL) dan mengunggahnya ke MinIO
-func (s *MinioService) UploadFromURL(
+// UploadFromURL memproses input gambar (Base64 atau HTTP URL) dan mengunggahnya ke SeaweedFS
+func (s *SeaweedFSService) UploadFromURL(
 	ctx context.Context,
 	imageSource string,
 	fileName string,
@@ -156,7 +159,7 @@ func (s *MinioService) UploadFromURL(
 
 		decodedBytes, err := base64.StdEncoding.DecodeString(rawBase64)
 		if err != nil {
-			s.log.Error("[MinIO] Failed to decode base64 string", zap.Error(err))
+			s.log.Error("[SeaweedFS] Failed to decode base64 string", zap.Error(err))
 			return "", fmt.Errorf("decode base64: %w", err)
 		}
 
@@ -165,7 +168,7 @@ func (s *MinioService) UploadFromURL(
 		// 2. Jika input berupa URL HTTP/HTTPS (e.g. Avatar Google)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageSource, nil)
 		if err != nil {
-			s.log.Error("[MinIO] Failed to create HTTP request", zap.Error(err))
+			s.log.Error("[SeaweedFS] Failed to create HTTP request", zap.Error(err))
 			return "", fmt.Errorf("create http request: %w", err)
 		}
 
@@ -173,7 +176,7 @@ func (s *MinioService) UploadFromURL(
 
 		httpResp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			s.log.Error("[MinIO] Failed to download image from URL",
+			s.log.Error("[SeaweedFS] Failed to download image from URL",
 				zap.String("url", imageSource),
 				zap.Error(err),
 			)
@@ -182,7 +185,7 @@ func (s *MinioService) UploadFromURL(
 		defer httpResp.Body.Close()
 
 		if httpResp.StatusCode != http.StatusOK {
-			s.log.Error("[MinIO] Download image failed with non-200 status",
+			s.log.Error("[SeaweedFS] Download image failed with non-200 status",
 				zap.String("url", imageSource),
 				zap.Int("status_code", httpResp.StatusCode),
 			)
@@ -200,17 +203,20 @@ func (s *MinioService) UploadFromURL(
 	objectKey := s.helperBuildObjectKey(folder, fileName)
 	contentType := http.DetectContentType(optimizedBytes)
 
-	// 3. Eksekusi Upload ke MinIO
-	_, err = s.client.PutObject(ctx, s.bucketName, objectKey, bytes.NewReader(optimizedBytes), int64(len(optimizedBytes)), minio.PutObjectOptions{
-		ContentType: contentType,
+	// 3. Eksekusi Upload ke SeaweedFS
+	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
+		Key:         aws.String(objectKey),
+		Body:        bytes.NewReader(optimizedBytes),
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
-		s.log.Error("[MinIO] Failed to upload stream to MinIO",
+		s.log.Error("[SeaweedFS] Failed to upload stream to SeaweedFS",
 			zap.String("filename", fileName),
 			zap.String("key", objectKey),
 			zap.Error(err),
 		)
-		return "", fmt.Errorf("upload to minio: %w", err)
+		return "", fmt.Errorf("upload to seaweedfs: %w", err)
 	}
 
 	scheme := "http"
@@ -219,29 +225,10 @@ func (s *MinioService) UploadFromURL(
 	}
 	fileURL := fmt.Sprintf("%s://%s/%s/%s", scheme, s.endpoint, s.bucketName, objectKey)
 
-	s.log.Info("[MinIO] Image uploaded successfully from URL/Base64",
+	s.log.Info("[SeaweedFS] Image uploaded successfully from URL/Base64",
 		zap.String("url", fileURL),
 		zap.String("key", objectKey),
 	)
 
 	return fileURL, nil
-}
-
-func (s *MinioService) GetPresignedURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
-	presignedURL, err := s.client.PresignedGetObject(ctx, s.bucketName, objectName, expiry, nil)
-	if err != nil {
-		s.log.Error("[MinIO] Failed to generate presigned URL", zap.String("object_name", objectName), zap.Error(err))
-		return "", fmt.Errorf("presigned url: %w", err)
-	}
-	return presignedURL.String(), nil
-}
-
-func (s *MinioService) DeleteFile(ctx context.Context, objectName string) error {
-	err := s.client.RemoveObject(ctx, s.bucketName, objectName, minio.RemoveObjectOptions{})
-	if err != nil {
-		s.log.Error("[MinIO] Failed to remove object", zap.String("object_name", objectName), zap.Error(err))
-		return fmt.Errorf("delete file: %w", err)
-	}
-	s.log.Info("[MinIO] File deleted successfully", zap.String("object_name", objectName))
-	return nil
 }

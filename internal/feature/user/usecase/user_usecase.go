@@ -20,14 +20,14 @@ import (
 )
 
 type UserUsecase struct {
-	repo     *repository.UserRepository
-	imagekit *storage.ImageKitService
+	repo    *repository.UserRepository
+	seaweed *storage.SeaweedFSService
 }
 
-func NewUserUsecase(repo *repository.UserRepository, imagekit *storage.ImageKitService) *UserUsecase {
+func NewUserUsecase(repo *repository.UserRepository, seaweed *storage.SeaweedFSService) *UserUsecase {
 	return &UserUsecase{
-		repo:     repo,
-		imagekit: imagekit,
+		repo:    repo,
+		seaweed: seaweed,
 	}
 }
 
@@ -67,13 +67,13 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 
 	if req.DefaultAvatarURL != nil && *req.DefaultAvatarURL != "" {
 		avatarSource := strings.TrimSpace(*req.DefaultAvatarURL)
-		if !strings.Contains(avatarSource, "ik.imagekit.io") {
-			fileName := fmt.Sprintf("avatar_%s.jpg", userID.String())
-			ikURL, err := u.imagekit.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
-			if err == nil && ikURL != "" {
-				avatarSource = ikURL
-			}
+
+		fileName := fmt.Sprintf("avatar_%s.jpg", userID.String())
+		seaweedURL, err := u.seaweed.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
+		if err == nil && seaweedURL != "" {
+			avatarSource = seaweedURL
 		}
+
 		user.DefaultAvatarURL = &avatarSource
 	}
 
@@ -361,11 +361,11 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 	}
 
 	avatarURL := req.AvatarURL
-	if avatarURL != "" && !strings.Contains(avatarURL, "ik.imagekit.io") {
+	if avatarURL != "" {
 		fileName := fmt.Sprintf("persona_%s_%s.jpg", role, userID.String())
-		ikURL, err := u.imagekit.UploadFromURL(ctx, avatarURL, fileName, "/avatars")
-		if err == nil && ikURL != "" {
-			avatarURL = ikURL
+		seaweedURL, err := u.seaweed.UploadFromURL(ctx, avatarURL, fileName, "/avatars")
+		if err == nil && seaweedURL != "" {
+			avatarURL = seaweedURL
 		}
 	}
 
@@ -440,16 +440,26 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
 	fileName := fmt.Sprintf("%s_%s_%d.jpg", req.DocumentType, userID.String(), time.Now().Unix())
 
-	uploadedURL, err := u.imagekit.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
+	uploadedURL, err := u.seaweed.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
 	if err != nil {
 		return errors.New(string(i18n.KeyUserDocumentFailedToUpload))
 	}
 
+	countryCode := req.CountryCode
+	if countryCode == "" {
+		countryCode = "ID"
+	}
+
+	docLabel := req.DocumentLabel
+	if docLabel == "" {
+		docLabel = "KTP"
+	}
+
 	identity := &entity.UserIdentityProfile{
 		UserID:           userID,
-		CountryCode:      req.CountryCode,
+		CountryCode:      countryCode,
 		DocumentType:     req.DocumentType,
-		DocumentLabel:    req.DocumentLabel,
+		DocumentLabel:    docLabel,
 		FullNameIdentity: req.FullNameIdentity,
 		DocumentNumber:   req.DocumentNumber,
 		DocumentPhotoURL: uploadedURL,

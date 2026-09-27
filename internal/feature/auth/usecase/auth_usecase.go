@@ -29,7 +29,7 @@ type AuthUsecase struct {
 	rdb        *redis.Client
 	jwtService *jwt.JWTService
 	mailer     *mailer.Mailer
-	imagekit   *storage.ImageKitService
+	seaweed    *storage.SeaweedFSService
 }
 
 func NewAuthUsecase(
@@ -37,14 +37,14 @@ func NewAuthUsecase(
 	rdb *redis.Client,
 	jwtService *jwt.JWTService,
 	mailer *mailer.Mailer,
-	imagekit *storage.ImageKitService,
+	seaweed *storage.SeaweedFSService,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		repo:       repo,
 		rdb:        rdb,
 		jwtService: jwtService,
 		mailer:     mailer,
-		imagekit:   imagekit,
+		seaweed:    seaweed,
 	}
 }
 
@@ -209,7 +209,7 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 
 	user, _ := u.repo.FindUserByEmail(ctx, email)
 
-	// Helper closure untuk upload ke ImageKit (mendukung URL HTTP & Base64)
+	// Helper closure untuk upload ke SeaweedFS (mendukung URL HTTP & Base64)
 	uploadAvatar := func(rawSource string) string {
 		cleanSource := strings.TrimSpace(rawSource)
 		if cleanSource == "" {
@@ -217,20 +217,20 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 		}
 
 		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
-		ikURL, err := u.imagekit.UploadFromURL(ctx, cleanSource, fileName, "/avatars")
+		seaweedURL, err := u.seaweed.UploadFromURL(ctx, cleanSource, fileName, "/avatars")
 		if err != nil {
-			fmt.Printf("[ImageKit Upload Error]: %v\n", err)
+			fmt.Printf("[SeaweedFS Upload Error]: %v\n", err)
 			return cleanSource // Fallback ke string asli jika gagal
 		}
-		return ikURL
+		return seaweedURL
 	}
 
 	if user == nil {
 		var avatarPtr *string
 		if picture != "" {
-			ikURL := uploadAvatar(picture)
-			if ikURL != "" {
-				avatarPtr = &ikURL
+			seaweedURL := uploadAvatar(picture)
+			if seaweedURL != "" {
+				avatarPtr = &seaweedURL
 			}
 		}
 
@@ -257,9 +257,9 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 			(!strings.HasPrefix(*user.DefaultAvatarURL, "http://") && !strings.HasPrefix(*user.DefaultAvatarURL, "https://"))
 
 		if needsUpload && picture != "" {
-			ikURL := uploadAvatar(picture)
-			if ikURL != "" && (user.DefaultAvatarURL == nil || ikURL != *user.DefaultAvatarURL) {
-				user.DefaultAvatarURL = &ikURL
+			seaweedURL := uploadAvatar(picture)
+			if seaweedURL != "" && (user.DefaultAvatarURL == nil || seaweedURL != *user.DefaultAvatarURL) {
+				user.DefaultAvatarURL = &seaweedURL
 				_ = u.repo.UpdateUser(ctx, user)
 			}
 		}
@@ -277,17 +277,15 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 
 	user.Name = req.Name
 
-	// Jika avatar diisi (bisa berupa URL atau Base64), upload ke ImageKit
+	// Jika avatar diisi (bisa berupa URL atau Base64), upload ke SeaweedFS
 	if req.AvatarURL != "" {
 		avatarSource := strings.TrimSpace(req.AvatarURL)
 
-		// Upload ke ImageKit jika bertipe Base64 atau URL luar
-		if !strings.Contains(avatarSource, "ik.imagekit.io") {
-			fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
-			ikURL, err := u.imagekit.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
-			if err == nil && ikURL != "" {
-				avatarSource = ikURL
-			}
+		// Upload ke SeaweedFS jika berupa Base64 atau URL luar
+		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
+		seaweedURL, err := u.seaweed.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
+		if err == nil && seaweedURL != "" {
+			avatarSource = seaweedURL
 		}
 		user.DefaultAvatarURL = &avatarSource
 	}

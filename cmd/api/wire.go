@@ -31,7 +31,7 @@ var infrastructureSet = wire.NewSet(
 	cache.NewRedisClient,
 	jwt.NewJWTService,
 	firebase.NewFirebaseService,
-	storage.NewImageKitService,
+	storage.NewSeaweedFSService,
 	payment.NewPaymentService,
 )
 
