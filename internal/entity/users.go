@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -187,4 +188,56 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 		u.RoleProfiles = RoleProfiles{}
 	}
 	return
+}
+
+func (p PhoneNumbers) GetPhoneDetailForRole(role string) (int, string, string) {
+	for idx, num := range p {
+		for _, r := range num.Roles {
+			if r == role {
+				return idx, num.DialCode, num.Number
+			}
+		}
+	}
+
+	primaryIdx := p.GetPrimaryIndex()
+	if primaryIdx >= 0 && primaryIdx < len(p) {
+		return primaryIdx, p[primaryIdx].DialCode, p[primaryIdx].Number
+	}
+
+	return -1, "", ""
+}
+
+func (p *PhoneNumbers) AssignRoleToPhoneNumberIndex(targetIndex int, role string) {
+	if targetIndex < 0 || targetIndex >= len(*p) {
+		return
+	}
+
+	cleanRole := strings.TrimSpace(role)
+	if cleanRole == "" {
+		return
+	}
+
+	for i := range *p {
+		if i == targetIndex {
+			continue
+		}
+		var updatedRoles []string
+		for _, r := range (*p)[i].Roles {
+			if r != cleanRole {
+				updatedRoles = append(updatedRoles, r)
+			}
+		}
+		(*p)[i].Roles = updatedRoles
+	}
+
+	hasRole := false
+	for _, r := range (*p)[targetIndex].Roles {
+		if r == cleanRole {
+			hasRole = true
+			break
+		}
+	}
+	if !hasRole {
+		(*p)[targetIndex].Roles = append((*p)[targetIndex].Roles, cleanRole)
+	}
 }

@@ -44,7 +44,6 @@ func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (
 	}
 
 	return dto.GetGeneralProfileResponse{
-		ID:               user.ID.String(),
 		Name:             user.Name,
 		Email:            user.Email,
 		DefaultAvatarURL: avatar,
@@ -81,13 +80,13 @@ func (u *UserUsecase) UpdateGeneralProfile(ctx context.Context, userID uuid.UUID
 		user.ActiveRole = *req.ActiveRole
 	}
 
-	if req.PrimaryPhoneIndex != nil {
-		if *req.PrimaryPhoneIndex < 0 || *req.PrimaryPhoneIndex >= len(user.PhoneNumbers) {
+	if req.PhoneNumberIndex != nil {
+		if *req.PhoneNumberIndex < 0 || *req.PhoneNumberIndex >= len(user.PhoneNumbers) {
 			return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 		}
 
 		for i := range user.PhoneNumbers {
-			user.PhoneNumbers[i].IsPrimary = i == *req.PrimaryPhoneIndex
+			user.PhoneNumbers[i].IsPrimary = i == *req.PhoneNumberIndex
 		}
 	}
 
@@ -330,6 +329,9 @@ func (u *UserUsecase) GetPersonaProfile(ctx context.Context, userID uuid.UUID, r
 		return dto.PersonaProfileResponse{}, errors.New(string(i18n.KeyUserNotFound))
 	}
 
+	// Ambil detail nomor HP khusus untuk role ini (Fallback ke Primary jika tidak ada)
+	phoneIdx, dialCode, number := user.PhoneNumbers.GetPhoneDetailForRole(role)
+
 	profile, exists := user.RoleProfiles[role]
 	if !exists {
 		defaultAvatar := ""
@@ -340,6 +342,11 @@ func (u *UserUsecase) GetPersonaProfile(ctx context.Context, userID uuid.UUID, r
 			Role:        role,
 			DisplayName: user.Name,
 			AvatarURL:   defaultAvatar,
+			Phone: dto.PhoneNumber{
+				Index:    phoneIdx,
+				DialCode: dialCode,
+				Number:   number,
+			},
 		}, nil
 	}
 
@@ -347,6 +354,11 @@ func (u *UserUsecase) GetPersonaProfile(ctx context.Context, userID uuid.UUID, r
 		Role:        role,
 		DisplayName: profile.DisplayName,
 		AvatarURL:   profile.AvatarURL,
+		Phone: dto.PhoneNumber{
+			Index:    phoneIdx,
+			DialCode: dialCode,
+			Number:   number,
+		},
 	}, nil
 }
 
@@ -360,24 +372,45 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 		user.RoleProfiles = entity.RoleProfiles{}
 	}
 
-	avatarURL := req.AvatarURL
-	if avatarURL != "" {
+	// 1. Proses update avatar jika dikirimkan
+	avatarURL := ""
+	if profile, exists := user.RoleProfiles[role]; exists {
+		avatarURL = profile.AvatarURL
+	}
+
+	if req.AvatarURL != nil && *req.AvatarURL != "" {
+		sourceURL := strings.TrimSpace(*req.AvatarURL)
 		fileName := fmt.Sprintf("persona_%s_%s.jpg", role, userID.String())
-		seaweedURL, err := u.seaweed.UploadFromURL(ctx, avatarURL, fileName, "/avatars")
+		seaweedURL, err := u.seaweed.UploadFromURL(ctx, sourceURL, fileName, "/avatars")
 		if err == nil && seaweedURL != "" {
 			avatarURL = seaweedURL
+		} else {
+			avatarURL = sourceURL
 		}
 	}
 
+	// Simpan perubahan nama & avatar ke map RoleProfiles
 	user.RoleProfiles[role] = entity.RoleProfileItem{
 		DisplayName: req.DisplayName,
 		AvatarURL:   avatarURL,
 	}
 
+	// 2. Jika `phone_number_index` dikirim, daftarkan/pindahkan role ini ke nomor HP tersebut
+	if req.PhoneNumberIndex != nil {
+		targetIdx := *req.PhoneNumberIndex
+		if targetIdx < 0 || targetIdx >= len(user.PhoneNumbers) {
+			return dto.PersonaProfileResponse{}, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
+		}
+
+		user.PhoneNumbers.AssignRoleToPhoneNumberIndex(targetIdx, role)
+	}
+
+	// 3. Simpan perubahan User ke DB
 	if err := u.repo.UpdateUser(ctx, user); err != nil {
 		return dto.PersonaProfileResponse{}, err
 	}
 
+	// Return data persona profile terbaru
 	return u.GetPersonaProfile(ctx, userID, role)
 }
 

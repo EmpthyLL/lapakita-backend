@@ -11,7 +11,7 @@ type GetPhoneNumbersRequest struct {
 
 type PhoneNumberItem struct {
 	Index     int      `json:"index"`
-	Label     string   `json:"label"` // e.g. "Kontak Utama Usaha", "WhatsApp Logistik"
+	Label     string   `json:"label"`
 	DialCode  string   `json:"dial_code"`
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`

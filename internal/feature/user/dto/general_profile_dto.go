@@ -1,7 +1,6 @@
 package dto
 
 type GetGeneralProfileResponse struct {
-	ID               string      `json:"id"`
 	Name             string      `json:"name"`
 	Email            string      `json:"email"`
 	DefaultAvatarURL string      `json:"default_avatar_url"`
@@ -10,10 +9,10 @@ type GetGeneralProfileResponse struct {
 }
 
 type UpdateGeneralProfileRequest struct {
-	Name              string  `json:"name" binding:"required,max=255"`
-	DefaultAvatarURL  *string `json:"default_avatar_url" binding:"omitempty"`
-	PrimaryPhoneIndex *int    `json:"primary_phone_index" binding:"omitempty,min=0"`
-	ActiveRole        *string `json:"active_role" binding:"omitempty,oneof=tenant owner supplier"`
+	Name             string  `json:"name" binding:"required,max=255"`
+	DefaultAvatarURL *string `json:"default_avatar_url" binding:"omitempty"`
+	PhoneNumberIndex *int    `json:"phone_number_index" binding:"omitempty,min=0"`
+	ActiveRole       *string `json:"active_role" binding:"omitempty,oneof=tenant owner supplier"`
 }
 
 type PhoneNumber struct {
