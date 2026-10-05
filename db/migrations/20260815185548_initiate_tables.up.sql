@@ -60,14 +60,15 @@ CREATE INDEX idx_user_identity_doc_num ON user_identity_profiles(document_number
 CREATE INDEX idx_user_identity_user_id ON user_identity_profiles(user_id);
 
 -- Rekening Bank User (Penarikan Dana Escrow / Payout)
-CREATE TABLE bank_accounts (
+CREATE TABLE payout_methods (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    bank_code VARCHAR(32) NOT NULL,        -- e.g. "BCA", "MANDIRI", "BRI", "BNI"
-    bank_name VARCHAR(128) NOT NULL,       -- e.g. "Bank Central Asia"
-    account_number VARCHAR(64) NOT NULL,
-    account_holder_name VARCHAR(255) NOT NULL,
+    payout_type VARCHAR(32) NOT NULL DEFAULT 'bank_account', -- 'bank_account' atau 'e_wallet'
+    provider_code VARCHAR(32) NOT NULL,                      -- e.g. 'BCA', 'MANDIRI', 'GOPAY', 'OVO', 'DANA'
+    provider_name VARCHAR(128) NOT NULL,                     -- e.g. 'Bank Central Asia' atau 'GoPay'
+    account_number VARCHAR(64) NOT NULL,                     -- Nomor Rekening atau Nomor HP E-Wallet
+    account_holder_name VARCHAR(255) NOT NULL,               -- Nama Pemilik Rekening/Akun
     
     is_primary BOOLEAN DEFAULT FALSE,
     
@@ -75,7 +76,42 @@ CREATE TABLE bank_accounts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_bank_accounts_user_id ON bank_accounts(user_id);
+CREATE INDEX idx_payout_methods_user_id ON payout_methods(user_id);
+
+CREATE TABLE payment_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    -- Pihak Utama
+    payer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- Pembayar (Tenant / Buyer)
+    payee_user_id UUID REFERENCES users(id) ON DELETE SET NULL,             -- Penerima (Owner / Supplier / NULL jika bayar ke Lapakita)
+    
+    -- Relasi Entitas Spesifik (Nullable tergantung jenis transaksi)
+    lease_contract_id UUID REFERENCES lease_contracts(id) ON DELETE SET NULL,
+    supplier_order_id UUID REFERENCES supplier_orders(id) ON DELETE SET NULL,
+    
+    -- Identifikasi Transaksi Gateway
+    order_id VARCHAR(64) UNIQUE NOT NULL,                                   -- e.g. "LAPAKITA-RENT-9921" / "LAPAKITA-SUP-1102"
+    transaction_category VARCHAR(32) NOT NULL,                              -- 'lease_rent', 'security_deposit', 'b2b_supplier_order', 'platform_subscription', 'payout'
+    
+    gross_amount NUMERIC(15, 2) NOT NULL,
+    admin_fee_amount NUMERIC(15, 2) DEFAULT 0.00,                           -- Biaya penanganan platform/gateway
+    net_amount NUMERIC(15, 2) NOT NULL,                                     -- Nominal bersih
+    
+    payment_channel VARCHAR(32),                                           -- 'bank_transfer', 'qris', 'gopay', 'credit_card'
+    payment_status VARCHAR(32) NOT NULL DEFAULT 'pending',                  -- 'pending', 'settlement', 'expire', 'cancel', 'failed'
+    
+    snap_token TEXT,
+    snap_redirect_url TEXT,
+    gateway_response JSONB DEFAULT '{}'::jsonb,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_payment_transactions_payer ON payment_transactions(payer_user_id);
+CREATE INDEX idx_payment_transactions_payee ON payment_transactions(payee_user_id);
+CREATE INDEX idx_payment_transactions_order ON payment_transactions(order_id);
+CREATE INDEX idx_payment_transactions_category ON payment_transactions(transaction_category);
 
 -- =============================================================================
 -- 2. BUSINESS TYPES & TENANT BUSINESS PROFILES
@@ -462,11 +498,25 @@ CREATE TABLE supplier_orders (
     tenant_user_id UUID NOT NULL REFERENCES users(id),
     business_id UUID NOT NULL REFERENCES businesses(id),
     supplier_user_id UUID NOT NULL REFERENCES users(id),
-    order_number VARCHAR(64) UNIQUE NOT NULL,
-    total_amount NUMERIC(15, 2) NOT NULL,
-    status VARCHAR(32) DEFAULT 'pending',
-    items_json JSONB NOT NULL,
-    digital_delivery_note_url TEXT,
+    
+    order_number VARCHAR(64) UNIQUE NOT NULL,            -- e.g. "SUP-202609-0012"
+    
+    -- Rincian Biaya
+    subtotal_amount NUMERIC(15, 2) NOT NULL,             -- Total harga barang
+    shipping_fee NUMERIC(15, 2) NOT NULL DEFAULT 0.00,   -- Biaya ongkir
+    total_amount NUMERIC(15, 2) NOT NULL,                -- subtotal + shipping_fee
+    
+    -- Informasi Kurir & Pengiriman (Shipping Details)
+    shipping_provider VARCHAR(64),                        -- e.g. "biteship", "lalamove", "manual"
+    courier_company VARCHAR(32),                          -- e.g. "gosend", "lalamove", "jne", "s"
+    courier_type VARCHAR(32),                             -- e.g. "instant", "same_day", "cargo"
+    tracking_number VARCHAR(128),                         -- Nomor resi / Waybill ID
+    shipping_status VARCHAR(32) DEFAULT 'pending',        -- 'pending', 'allocated', 'picking_up', 'in_transit', 'delivered'
+    
+    status VARCHAR(32) DEFAULT 'pending',                 -- Status Order: 'pending', 'paid', 'processing', 'shipped', 'completed', 'cancelled'
+    items_json JSONB NOT NULL,                            -- Array item katalog yang dibeli
+    digital_delivery_note_url TEXT,                       -- Surat Jalan Digital
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -474,6 +524,7 @@ CREATE TABLE supplier_orders (
 
 CREATE INDEX idx_supplier_orders_tenant_user_id ON supplier_orders(tenant_user_id);
 CREATE INDEX idx_supplier_orders_supplier_user_id ON supplier_orders(supplier_user_id);
+CREATE INDEX idx_supplier_orders_tracking ON supplier_orders(tracking_number);
 
 -- =============================================================================
 -- 8. NOTIFICATIONS & CMS
