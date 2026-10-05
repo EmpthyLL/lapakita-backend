@@ -143,7 +143,9 @@ func (c *GeoapifyClient) SearchGeneral(ctx context.Context, req dto.GetAreaGener
 	query.Set("text", cleanSearch)
 	query.Set("limit", fmt.Sprintf("%d", limit*2))
 	query.Set("offset", fmt.Sprintf("%d", offset))
-	query.Set("lang", "en")
+	// query.Set("lang", "en")
+	query.Set("lang", "id")
+	query.Set("countrycodes", "id")
 	query.Set("apiKey", c.cfg.GeoapifyAPIKey)
 	reqURL.RawQuery = query.Encode()
 
@@ -371,7 +373,9 @@ func (c *GeoapifyClient) SearchDetail(ctx context.Context, req dto.GetAreaDetail
 	query.Set("text", cleanSearch)
 	query.Set("limit", fmt.Sprintf("%d", limit*2))
 	query.Set("offset", fmt.Sprintf("%d", offset))
-	query.Set("lang", "en")
+	// query.Set("lang", "en")
+	query.Set("lang", "id")
+	query.Set("countrycodes", "id")
 	query.Set("apiKey", c.cfg.GeoapifyAPIKey)
 	reqURL.RawQuery = query.Encode()
 
