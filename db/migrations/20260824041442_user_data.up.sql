@@ -1,3 +1,7 @@
+-- =============================================================================
+-- SEED DATA (Users, Identities & Payout Methods)
+-- =============================================================================
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. SEED USERS
@@ -93,9 +97,24 @@ SELECT
     'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop'
 FROM users;
 
--- 3. SEED BANK ACCOUNTS
-INSERT INTO bank_accounts (id, user_id, bank_code, bank_name, account_number, account_holder_name, is_primary)
+-- 3. SEED PAYOUT METHODS (MENGGANTIKAN BANK ACCOUNTS)
+INSERT INTO payout_methods (
+    id, 
+    user_id, 
+    payout_type, 
+    provider_code, 
+    provider_name, 
+    account_number, 
+    account_holder_name, 
+    is_primary
+)
 SELECT 
-    gen_random_uuid(), id, 'BCA', 'Bank Central Asia',
-    floor(random() * 8999999999 + 1000000000)::text, name, TRUE
+    gen_random_uuid(), 
+    id, 
+    'bank_account', 
+    'BCA', 
+    'Bank Central Asia',
+    floor(random() * 8999999999 + 1000000000)::text, 
+    name, 
+    TRUE
 FROM users;

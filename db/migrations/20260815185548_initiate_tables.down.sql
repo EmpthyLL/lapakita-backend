@@ -1,5 +1,9 @@
+-- =============================================================================
 -- DOWN MIGRATION (Strict Dependency Order)
--- 1. Drop Generated Reports
+-- =============================================================================
+-- 1. Drop Generated Reports & Financial Transactions
+DROP TABLE IF EXISTS payment_transactions CASCADE;
+
 DROP TABLE IF EXISTS generated_reports CASCADE;
 
 -- 2. Drop CMS & Inquiry Tables
@@ -30,7 +34,7 @@ DROP TABLE IF EXISTS pos_categories CASCADE;
 
 DROP TABLE IF EXISTS pos_staff_accounts CASCADE;
 
--- 6. Drop Stall Reviews & Lease Contracts
+-- 6. Drop Operational, Reviews & Lease Contracts
 DROP TABLE IF EXISTS key_requests CASCADE;
 
 DROP TABLE IF EXISTS damage_claims CASCADE;
@@ -41,21 +45,21 @@ DROP TABLE IF EXISTS stall_reviews CASCADE;
 
 DROP TABLE IF EXISTS lease_contracts CASCADE;
 
--- 7. Drop Stalls, Businesses & Business Types
+-- 7. Drop Stalls, Businesses & Payout Methods
 DROP TABLE IF EXISTS stalls CASCADE;
 
 DROP TABLE IF EXISTS businesses CASCADE;
 
 DROP TABLE IF EXISTS business_types CASCADE;
 
--- 8. Drop Bank Accounts, Identities & Users
-DROP TABLE IF EXISTS bank_accounts CASCADE;
+DROP TABLE IF EXISTS payout_methods CASCADE;
 
+-- 8. Drop Identities & Users
 DROP TABLE IF EXISTS user_identity_profiles CASCADE;
 
 DROP TABLE IF EXISTS users CASCADE;
 
--- 9. Drop Custom Enum Types (Lengkap tanpa duplikasi)
+-- 9. Drop Custom Enum Types
 DROP TYPE IF EXISTS stall_permanence_type CASCADE;
 
 DROP TYPE IF EXISTS stall_placement_type CASCADE;

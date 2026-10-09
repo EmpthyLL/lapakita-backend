@@ -78,41 +78,6 @@ CREATE TABLE payout_methods (
 
 CREATE INDEX idx_payout_methods_user_id ON payout_methods(user_id);
 
-CREATE TABLE payment_transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    
-    -- Pihak Utama
-    payer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- Pembayar (Tenant / Buyer)
-    payee_user_id UUID REFERENCES users(id) ON DELETE SET NULL,             -- Penerima (Owner / Supplier / NULL jika bayar ke Lapakita)
-    
-    -- Relasi Entitas Spesifik (Nullable tergantung jenis transaksi)
-    lease_contract_id UUID REFERENCES lease_contracts(id) ON DELETE SET NULL,
-    supplier_order_id UUID REFERENCES supplier_orders(id) ON DELETE SET NULL,
-    
-    -- Identifikasi Transaksi Gateway
-    order_id VARCHAR(64) UNIQUE NOT NULL,                                   -- e.g. "LAPAKITA-RENT-9921" / "LAPAKITA-SUP-1102"
-    transaction_category VARCHAR(32) NOT NULL,                              -- 'lease_rent', 'security_deposit', 'b2b_supplier_order', 'platform_subscription', 'payout'
-    
-    gross_amount NUMERIC(15, 2) NOT NULL,
-    admin_fee_amount NUMERIC(15, 2) DEFAULT 0.00,                           -- Biaya penanganan platform/gateway
-    net_amount NUMERIC(15, 2) NOT NULL,                                     -- Nominal bersih
-    
-    payment_channel VARCHAR(32),                                           -- 'bank_transfer', 'qris', 'gopay', 'credit_card'
-    payment_status VARCHAR(32) NOT NULL DEFAULT 'pending',                  -- 'pending', 'settlement', 'expire', 'cancel', 'failed'
-    
-    snap_token TEXT,
-    snap_redirect_url TEXT,
-    gateway_response JSONB DEFAULT '{}'::jsonb,
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_payment_transactions_payer ON payment_transactions(payer_user_id);
-CREATE INDEX idx_payment_transactions_payee ON payment_transactions(payee_user_id);
-CREATE INDEX idx_payment_transactions_order ON payment_transactions(order_id);
-CREATE INDEX idx_payment_transactions_category ON payment_transactions(transaction_category);
-
 -- =============================================================================
 -- 2. BUSINESS TYPES & TENANT BUSINESS PROFILES
 -- =============================================================================
@@ -609,3 +574,38 @@ CREATE TABLE generated_reports (
 
 CREATE INDEX idx_generated_reports_user_role ON generated_reports(user_id, role_type);
 CREATE INDEX idx_generated_reports_created_at ON generated_reports(created_at DESC);
+
+CREATE TABLE payment_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    -- Pihak Utama
+    payer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- Pembayar (Tenant / Buyer)
+    payee_user_id UUID REFERENCES users(id) ON DELETE SET NULL,             -- Penerima (Owner / Supplier / NULL jika bayar ke Lapakita)
+    
+    -- Relasi Entitas Spesifik (Nullable tergantung jenis transaksi)
+    lease_contract_id UUID REFERENCES lease_contracts(id) ON DELETE SET NULL,
+    supplier_order_id UUID REFERENCES supplier_orders(id) ON DELETE SET NULL,
+    
+    -- Identifikasi Transaksi Gateway
+    order_id VARCHAR(64) UNIQUE NOT NULL,                                   -- e.g. "LAPAKITA-RENT-9921" / "LAPAKITA-SUP-1102"
+    transaction_category VARCHAR(32) NOT NULL,                              -- 'lease_rent', 'security_deposit', 'b2b_supplier_order', 'platform_subscription', 'payout'
+    
+    gross_amount NUMERIC(15, 2) NOT NULL,
+    admin_fee_amount NUMERIC(15, 2) DEFAULT 0.00,                           -- Biaya penanganan platform/gateway
+    net_amount NUMERIC(15, 2) NOT NULL,                                     -- Nominal bersih
+    
+    payment_channel VARCHAR(32),                                           -- 'bank_transfer', 'qris', 'gopay', 'credit_card'
+    payment_status VARCHAR(32) NOT NULL DEFAULT 'pending',                  -- 'pending', 'settlement', 'expire', 'cancel', 'failed'
+    
+    snap_token TEXT,
+    snap_redirect_url TEXT,
+    gateway_response JSONB DEFAULT '{}'::jsonb,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_payment_transactions_payer ON payment_transactions(payer_user_id);
+CREATE INDEX idx_payment_transactions_payee ON payment_transactions(payee_user_id);
+CREATE INDEX idx_payment_transactions_order ON payment_transactions(order_id);
+CREATE INDEX idx_payment_transactions_category ON payment_transactions(transaction_category);
