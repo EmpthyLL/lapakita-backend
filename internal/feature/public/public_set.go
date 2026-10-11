@@ -3,7 +3,7 @@ package public
 import (
 	"lapakita-backend/internal/feature/public/handler"
 	"lapakita-backend/internal/feature/public/repository"
-	"lapakita-backend/internal/feature/public/usecase"
+	usecase "lapakita-backend/internal/feature/public/usecase/impl"
 
 	"github.com/google/wire"
 )

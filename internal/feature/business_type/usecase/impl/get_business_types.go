@@ -50,7 +50,7 @@ func (u *BusinessTypeUsecase) GetBusinessTypes(ctx context.Context, lang string,
 		}
 
 		responses = append(responses, dto.BusinessTypeResponse{
-			ID:                         item.ID.String(),
+			ID:                         api.EncodeResponse(item.ID),
 			Label:                      label,
 			GroupName:                  groupName,
 			DefaultBEPMonths:           item.DefaultBEPMonths,

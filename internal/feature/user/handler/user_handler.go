@@ -5,12 +5,10 @@ import (
 	"strconv"
 
 	"lapakita-backend/internal/feature/user/dto"
-	"lapakita-backend/internal/feature/user/usecase"
+	usecase "lapakita-backend/internal/feature/user/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
-
-	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 )
@@ -286,7 +284,7 @@ func (h *UserHandler) DeleteDocument(c *gin.Context) {
 	}
 
 	docIDStr := c.Param("id")
-	docID, err := uuid.Parse(docIDStr)
+	docID, err := api.DecodeRequest(docIDStr)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return

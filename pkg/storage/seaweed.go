@@ -92,6 +92,16 @@ func (s *SeaweedFSService) helperBuildObjectKey(folder string, fileName string) 
 	return path.Join(cleanFolder, fileName)
 }
 
+// IsStoredURL reports whether source points to this SeaweedFS bucket.
+func (s *SeaweedFSService) IsStoredURL(source string) bool {
+	scheme := "http"
+	if s.useSSL {
+		scheme = "https"
+	}
+	prefix := fmt.Sprintf("%s://%s/%s/", scheme, s.endpoint, s.bucketName)
+	return strings.HasPrefix(strings.TrimSpace(source), prefix)
+}
+
 func (s *SeaweedFSService) UploadFile(
 	ctx context.Context,
 	fileHeader *multipart.FileHeader,

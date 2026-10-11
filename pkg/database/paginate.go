@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 
 	"lapakita-backend/pkg/api"
@@ -51,14 +52,19 @@ func AutoPaginate[T any](
 	}
 
 	var hasNextPage, hasPrevPage bool
+	selectedIDs := req.GetSelectedIDs()
+	anchorID := ""
+	if len(selectedIDs) > 0 {
+		anchorID = normalizeSelectedID(selectedIDs[0])
+	}
 
 	// -------------------------------------------------------------------------
 	// KASUS A: SelectedID Active (Anchor Center Hydration)
 	// -------------------------------------------------------------------------
-	if req.SelectedID != "" {
+	if anchorID != "" {
 		var anchor T
 		err := db.Session(&gorm.Session{}).
-			Where(fmt.Sprintf("%s = ?", pk), req.SelectedID).
+			Where(fmt.Sprintf("%s = ?", pk), anchorID).
 			First(&anchor).Error
 
 		if err == nil {
@@ -86,7 +92,7 @@ func AutoPaginate[T any](
 			// 1. Fetch item SEBELUM anchor (Upper)
 			var upperSlice []T
 			err = db.Session(&gorm.Session{}).
-				Where(upperOp, req.SelectedID, req.SelectedID).
+				Where(upperOp, anchorID, anchorID).
 				Order(upperOrder).
 				Limit(beforeLimit).
 				Find(&upperSlice).Error
@@ -102,7 +108,7 @@ func AutoPaginate[T any](
 			// 2. Fetch item MULAI DARI anchor KE BAWAH (Lower)
 			var lowerSlice []T
 			err = db.Session(&gorm.Session{}).
-				Where(lowerOp, req.SelectedID, req.SelectedID).
+				Where(lowerOp, anchorID, anchorID).
 				Order(lowerOrder).
 				Limit(afterLimit).
 				Find(&lowerSlice).Error
@@ -111,12 +117,11 @@ func AutoPaginate[T any](
 			}
 
 			combined := append(upperSlice, lowerSlice...)
-			*outSlice = combined
 
 			if len(combined) > 0 {
 				var prevCount int64
 				_ = db.Session(&gorm.Session{}).
-					Where(upperOp, req.SelectedID, req.SelectedID).
+					Where(upperOp, anchorID, anchorID).
 					Count(&prevCount).Error
 				hasPrevPage = prevCount > 0
 				hasNextPage = int64(len(lowerSlice)) >= int64(afterLimit)
@@ -132,6 +137,12 @@ func AutoPaginate[T any](
 				HasNextPage: hasNextPage,
 				HasPrevPage: hasPrevPage,
 			}
+
+			combined, err = hydrateSelectedRows(db, pk, selectedIDs, combined)
+			if err != nil {
+				return err
+			}
+			*outSlice = combined
 
 			return nil
 		}
@@ -157,6 +168,11 @@ func AutoPaginate[T any](
 		hasNextPage = true
 		*outSlice = items[:req.Limit]
 	}
+	hydratedItems, hydrateErr := hydrateSelectedRows(db, pk, selectedIDs, *outSlice)
+	if hydrateErr != nil {
+		return hydrateErr
+	}
+	*outSlice = hydratedItems
 	hasPrevPage = req.Page > 1
 
 	totalPages := int((totalItems + int64(req.Limit) - 1) / int64(req.Limit))
@@ -171,6 +187,70 @@ func AutoPaginate[T any](
 	}
 
 	return nil
+}
+
+func normalizeSelectedID(value string) string {
+	if normalized, err := api.Normalize(value); err == nil {
+		return normalized
+	}
+	return value
+}
+
+func entityID[T any](item T) string {
+	value := reflect.ValueOf(item)
+	if value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return ""
+		}
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Struct {
+		return ""
+	}
+	field := value.FieldByName("ID")
+	if !field.IsValid() || !field.CanInterface() {
+		return ""
+	}
+	return normalizeSelectedID(fmt.Sprint(field.Interface()))
+}
+
+func hydrateSelectedRows[T any](db *gorm.DB, primaryKey string, selectedIDs []string, items []T) ([]T, error) {
+	if len(selectedIDs) == 0 {
+		return items, nil
+	}
+
+	queryIDs := make([]string, 0, len(selectedIDs))
+	for _, id := range selectedIDs {
+		queryIDs = append(queryIDs, normalizeSelectedID(id))
+	}
+
+	var selectedItems []T
+	if err := db.Session(&gorm.Session{}).
+		Where(fmt.Sprintf("%s IN ?", primaryKey), queryIDs).
+		Find(&selectedItems).Error; err != nil {
+		return nil, err
+	}
+
+	selectedByID := make(map[string]T, len(selectedItems))
+	for _, item := range selectedItems {
+		selectedByID[entityID(item)] = item
+	}
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		seen[entityID(item)] = struct{}{}
+	}
+
+	result := make([]T, 0, len(selectedItems)+len(items))
+	for _, id := range queryIDs {
+		if _, alreadyIncluded := seen[id]; alreadyIncluded {
+			continue
+		}
+		if item, exists := selectedByID[id]; exists {
+			result = append(result, item)
+			seen[id] = struct{}{}
+		}
+	}
+	return append(result, items...), nil
 }
 
 // -----------------------------------------------------------------------------
@@ -203,69 +283,70 @@ func AutoPaginateSlice[T any](
 	// -------------------------------------------------------------------------
 	// KASUS A: SelectedID Active (Hydration Dropdown Tanpa Duplikasi)
 	// -------------------------------------------------------------------------
-	if req.SelectedID != "" && matchSelected != nil {
-		selectedIdx := -1
-		for idx, item := range sourceSlice {
-			if matchSelected(item, req.SelectedID) {
-				selectedIdx = idx
-				break
+	selectedIDs := req.GetSelectedIDs()
+	if len(selectedIDs) > 0 && matchSelected != nil {
+		selectedItems := make([]T, 0, len(selectedIDs))
+		selectedIndexes := make(map[int]struct{}, len(selectedIDs))
+		for _, selectedID := range selectedIDs {
+			for index, item := range sourceSlice {
+				if matchSelected(item, selectedID) {
+					if _, alreadySelected := selectedIndexes[index]; !alreadySelected {
+						selectedItems = append(selectedItems, item)
+						selectedIndexes[index] = struct{}{}
+					}
+					break
+				}
 			}
 		}
 
-		if selectedIdx != -1 {
-			// The selected option is an extra hydration item on the first page.
-			// Remove it from the regular stream so it cannot appear again later.
-			regularItems := make([]T, 0, totalItems-1)
-			regularItems = append(regularItems, sourceSlice[:selectedIdx]...)
-			regularItems = append(regularItems, sourceSlice[selectedIdx+1:]...)
+		regularItems := make([]T, 0, totalItems-len(selectedItems))
+		for index, item := range sourceSlice {
+			if _, isSelected := selectedIndexes[index]; !isSelected {
+				regularItems = append(regularItems, item)
+			}
+		}
 
-			startIdx := 0
-			if req.Page > 1 {
-				startIdx = (req.Page-1)*req.Limit - 1
-				if startIdx < 0 {
-					startIdx = 0
-				}
-			}
-			if startIdx >= len(regularItems) && req.Page > 1 {
-				*outSlice = []T{}
-				*meta = api.PaginationMeta{
-					TotalItems:  totalItems,
-					TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
-					CurrentPage: req.Page,
-					PerPage:     req.Limit,
-					HasPrevPage: true,
-				}
-				return
-			}
-
-			pageSize := req.Limit
-			if req.Page == 1 {
-				pageSize--
-			}
-			endIdx := startIdx + pageSize
-			if endIdx > len(regularItems) {
-				endIdx = len(regularItems)
-			}
-
-			pagedItems := regularItems[startIdx:endIdx]
-			if req.Page == 1 {
-				pagedItems = append([]T{sourceSlice[selectedIdx]}, pagedItems...)
-			}
-			hasPrevPage := req.Page > 1
-			hasNextPage := endIdx < len(regularItems)
-			totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
-
-			*outSlice = pagedItems
+		startIdx := 0
+		pageSize := req.Limit - len(selectedItems)
+		if req.Page > 1 {
+			startIdx = (req.Page-1)*req.Limit - len(selectedItems)
+			pageSize = req.Limit
+		}
+		if pageSize < 0 {
+			pageSize = 0
+		}
+		if startIdx < 0 {
+			startIdx = 0
+		}
+		if startIdx >= len(regularItems) {
+			*outSlice = []T{}
 			*meta = api.PaginationMeta{
 				TotalItems:  totalItems,
-				TotalPages:  totalPages,
+				TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
 				CurrentPage: req.Page,
 				PerPage:     req.Limit,
-				HasNextPage: hasNextPage,
-				HasPrevPage: hasPrevPage,
+				HasPrevPage: req.Page > 1,
 			}
 			return
 		}
+		endIdx := startIdx + pageSize
+		if endIdx > len(regularItems) {
+			endIdx = len(regularItems)
+		}
+		pagedItems := regularItems[startIdx:endIdx]
+		if req.Page == 1 {
+			pagedItems = append(selectedItems, pagedItems...)
+		}
+		*outSlice = pagedItems
+		*meta = api.PaginationMeta{
+			TotalItems:  totalItems,
+			TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
+			CurrentPage: req.Page,
+			PerPage:     req.Limit,
+			HasNextPage: endIdx < len(regularItems),
+			HasPrevPage: req.Page > 1,
+		}
+		return
 	}
 
 	// -------------------------------------------------------------------------

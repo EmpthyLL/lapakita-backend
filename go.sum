@@ -161,8 +161,8 @@ github.com/googleapis/enterprise-certificate-proxy v0.3.19 h1:mMOE7DN2+p76/EdIrm
 github.com/googleapis/enterprise-certificate-proxy v0.3.19/go.mod h1:rSEsBUemEBZEexP2y6jPp16LUmUbjmSbcPMQizR0o4k=
 github.com/googleapis/gax-go/v2 v2.23.0 h1:Tchl7qkvE7Ip3y+ztvNufYFvkfqTe7NfLTYGIdJRLuE=
 github.com/googleapis/gax-go/v2 v2.23.0/go.mod h1:rBQKOVJCdb8IFEzg+FCwlt1LP/xMDGuqUXhUG+XMXEg=
-github.com/imagekit-developer/imagekit-go/v2 v2.9.0 h1:0kX1vbBtXuafZfE0tjctgy9gexC/piu75mH+MXxOBaA=
-github.com/imagekit-developer/imagekit-go/v2 v2.9.0/go.mod h1:OfuwiHGPakxvI+uI/XQylr1BFl1RWjPQ+7w0pipU/yk=
+github.com/imagekit-developer/imagekit-go/v2 v2.11.0 h1:V9uy0DJNhtQDlcUAJGGIg99gOg8XV572HxvgTZUqkD0=
+github.com/imagekit-developer/imagekit-go/v2 v2.11.0/go.mod h1:OfuwiHGPakxvI+uI/XQylr1BFl1RWjPQ+7w0pipU/yk=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=

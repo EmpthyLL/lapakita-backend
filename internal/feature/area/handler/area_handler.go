@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/area/dto"
-	"lapakita-backend/internal/feature/area/usecase"
+	usecase "lapakita-backend/internal/feature/area/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -14,7 +14,7 @@ import (
 )
 
 type AreaHandler struct {
-	usecase *usecase.AreaUsecase // Pastikan tipe pointer murni
+	usecase *usecase.AreaUsecase
 }
 
 func NewAreaHandler(usecase *usecase.AreaUsecase) *AreaHandler {

@@ -25,7 +25,9 @@ func NewStallRepository(db *gorm.DB) *StallRepository {
 }
 
 func (r *StallRepository) Create(ctx context.Context, stall *entity.Stall) error {
-	return r.db.WithContext(ctx).Create(stall).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Create(stall).Error
+	})
 }
 
 func (r *StallRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.Stall, error) {
@@ -38,11 +40,15 @@ func (r *StallRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.S
 }
 
 func (r *StallRepository) Update(ctx context.Context, stall *entity.Stall) error {
-	return r.db.WithContext(ctx).Save(stall).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Save(stall).Error
+	})
 }
 
 func (r *StallRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Model(&entity.Stall{}).Where("id = ?", id).Update("deleted_at", gorm.Expr("NOW()")).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Model(&entity.Stall{}).Where("id = ?", id).Update("deleted_at", gorm.Expr("NOW()")).Error
+	})
 }
 
 func cleanLocationComponent(val string) string {
@@ -244,7 +250,7 @@ func (r *StallRepository) FindByOwnerID(ctx context.Context, req dto.GetOwnerSta
 	var stalls []entity.Stall
 	var meta api.PaginationMeta
 
-	ownerUUID, err := uuid.Parse(req.OwnerID)
+	ownerUUID, err := api.DecodeRequest(req.OwnerID)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}

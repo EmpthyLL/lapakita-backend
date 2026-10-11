@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"lapakita-backend/internal/entity"
+	"lapakita-backend/pkg/database"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -21,7 +22,9 @@ func NewAuthRepository(db *gorm.DB) *AuthRepository {
 }
 
 func (r *AuthRepository) CreateUser(ctx context.Context, user *entity.User) error {
-	return r.db.WithContext(ctx).Create(user).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Create(user).Error
+	})
 }
 
 func (r *AuthRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
@@ -51,5 +54,7 @@ func (r *AuthRepository) FindUserByEmail(ctx context.Context, email string) (*en
 }
 
 func (r *AuthRepository) UpdateUser(ctx context.Context, user *entity.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Save(user).Error
+	})
 }

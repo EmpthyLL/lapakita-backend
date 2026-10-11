@@ -3,7 +3,7 @@ package auth
 import (
 	"lapakita-backend/internal/feature/auth/handler"
 	"lapakita-backend/internal/feature/auth/repository"
-	"lapakita-backend/internal/feature/auth/usecase"
+	usecase "lapakita-backend/internal/feature/auth/usecase/impl"
 
 	"github.com/google/wire"
 )

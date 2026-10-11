@@ -4,13 +4,12 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/stall/dto"
-	"lapakita-backend/internal/feature/stall/usecase"
+	usecase "lapakita-backend/internal/feature/stall/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type StallHandler struct {
@@ -41,7 +40,7 @@ func (h *StallHandler) Search(c *gin.Context) {
 // GET /api/v1/stalls/:id
 func (h *StallHandler) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
+	id, err := api.DecodeRequest(idStr)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
@@ -113,7 +112,7 @@ func (h *StallHandler) Delete(c *gin.Context) {
 	}
 
 	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
+	id, err := api.DecodeRequest(idStr)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
@@ -143,7 +142,7 @@ func (h *StallHandler) GetByOwner(c *gin.Context) {
 
 	// Auto-fill owner_id dari JWT jika tidak dikirimkan di query param
 	if req.OwnerID == "" {
-		req.OwnerID = ownerID.String()
+		req.OwnerID = api.EncodeResponse(ownerID)
 	}
 
 	stalls, meta, err := h.usecase.GetByOwnerID(c.Request.Context(), req)
@@ -157,7 +156,7 @@ func (h *StallHandler) GetByOwner(c *gin.Context) {
 
 // GET /api/v1/stalls/:id/similar
 func (h *StallHandler) GetSimilar(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := api.DecodeRequest(c.Param("id"))
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return

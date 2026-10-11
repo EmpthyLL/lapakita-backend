@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"lapakita-backend/internal/entity"
+	"lapakita-backend/pkg/database"
 
 	"gorm.io/gorm"
 )
@@ -49,5 +50,7 @@ func (r *PublicRepository) GetLegalDocument(ctx context.Context, docType, lang s
 }
 
 func (r *PublicRepository) CreateContactInquiry(ctx context.Context, inquiry *entity.ContactInquiry) error {
-	return r.database.WithContext(ctx).Create(inquiry).Error
+	return database.RunInTransaction(ctx, r.database, func(tx *gorm.DB) error {
+		return tx.Create(inquiry).Error
+	})
 }

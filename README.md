@@ -16,7 +16,7 @@ Backend RESTful API untuk platform manajemen dan penyewaan lapak UMKM berbasis *
 - **Live Reload Development:** [Air](https://github.com/air-verse/air)
 - **Third-Party Integrations:**
   - **Firebase:** Push Notification (FCM) & Analytics
-  - **Storage:** ImageKit SDK v2 & MinIO (Object Storage)
+  - **Storage:** SeaweedFS & MinIO (Object Storage)
   - **Payment Gateway:** Midtrans Snap SDK
 
 ---
@@ -48,7 +48,7 @@ lapakita-backend/
 │   ├── firebase/              # FCM & Firebase Analytics
 │   ├── logger/                # Zap Logger Setup
 │   ├── payment/               # Midtrans Integration
-│   └── storage/               # ImageKit & MinIO Storage Drivers
+│   └── storage/               # SeaweedFS & MinIO Storage Drivers
 ├── migrations/                # File Migrasi SQL
 ├── .env.example               # Template Environment Variable
 ├── Dockerfile                 # Multi-stage Docker Build

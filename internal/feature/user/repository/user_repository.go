@@ -35,14 +35,17 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.Us
 }
 
 func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Save(user).Error
+	})
 }
 
 func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, newPasswordHash string) error {
-	return r.db.WithContext(ctx).
-		Model(&entity.User{}).
-		Where("id = ?", userID).
-		Update("password_hash", newPasswordHash).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Model(&entity.User{}).
+			Where("id = ?", userID).
+			Update("password_hash", newPasswordHash).Error
+	})
 }
 
 // Check jika nomor dokumen ini sudah dipakai di manapun (Global Check)
@@ -158,11 +161,15 @@ func (r *UserRepository) GetPhoneNumbers(ctx context.Context, userID uuid.UUID, 
 }
 
 func (r *UserRepository) CreateIdentityProfile(ctx context.Context, profile *entity.UserIdentityProfile) error {
-	return r.db.WithContext(ctx).Create(profile).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Create(profile).Error
+	})
 }
 
 func (r *UserRepository) DeleteIdentityProfile(ctx context.Context, userID uuid.UUID, documentID uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("id = ? AND user_id = ?", documentID, userID).Delete(&entity.UserIdentityProfile{}).Error
+	return database.RunInTransaction(ctx, r.db, func(tx *gorm.DB) error {
+		return tx.Where("id = ? AND user_id = ?", documentID, userID).Delete(&entity.UserIdentityProfile{}).Error
+	})
 }
 
 func (r *UserRepository) GetDocument(ctx context.Context, userID uuid.UUID, req *dto.GetDocumentRequest) ([]entity.UserIdentityProfile, api.PaginationMeta, error) {

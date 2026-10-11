@@ -1,0 +1,44 @@
+package usecase
+
+import (
+	"context"
+	"encoding/json"
+
+	"lapakita-backend/internal/feature/area/dto"
+	"lapakita-backend/internal/feature/area/usecase"
+
+	"github.com/redis/go-redis/v9"
+)
+
+func (u *AreaUsecase) GetSearchHistory(ctx context.Context, userID string, deviceID string) ([]dto.AreaHistoryItemResponse, error) {
+	userKey, guestKey := usecase.GetHistoryKeys(userID, deviceID)
+	if userKey != "" && guestKey != "" {
+		usecase.MergeGuestToUserHistory(ctx, u.rdb, userKey, guestKey)
+	}
+	targetKey := userKey
+	if targetKey == "" {
+		targetKey = guestKey
+	}
+	if targetKey == "" {
+		return []dto.AreaHistoryItemResponse{}, nil
+	}
+
+	rawItems, err := u.rdb.LRange(ctx, targetKey, 0, -1).Result()
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+	if userKey != "" {
+		u.rdb.Expire(ctx, userKey, usecase.UserHistoryTTL)
+	} else if guestKey != "" {
+		u.rdb.Expire(ctx, guestKey, usecase.GuestHistoryTTL)
+	}
+
+	result := make([]dto.AreaHistoryItemResponse, 0, len(rawItems))
+	for _, itemStr := range rawItems {
+		var item dto.AreaHistoryItemResponse
+		if err := json.Unmarshal([]byte(itemStr), &item); err == nil {
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}

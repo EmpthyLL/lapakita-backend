@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/auth/dto"
-	"lapakita-backend/internal/feature/auth/usecase"
+	usecase "lapakita-backend/internal/feature/auth/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"

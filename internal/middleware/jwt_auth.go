@@ -85,7 +85,7 @@ func GetUserID(c *gin.Context) (uuid.UUID, bool) {
 		return uuid.Nil, false
 	}
 
-	parsedUUID, err := uuid.Parse(userIDStr)
+	parsedUUID, err := api.DecodeRequest(userIDStr)
 	if err != nil {
 		return uuid.Nil, false
 	}

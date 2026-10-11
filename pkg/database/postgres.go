@@ -40,3 +40,14 @@ func WithTransaction(ctx context.Context, db *gorm.DB, fn func(txCtx context.Con
 		return fn(txCtx)
 	})
 }
+
+// RunInTransaction executes fn in the transaction carried by ctx when present,
+// or creates a transaction for this operation otherwise.
+func RunInTransaction(ctx context.Context, db *gorm.DB, fn func(tx *gorm.DB) error) error {
+	if tx, ok := ctx.Value(txKey).(*gorm.DB); ok && tx != nil {
+		return fn(tx.WithContext(ctx))
+	}
+	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return fn(tx.WithContext(ctx))
+	})
+}
