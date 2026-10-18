@@ -7,27 +7,32 @@ import (
 )
 
 type BasePaginationRequest struct {
-	Page        int      `form:"page" binding:"omitempty,min=1"`
-	Limit       int      `form:"limit" binding:"omitempty,min=1"`
-	SelectedIDs []string `form:"selected_id" binding:"omitempty,dive,required"`
+	Page       int    `form:"page" binding:"omitempty,min=1"`
+	Limit      int    `form:"limit" binding:"omitempty,min=1"`
+	SelectedID string `form:"selected_id" binding:"omitempty"`
 }
 
 func (r BasePaginationRequest) GetSelectedIDs() []string {
-	seen := make(map[string]struct{}, len(r.SelectedIDs))
-	result := make([]string, 0, len(r.SelectedIDs))
-	for _, selection := range r.SelectedIDs {
-		for _, value := range strings.Split(selection, ",") {
-			value = strings.TrimSpace(value)
-			if value == "" {
-				continue
-			}
-			if _, exists := seen[value]; exists {
-				continue
-			}
-			seen[value] = struct{}{}
-			result = append(result, value)
-		}
+	if r.SelectedID == "" {
+		return nil
 	}
+
+	rawItems := strings.Split(r.SelectedID, ",")
+	seen := make(map[string]struct{}, len(rawItems))
+	result := make([]string, 0, len(rawItems))
+
+	for _, item := range rawItems {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		if _, exists := seen[item]; exists {
+			continue
+		}
+		seen[item] = struct{}{}
+		result = append(result, item)
+	}
+
 	return result
 }
 

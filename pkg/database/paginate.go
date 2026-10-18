@@ -36,10 +36,10 @@ func AutoPaginate[T any](
 
 	if customOrderOpsional != "" {
 		orderCol = customOrderOpsional
-		if len(customOrderOpsional) > 4 && customOrderOpsional[len(customOrderOpsional)-4:] == " ASC" {
+		if len(customOrderOpsional) > 4 && strings.ToUpper(customOrderOpsional[len(customOrderOpsional)-4:]) == " ASC" {
 			orderDir = "ASC"
 			orderCol = strings.TrimSpace(customOrderOpsional[:len(customOrderOpsional)-4])
-		} else if len(customOrderOpsional) > 5 && customOrderOpsional[len(customOrderOpsional)-5:] == " DESC" {
+		} else if len(customOrderOpsional) > 5 && strings.ToUpper(customOrderOpsional[len(customOrderOpsional)-5:]) == " DESC" {
 			orderDir = "DESC"
 			orderCol = strings.TrimSpace(customOrderOpsional[:len(customOrderOpsional)-5])
 		}
