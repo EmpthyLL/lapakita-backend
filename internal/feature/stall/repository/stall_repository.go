@@ -128,7 +128,17 @@ func (r *StallRepository) Search(ctx context.Context, req dto.SearchStallRequest
 	var meta api.PaginationMeta
 
 	query := r.db.WithContext(ctx).Model(&entity.Stall{}).Where("deleted_at IS NULL AND is_published = ?", true)
-	query = query.Where("permanence_type != ? OR ((event_schedule->>'end_date')::date >= CURRENT_DATE)", entity.StallPermanenceTemporary)
+
+	// Filter untuk stall Temporary:
+	// 1. Tanggal selesai event (end_date) tidak boleh lewat hari ini
+	// 2. Batas tanggal pendaftaran (registration_deadline) tidak boleh lewat hari ini
+	query = query.Where(
+		"permanence_type != ? OR ("+
+			"(event_schedule->>'end_date')::date >= CURRENT_DATE AND "+
+			"(event_schedule->>'registration_deadline' IS NULL OR (event_schedule->>'registration_deadline')::date >= CURRENT_DATE)"+
+			")",
+		entity.StallPermanenceTemporary,
+	)
 
 	if req.Location != "" {
 		query = applyLocationFilter(query, req.Location)
