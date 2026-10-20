@@ -23,8 +23,8 @@ func NewAuthHandler(usecase *usecase.AuthUsecase) *AuthHandler {
 // POST /api/v1/auth/register
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -39,8 +39,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // POST /api/v1/auth/login
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -56,8 +56,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // POST /api/v1/auth/google
 func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 	var req dto.GoogleAuthRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -79,8 +79,8 @@ func (h *AuthHandler) CompleteProfile(c *gin.Context) {
 	}
 
 	var req dto.CompleteProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -96,8 +96,8 @@ func (h *AuthHandler) CompleteProfile(c *gin.Context) {
 // POST /api/v1/auth/otp/send
 func (h *AuthHandler) SendOTP(c *gin.Context) {
 	var req dto.SendOTPRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -112,8 +112,8 @@ func (h *AuthHandler) SendOTP(c *gin.Context) {
 // POST /api/v1/auth/otp/verify
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	var req dto.VerifyOTPRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -130,7 +130,11 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	email := c.Param("email")
 	var req dto.ResetPasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil || email == "" {
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
+		return
+	}
+	if email == "" {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 		return
 	}
@@ -146,8 +150,8 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 // POST /api/v1/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req dto.RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 

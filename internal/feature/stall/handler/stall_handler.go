@@ -23,8 +23,8 @@ func NewStallHandler(usecase *usecase.StallUsecase) *StallHandler {
 // GET /api/v1/stalls (Search with Filters)
 func (h *StallHandler) Search(c *gin.Context) {
 	var req dto.SearchStallRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -64,8 +64,8 @@ func (h *StallHandler) Create(c *gin.Context) {
 	}
 
 	var req dto.CreateStallRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -87,8 +87,8 @@ func (h *StallHandler) Update(c *gin.Context) {
 	}
 
 	var req dto.UpdateStallRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -135,8 +135,8 @@ func (h *StallHandler) GetByOwner(c *gin.Context) {
 	}
 
 	var req dto.GetOwnerStallsRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -163,8 +163,8 @@ func (h *StallHandler) GetSimilar(c *gin.Context) {
 	}
 
 	req := dto.GetSimilarStallsRequest{ID: id}
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 

@@ -7,11 +7,13 @@ import (
 )
 
 type BasePaginationRequest struct {
-	Page       int    `form:"page" binding:"omitempty,min=1"`
-	Limit      int    `form:"limit" binding:"omitempty,min=1"`
+	Page       int    `form:"page,default=1" binding:"omitempty"`
+	Limit      int    `form:"limit,default=10" binding:"omitempty,min=1"`
 	SelectedID string `form:"selected_id" binding:"omitempty"`
 }
 
+// GetSelectedIDs menguraikan query string koma (misal: "id1,id2,id3")
+// menjadi []string bersih tanpa duplikat.
 func (r BasePaginationRequest) GetSelectedIDs() []string {
 	if r.SelectedID == "" {
 		return nil
@@ -36,8 +38,26 @@ func (r BasePaginationRequest) GetSelectedIDs() []string {
 	return result
 }
 
+// GetPrimaryAnchor mengambil titik acuan tengah dari daftar SelectedID
+func (r BasePaginationRequest) GetPrimaryAnchor() (string, bool) {
+	ids := r.GetSelectedIDs()
+	n := len(ids)
+	if n == 0 {
+		return "", false
+	}
+
+	var centerIdx int
+	if n%2 == 0 {
+		centerIdx = (n / 2) - 1
+	} else {
+		centerIdx = n / 2
+	}
+
+	return ids[centerIdx], true
+}
+
 func (r *BasePaginationRequest) SetDefaults() {
-	if r.Page <= 0 {
+	if r.Page == 0 {
 		r.Page = 1
 	}
 	if r.Limit <= 0 {

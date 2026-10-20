@@ -11,6 +11,41 @@ import (
 	"gorm.io/gorm"
 )
 
+// Helper presisi untuk mengekstrak string UUID/ID murni dari struct/pointer
+func getItemID[T any](item T, pkColumn string) string {
+	val := reflect.ValueOf(item)
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return ""
+		}
+		val = val.Elem()
+	}
+
+	if val.Kind() == reflect.Struct {
+		field := val.FieldByName("ID")
+		if field.IsValid() && field.CanInterface() {
+			return normalizeSelectedID(fmt.Sprintf("%v", field.Interface()))
+		}
+
+		for i := 0; i < val.NumField(); i++ {
+			typeField := val.Type().Field(i)
+			tag := typeField.Tag.Get("gorm")
+			if strings.Contains(tag, "primaryKey") || strings.EqualFold(typeField.Name, pkColumn) {
+				return normalizeSelectedID(fmt.Sprintf("%v", val.Field(i).Interface()))
+			}
+		}
+	}
+
+	return normalizeSelectedID(fmt.Sprintf("%v", item))
+}
+
+func normalizeSelectedID(value string) string {
+	if normalized, err := api.Normalize(value); err == nil {
+		return normalized
+	}
+	return value
+}
+
 // -----------------------------------------------------------------------------
 // 1. AUTOPAGINATE UNTUK QUERY GORM (SQL DATABASE)
 // -----------------------------------------------------------------------------
@@ -24,8 +59,6 @@ func AutoPaginate[T any](
 	customOrderOpsional string,
 	primaryKeyColumn ...string,
 ) error {
-	req.SetDefaults()
-
 	pk := "id"
 	if len(primaryKeyColumn) > 0 && primaryKeyColumn[0] != "" {
 		pk = primaryKeyColumn[0]
@@ -53,27 +86,17 @@ func AutoPaginate[T any](
 
 	var hasNextPage, hasPrevPage bool
 	selectedIDs := req.GetSelectedIDs()
-	anchorID := ""
-	if len(selectedIDs) > 0 {
-		anchorID = normalizeSelectedID(selectedIDs[0])
-	}
 
 	// -------------------------------------------------------------------------
-	// KASUS A: SelectedID Active (Anchor Center Hydration)
+	// KASUS A: SelectedID Active (Anchor Center Hydration & Bidirectional Page)
 	// -------------------------------------------------------------------------
-	if anchorID != "" {
+	if anchorID, ok := req.GetPrimaryAnchor(); ok {
 		var anchor T
 		err := db.Session(&gorm.Session{}).
 			Where(fmt.Sprintf("%s = ?", pk), anchorID).
 			First(&anchor).Error
 
 		if err == nil {
-			beforeLimit := 4
-			if req.Limit < 5 {
-				beforeLimit = req.Limit / 2
-			}
-			afterLimit := req.Limit - beforeLimit
-
 			anchorValSubquery := fmt.Sprintf("(SELECT %s FROM %s WHERE %s = ? LIMIT 1)", orderCol, targetTableName, pk)
 
 			var upperOp, upperOrder, lowerOp, lowerOrder string
@@ -89,44 +112,164 @@ func AutoPaginate[T any](
 				lowerOrder = fmt.Sprintf("%s DESC, %s DESC", orderCol, pk)
 			}
 
-			// 1. Fetch item SEBELUM anchor (Upper)
 			var upperSlice []T
-			err = db.Session(&gorm.Session{}).
-				Where(upperOp, anchorID, anchorID).
-				Order(upperOrder).
-				Limit(beforeLimit).
-				Find(&upperSlice).Error
-			if err != nil {
-				return err
+			var lowerSlice []T
+
+			if req.Page == 1 {
+				idealUpperLimit := 4
+				if req.Limit < 10 {
+					idealUpperLimit = req.Limit / 2
+				}
+
+				// Fetch Upper (Item sebelum Anchor)
+				err = db.Session(&gorm.Session{}).
+					Where(upperOp, anchorID, anchorID, anchorID).
+					Order(upperOrder).
+					Limit(idealUpperLimit).
+					Find(&upperSlice).Error
+				if err != nil {
+					return err
+				}
+
+				actualUpperCount := len(upperSlice)
+				lowerLimit := req.Limit - actualUpperCount
+
+				// Fetch Lower (Item mulai dari Anchor ke bawah)
+				err = db.Session(&gorm.Session{}).
+					Where(lowerOp, anchorID, anchorID, anchorID).
+					Order(lowerOrder).
+					Limit(lowerLimit + 1).
+					Find(&lowerSlice).Error
+				if err != nil {
+					return err
+				}
+
+				if len(lowerSlice) > lowerLimit {
+					hasNextPage = true
+					lowerSlice = lowerSlice[:lowerLimit]
+				}
+
+				actualLowerCount := len(lowerSlice)
+				if (actualUpperCount + actualLowerCount) < req.Limit {
+					extraNeeded := req.Limit - (actualUpperCount + actualLowerCount)
+					var extraUpper []T
+					_ = db.Session(&gorm.Session{}).
+						Where(upperOp, anchorID, anchorID, anchorID).
+						Order(upperOrder).
+						Offset(actualUpperCount).
+						Limit(extraNeeded).
+						Find(&extraUpper).Error
+					if len(extraUpper) > 0 {
+						upperSlice = append(upperSlice, extraUpper...)
+					}
+				}
+
+				var totalUpper int64
+				_ = db.Session(&gorm.Session{}).
+					Where(upperOp, anchorID, anchorID, anchorID).
+					Count(&totalUpper).Error
+				hasPrevPage = totalUpper > int64(len(upperSlice))
+
+			} else if req.Page < 1 {
+				// Halaman sebelum Anchor (Page 0, -1, -2, dst)
+				pageOffset := (1 - req.Page) * req.Limit
+				upperOffset := 4 + (pageOffset - req.Limit)
+
+				err = db.Session(&gorm.Session{}).
+					Where(upperOp, anchorID, anchorID, anchorID).
+					Order(upperOrder).
+					Offset(upperOffset).
+					Limit(req.Limit + 1).
+					Find(&upperSlice).Error
+				if err != nil {
+					return err
+				}
+
+				if len(upperSlice) > req.Limit {
+					hasPrevPage = true
+					upperSlice = upperSlice[:req.Limit]
+				}
+				hasNextPage = true
+
+			} else {
+				// Halaman setelah Anchor (Page 2, 3, 4, dst)
+				pageOffset := (req.Page - 1) * req.Limit
+				lowerOffset := (req.Limit - 4) + (pageOffset - req.Limit)
+
+				err = db.Session(&gorm.Session{}).
+					Where(lowerOp, anchorID, anchorID, anchorID).
+					Order(lowerOrder).
+					Offset(lowerOffset).
+					Limit(req.Limit + 1).
+					Find(&lowerSlice).Error
+				if err != nil {
+					return err
+				}
+
+				if len(lowerSlice) > req.Limit {
+					hasNextPage = true
+					lowerSlice = lowerSlice[:req.Limit]
+				}
+				hasPrevPage = true
 			}
 
-			// Reverse Upper Slice
+			// Reverse Upper Slice agar urutan kembali kronologis
 			for i, j := 0, len(upperSlice)-1; i < j; i, j = i+1, j-1 {
 				upperSlice[i], upperSlice[j] = upperSlice[j], upperSlice[i]
 			}
 
-			// 2. Fetch item MULAI DARI anchor KE BAWAH (Lower)
-			var lowerSlice []T
-			err = db.Session(&gorm.Session{}).
-				Where(lowerOp, anchorID, anchorID).
-				Order(lowerOrder).
-				Limit(afterLimit).
-				Find(&lowerSlice).Error
-			if err != nil {
-				return err
-			}
-
 			combined := append(upperSlice, lowerSlice...)
 
-			if len(combined) > 0 {
-				var prevCount int64
-				_ = db.Session(&gorm.Session{}).
-					Where(upperOp, anchorID, anchorID).
-					Count(&prevCount).Error
-				hasPrevPage = prevCount > 0
-				hasNextPage = int64(len(lowerSlice)) >= int64(afterLimit)
+			// -----------------------------------------------------------------
+			// BOUNDARY PINNING DINAMIS UNTUK ITEM TERPILIH LAINNYA
+			// -----------------------------------------------------------------
+			if len(selectedIDs) > 1 {
+				var allSelectedEntities []T
+				err = db.Session(&gorm.Session{}).
+					Where(fmt.Sprintf("%s IN (?)", pk), selectedIDs).
+					Order(fmt.Sprintf("%s %s, %s %s", orderCol, orderDir, pk, orderDir)).
+					Find(&allSelectedEntities).Error
+
+				if err == nil && len(allSelectedEntities) > 0 {
+					existingMap := make(map[string]bool)
+					for _, item := range combined {
+						idStr := getItemID(item, pk)
+						if idStr != "" {
+							existingMap[idStr] = true
+						}
+					}
+
+					var topPinned []T
+					var bottomPinned []T
+
+					for _, selItem := range allSelectedEntities {
+						selID := getItemID(selItem, pk)
+						if existingMap[selID] {
+							continue
+						}
+
+						var checkUpper int64
+						_ = db.Session(&gorm.Session{}).
+							Where(fmt.Sprintf("%s = ? AND %s", pk, upperOp), selID, anchorID, anchorID, anchorID).
+							Count(&checkUpper).Error
+
+						if checkUpper > 0 {
+							topPinned = append(topPinned, selItem)
+						} else {
+							bottomPinned = append(bottomPinned, selItem)
+						}
+					}
+
+					finalCombined := make([]T, 0, len(topPinned)+len(combined)+len(bottomPinned))
+					finalCombined = append(finalCombined, topPinned...)
+					finalCombined = append(finalCombined, combined...)
+					finalCombined = append(finalCombined, bottomPinned...)
+
+					combined = finalCombined
+				}
 			}
 
+			*outSlice = combined
 			totalPages := int((totalItems + int64(req.Limit) - 1) / int64(req.Limit))
 
 			*meta = api.PaginationMeta{
@@ -138,12 +281,6 @@ func AutoPaginate[T any](
 				HasPrevPage: hasPrevPage,
 			}
 
-			combined, err = hydrateSelectedRows(db, pk, selectedIDs, combined)
-			if err != nil {
-				return err
-			}
-			*outSlice = combined
-
 			return nil
 		}
 	}
@@ -152,6 +289,9 @@ func AutoPaginate[T any](
 	// KASUS B: Standard Offset Pagination (Fallback)
 	// -------------------------------------------------------------------------
 	offset := (req.Page - 1) * req.Limit
+	if offset < 0 {
+		offset = 0
+	}
 	orderClause := fmt.Sprintf("%s %s, %s %s", orderCol, orderDir, pk, orderDir)
 
 	err := db.Session(&gorm.Session{}).
@@ -168,11 +308,6 @@ func AutoPaginate[T any](
 		hasNextPage = true
 		*outSlice = items[:req.Limit]
 	}
-	hydratedItems, hydrateErr := hydrateSelectedRows(db, pk, selectedIDs, *outSlice)
-	if hydrateErr != nil {
-		return hydrateErr
-	}
-	*outSlice = hydratedItems
 	hasPrevPage = req.Page > 1
 
 	totalPages := int((totalItems + int64(req.Limit) - 1) / int64(req.Limit))
@@ -189,70 +324,6 @@ func AutoPaginate[T any](
 	return nil
 }
 
-func normalizeSelectedID(value string) string {
-	if normalized, err := api.Normalize(value); err == nil {
-		return normalized
-	}
-	return value
-}
-
-func entityID[T any](item T) string {
-	value := reflect.ValueOf(item)
-	if value.Kind() == reflect.Pointer {
-		if value.IsNil() {
-			return ""
-		}
-		value = value.Elem()
-	}
-	if value.Kind() != reflect.Struct {
-		return ""
-	}
-	field := value.FieldByName("ID")
-	if !field.IsValid() || !field.CanInterface() {
-		return ""
-	}
-	return normalizeSelectedID(fmt.Sprint(field.Interface()))
-}
-
-func hydrateSelectedRows[T any](db *gorm.DB, primaryKey string, selectedIDs []string, items []T) ([]T, error) {
-	if len(selectedIDs) == 0 {
-		return items, nil
-	}
-
-	queryIDs := make([]string, 0, len(selectedIDs))
-	for _, id := range selectedIDs {
-		queryIDs = append(queryIDs, normalizeSelectedID(id))
-	}
-
-	var selectedItems []T
-	if err := db.Session(&gorm.Session{}).
-		Where(fmt.Sprintf("%s IN ?", primaryKey), queryIDs).
-		Find(&selectedItems).Error; err != nil {
-		return nil, err
-	}
-
-	selectedByID := make(map[string]T, len(selectedItems))
-	for _, item := range selectedItems {
-		selectedByID[entityID(item)] = item
-	}
-	seen := make(map[string]struct{}, len(items))
-	for _, item := range items {
-		seen[entityID(item)] = struct{}{}
-	}
-
-	result := make([]T, 0, len(selectedItems)+len(items))
-	for _, id := range queryIDs {
-		if _, alreadyIncluded := seen[id]; alreadyIncluded {
-			continue
-		}
-		if item, exists := selectedByID[id]; exists {
-			result = append(result, item)
-			seen[id] = struct{}{}
-		}
-	}
-	return append(result, items...), nil
-}
-
 // -----------------------------------------------------------------------------
 // 2. AUTOPAGINATESLICE UNTUK IN-MEMORY ARRAYS / JSONB SLICES
 // -----------------------------------------------------------------------------
@@ -264,8 +335,6 @@ func AutoPaginateSlice[T any](
 	meta *api.PaginationMeta,
 	matchSelected func(item T, selectedID string) bool,
 ) {
-	req.SetDefaults()
-
 	totalItems := len(sourceSlice)
 	if totalItems == 0 {
 		*outSlice = []T{}
@@ -280,79 +349,114 @@ func AutoPaginateSlice[T any](
 		return
 	}
 
-	// -------------------------------------------------------------------------
-	// KASUS A: SelectedID Active (Hydration Dropdown Tanpa Duplikasi)
-	// -------------------------------------------------------------------------
 	selectedIDs := req.GetSelectedIDs()
-	if len(selectedIDs) > 0 && matchSelected != nil {
-		selectedItems := make([]T, 0, len(selectedIDs))
-		selectedIndexes := make(map[int]struct{}, len(selectedIDs))
-		for _, selectedID := range selectedIDs {
-			for index, item := range sourceSlice {
-				if matchSelected(item, selectedID) {
-					if _, alreadySelected := selectedIndexes[index]; !alreadySelected {
-						selectedItems = append(selectedItems, item)
-						selectedIndexes[index] = struct{}{}
+
+	if anchorID, ok := req.GetPrimaryAnchor(); ok && matchSelected != nil {
+		anchorIdx := -1
+		for idx, item := range sourceSlice {
+			if matchSelected(item, anchorID) {
+				anchorIdx = idx
+				break
+			}
+		}
+
+		if anchorIdx != -1 {
+			beforeLimit := 4
+			if req.Limit < 10 {
+				beforeLimit = req.Limit / 2
+			}
+
+			var startIdx, endIdx int
+
+			if req.Page == 1 {
+				startIdx = anchorIdx - beforeLimit
+				if startIdx < 0 {
+					startIdx = 0
+				}
+
+				endIdx = startIdx + req.Limit
+				if endIdx > totalItems {
+					endIdx = totalItems
+					startIdx = endIdx - req.Limit
+					if startIdx < 0 {
+						startIdx = 0
 					}
-					break
+				}
+			} else if req.Page < 1 {
+				pageOffset := (1 - req.Page) * req.Limit
+				endIdx = anchorIdx - beforeLimit - (pageOffset - req.Limit)
+				if endIdx < 0 {
+					endIdx = 0
+				}
+				startIdx = endIdx - req.Limit
+				if startIdx < 0 {
+					startIdx = 0
+				}
+			} else {
+				pageOffset := (req.Page - 1) * req.Limit
+				startIdx = anchorIdx + (req.Limit - beforeLimit) + (pageOffset - req.Limit)
+				if startIdx > totalItems {
+					startIdx = totalItems
+				}
+				endIdx = startIdx + req.Limit
+				if endIdx > totalItems {
+					endIdx = totalItems
 				}
 			}
-		}
 
-		regularItems := make([]T, 0, totalItems-len(selectedItems))
-		for index, item := range sourceSlice {
-			if _, isSelected := selectedIndexes[index]; !isSelected {
-				regularItems = append(regularItems, item)
+			pagedItems := sourceSlice[startIdx:endIdx]
+
+			if len(selectedIDs) > 1 {
+				existingMap := make(map[string]bool)
+				for _, item := range pagedItems {
+					idStr := getItemID(item, "id")
+					if idStr != "" {
+						existingMap[idStr] = true
+					}
+				}
+
+				var topPinned []T
+				var bottomPinned []T
+
+				for idx, item := range sourceSlice {
+					itemId := getItemID(item, "id")
+					for _, selID := range selectedIDs {
+						if itemId == normalizeSelectedID(selID) && !existingMap[itemId] {
+							if idx < anchorIdx {
+								topPinned = append(topPinned, item)
+							} else {
+								bottomPinned = append(bottomPinned, item)
+							}
+							existingMap[itemId] = true
+						}
+					}
+				}
+
+				finalItems := make([]T, 0, len(topPinned)+len(pagedItems)+len(bottomPinned))
+				finalItems = append(finalItems, topPinned...)
+				finalItems = append(finalItems, pagedItems...)
+				finalItems = append(finalItems, bottomPinned...)
+
+				pagedItems = finalItems
 			}
-		}
 
-		startIdx := 0
-		pageSize := req.Limit - len(selectedItems)
-		if req.Page > 1 {
-			startIdx = (req.Page-1)*req.Limit - len(selectedItems)
-			pageSize = req.Limit
-		}
-		if pageSize < 0 {
-			pageSize = 0
-		}
-		if startIdx < 0 {
-			startIdx = 0
-		}
-		if startIdx >= len(regularItems) {
-			*outSlice = []T{}
+			*outSlice = pagedItems
 			*meta = api.PaginationMeta{
 				TotalItems:  totalItems,
 				TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
 				CurrentPage: req.Page,
 				PerPage:     req.Limit,
-				HasPrevPage: req.Page > 1,
+				HasNextPage: endIdx < totalItems,
+				HasPrevPage: startIdx > 0,
 			}
 			return
 		}
-		endIdx := startIdx + pageSize
-		if endIdx > len(regularItems) {
-			endIdx = len(regularItems)
-		}
-		pagedItems := regularItems[startIdx:endIdx]
-		if req.Page == 1 {
-			pagedItems = append(selectedItems, pagedItems...)
-		}
-		*outSlice = pagedItems
-		*meta = api.PaginationMeta{
-			TotalItems:  totalItems,
-			TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
-			HasNextPage: endIdx < len(regularItems),
-			HasPrevPage: req.Page > 1,
-		}
-		return
 	}
 
-	// -------------------------------------------------------------------------
-	// KASUS B: Standard Offset Slicing
-	// -------------------------------------------------------------------------
 	startIdx := (req.Page - 1) * req.Limit
+	if startIdx < 0 {
+		startIdx = 0
+	}
 	if startIdx >= totalItems {
 		*outSlice = []T{}
 		*meta = api.PaginationMeta{
@@ -372,17 +476,14 @@ func AutoPaginateSlice[T any](
 	}
 
 	pagedItems := sourceSlice[startIdx:endIdx]
-	hasPrevPage := req.Page > 1
-	hasNextPage := endIdx < totalItems
-	totalPages := int(math.Ceil(float64(totalItems) / float64(req.Limit)))
 
 	*outSlice = pagedItems
 	*meta = api.PaginationMeta{
 		TotalItems:  totalItems,
-		TotalPages:  totalPages,
+		TotalPages:  int(math.Ceil(float64(totalItems) / float64(req.Limit))),
 		CurrentPage: req.Page,
 		PerPage:     req.Limit,
-		HasNextPage: hasNextPage,
-		HasPrevPage: hasPrevPage,
+		HasNextPage: endIdx < totalItems,
+		HasPrevPage: req.Page > 1,
 	}
 }

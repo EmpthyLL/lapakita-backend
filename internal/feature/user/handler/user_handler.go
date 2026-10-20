@@ -49,8 +49,8 @@ func (h *UserHandler) UpdateGeneralProfile(c *gin.Context) {
 	}
 
 	var req dto.UpdateGeneralProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -75,8 +75,8 @@ func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
 	}
 
 	var req dto.GetPhoneNumbersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -97,8 +97,8 @@ func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
 	}
 
 	var req dto.AddPhoneNumberRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -125,8 +125,8 @@ func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
 	}
 
 	var req dto.UpdatePhoneNumberRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -172,8 +172,8 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 	}
 
 	var req dto.ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -215,8 +215,8 @@ func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
 
 	role := c.Param("role")
 	var req dto.UpdatePersonaRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -241,8 +241,8 @@ func (h *UserHandler) GetDocument(c *gin.Context) {
 	}
 
 	var req dto.GetDocumentRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -263,8 +263,8 @@ func (h *UserHandler) UploadDocument(c *gin.Context) {
 	}
 
 	var req dto.UploadDocumentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 

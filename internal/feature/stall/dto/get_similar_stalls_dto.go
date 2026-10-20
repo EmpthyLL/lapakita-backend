@@ -8,5 +8,5 @@ import (
 
 type GetSimilarStallsRequest struct {
 	api.BasePaginationRequest
-	ID uuid.UUID `uri:"id" binding:"required"`
+	ID uuid.UUID
 }

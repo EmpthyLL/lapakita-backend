@@ -26,8 +26,8 @@ func (h *PublicHandler) GetFAQs(c *gin.Context) {
 	roleType := c.Param("role_type")
 
 	var req dto.FAQQueryRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid), api.BindErrorFields(err))
 		return
 	}
 
@@ -50,8 +50,8 @@ func (h *PublicHandler) GetLegalDocument(c *gin.Context) {
 	docType := c.Param("doc_type")
 
 	var req dto.LegalDocumentQueryRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid), api.BindErrorFields(err))
 		return
 	}
 
@@ -66,8 +66,8 @@ func (h *PublicHandler) GetLegalDocument(c *gin.Context) {
 
 func (h *PublicHandler) SubmitContact(c *gin.Context) {
 	var req dto.SubmitContactRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 

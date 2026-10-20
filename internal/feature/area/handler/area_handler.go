@@ -37,7 +37,7 @@ func (h *AreaHandler) SearchGeneral(c *gin.Context) {
 	var req dto.GetAreaGeneralRequest
 
 	// Gunakan ShouldBindQuery tanpa memblokir jika page/limit tidak dikirim
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := api.BindAndValidate(c, &req); err != nil {
 		log.Printf("[DEBUG] BindQuery Warn/Err: %v", err)
 	}
 
@@ -71,7 +71,7 @@ func (h *AreaHandler) SearchDetail(c *gin.Context) {
 
 	var req dto.GetAreaDetailRequest
 
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := api.BindAndValidate(c, &req); err != nil {
 		log.Printf("[DEBUG] BindQuery Warn/Err: %v", err)
 	}
 
@@ -125,8 +125,8 @@ func (h *AreaHandler) SaveHistory(c *gin.Context) {
 	}
 
 	var req dto.SaveHistoryRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 
@@ -165,8 +165,8 @@ func (h *AreaHandler) DeleteItemHistory(c *gin.Context) {
 	}
 
 	var req dto.DeleteHistoryItemRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
 

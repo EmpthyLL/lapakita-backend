@@ -23,12 +23,10 @@ func (h *BusinessTypeHandler) GetBusinessTypes(c *gin.Context) {
 	lang := api.GetLanguageFromHeader(c)
 
 	var req dto.GetBusinessTypesRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid))
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid), api.BindErrorFields(err))
 		return
 	}
-
-	req.SetDefaults()
 
 	data, meta, err := h.usecase.GetBusinessTypes(c.Request.Context(), lang, &req)
 	if err != nil {
