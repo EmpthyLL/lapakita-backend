@@ -164,7 +164,7 @@ type User struct {
 	UpdatedAt             time.Time    `gorm:"autoUpdateTime" json:"updated_at"`
 
 	IdentityProfile *UserIdentityProfile `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"identity_profile,omitempty"`
-	BankAccounts    []BankAccount        `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"bank_accounts,omitempty"`
+	PaymentMethod   []PayoutMethod       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"payment_method,omitempty"`
 }
 
 func (User) TableName() string {
