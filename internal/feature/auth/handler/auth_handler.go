@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/auth/dto"
-	usecase "lapakita-backend/internal/feature/auth/usecase/impl"
+	"lapakita-backend/internal/feature/auth/usecase"
+	"lapakita-backend/internal/feature/auth/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -28,7 +29,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.Register(c.Request.Context(), req); err != nil {
+	if err := impl.Register(c.Request.Context(), h.usecase, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -44,7 +45,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.Login(c.Request.Context(), req)
+	res, err := impl.Login(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -61,7 +62,7 @@ func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	authRes, err := h.usecase.GoogleAuth(c.Request.Context(), req)
+	authRes, err := impl.GoogleAuth(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -84,7 +85,7 @@ func (h *AuthHandler) CompleteProfile(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.CompleteProfile(c.Request.Context(), userID, req)
+	res, err := impl.CompleteProfile(c.Request.Context(), h.usecase, userID, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -101,7 +102,7 @@ func (h *AuthHandler) SendOTP(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.SendOTP(c.Request.Context(), req); err != nil {
+	if err := impl.SendOTP(c.Request.Context(), h.usecase, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -117,7 +118,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.VerifyOTP(c.Request.Context(), req)
+	res, err := impl.VerifyOTP(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -139,7 +140,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.ResetPassword(c.Request.Context(), email, req); err != nil {
+	if err := impl.ResetPassword(c.Request.Context(), h.usecase, email, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -155,7 +156,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.RefreshToken(c.Request.Context(), req)
+	res, err := impl.RefreshToken(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.MessageKey(err.Error())))
 		return

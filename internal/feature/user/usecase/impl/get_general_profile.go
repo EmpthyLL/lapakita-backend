@@ -1,17 +1,18 @@
-package usecase
+package impl
 
 import (
 	"context"
 	"errors"
 
 	"lapakita-backend/internal/feature/user/dto"
+	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/google/uuid"
 )
 
-func (u *UserUsecase) GetGeneralProfile(ctx context.Context, userID uuid.UUID) (dto.GetGeneralProfileResponse, error) {
-	user, err := u.repo.FindByID(ctx, userID)
+func GetGeneralProfile(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID) (dto.GetGeneralProfileResponse, error) {
+	user, err := u.Repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserNotFound))
 	}

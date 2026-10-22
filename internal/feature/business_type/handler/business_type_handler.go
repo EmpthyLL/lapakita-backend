@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/business_type/dto"
-	usecase "lapakita-backend/internal/feature/business_type/usecase/impl"
+	"lapakita-backend/internal/feature/business_type/usecase"
+	"lapakita-backend/internal/feature/business_type/usecase/impl"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
@@ -28,7 +29,7 @@ func (h *BusinessTypeHandler) GetBusinessTypes(c *gin.Context) {
 		return
 	}
 
-	data, meta, err := h.usecase.GetBusinessTypes(c.Request.Context(), lang, &req)
+	data, meta, err := impl.GetBusinessTypes(c.Request.Context(), h.usecase, lang, &req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyBusinessTypeFailedToGet))
 		return

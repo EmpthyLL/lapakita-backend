@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (u *AreaUsecase) GetSearchHistory(ctx context.Context, userID string, deviceID string) ([]dto.AreaHistoryItemResponse, error) {
+func GetSearchHistory(ctx context.Context, u *usecase.AreaUsecase, userID string, deviceID string) ([]dto.AreaHistoryItemResponse, error) {
 	userKey, guestKey := usecase.GetHistoryKeys(userID, deviceID)
 	if userKey != "" && guestKey != "" {
-		usecase.MergeGuestToUserHistory(ctx, u.rdb, userKey, guestKey)
+		usecase.MergeGuestToUserHistory(ctx, u.RDB, userKey, guestKey)
 	}
 	targetKey := userKey
 	if targetKey == "" {
@@ -23,14 +23,14 @@ func (u *AreaUsecase) GetSearchHistory(ctx context.Context, userID string, devic
 		return []dto.AreaHistoryItemResponse{}, nil
 	}
 
-	rawItems, err := u.rdb.LRange(ctx, targetKey, 0, -1).Result()
+	rawItems, err := u.RDB.LRange(ctx, targetKey, 0, -1).Result()
 	if err != nil && err != redis.Nil {
 		return nil, err
 	}
 	if userKey != "" {
-		u.rdb.Expire(ctx, userKey, usecase.UserHistoryTTL)
+		u.RDB.Expire(ctx, userKey, usecase.UserHistoryTTL)
 	} else if guestKey != "" {
-		u.rdb.Expire(ctx, guestKey, usecase.GuestHistoryTTL)
+		u.RDB.Expire(ctx, guestKey, usecase.GuestHistoryTTL)
 	}
 
 	result := make([]dto.AreaHistoryItemResponse, 0, len(rawItems))

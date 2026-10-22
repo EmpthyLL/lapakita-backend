@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -8,13 +8,14 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/user/dto"
+	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/google/uuid"
 )
 
-func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID, role string, req dto.UpdatePersonaRequest) (dto.PersonaProfileResponse, error) {
-	user, err := u.repo.FindByID(ctx, userID)
+func UpdatePersonaProfile(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID, role string, req dto.UpdatePersonaRequest) (dto.PersonaProfileResponse, error) {
+	user, err := u.Repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return dto.PersonaProfileResponse{}, errors.New(string(i18n.KeyUserNotFound))
 	}
@@ -28,7 +29,7 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 	if req.AvatarURL != nil && *req.AvatarURL != "" {
 		sourceURL := strings.TrimSpace(*req.AvatarURL)
 		fileName := fmt.Sprintf("persona_%s_%s.jpg", role, userID.String())
-		seaweedURL, uploadErr := u.seaweed.UploadFromURL(ctx, sourceURL, fileName, "/avatars")
+		seaweedURL, uploadErr := u.Seaweed.UploadFromURL(ctx, sourceURL, fileName, "/avatars")
 		if uploadErr == nil && seaweedURL != "" {
 			avatarURL = seaweedURL
 		} else {
@@ -43,8 +44,8 @@ func (u *UserUsecase) UpdatePersonaProfile(ctx context.Context, userID uuid.UUID
 		}
 		user.PhoneNumbers.AssignRoleToPhoneNumberIndex(targetIdx, role)
 	}
-	if err := u.repo.UpdateUser(ctx, user); err != nil {
+	if err := u.Repo.UpdateUser(ctx, user); err != nil {
 		return dto.PersonaProfileResponse{}, err
 	}
-	return u.GetPersonaProfile(ctx, userID, role)
+	return GetPersonaProfile(ctx, u, userID, role)
 }

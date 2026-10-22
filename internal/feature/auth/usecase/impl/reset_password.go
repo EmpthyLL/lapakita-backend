@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -6,19 +6,20 @@ import (
 	"fmt"
 
 	"lapakita-backend/internal/feature/auth/dto"
+	"lapakita-backend/internal/feature/auth/usecase"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (u *AuthUsecase) ResetPassword(ctx context.Context, email string, req dto.ResetPasswordRequest) error {
+func ResetPassword(ctx context.Context, u *usecase.AuthUsecase, email string, req dto.ResetPasswordRequest) error {
 	verifyTokenKey := fmt.Sprintf("verified:reset_password:%s", email)
-	storedVal, err := u.rdb.Get(ctx, verifyTokenKey).Result()
+	storedVal, err := u.RDB.Get(ctx, verifyTokenKey).Result()
 	if err == redis.Nil || storedVal != req.VerificationToken {
 		return errors.New(string(i18n.KeyResetTokenExpired))
 	}
-	user, err := u.repo.FindUserByEmail(ctx, email)
+	user, err := u.Repo.FindUserByEmail(ctx, email)
 	if err != nil || user == nil {
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
@@ -27,9 +28,9 @@ func (u *AuthUsecase) ResetPassword(ctx context.Context, email string, req dto.R
 		return err
 	}
 	user.PasswordHash = string(hashedPassword)
-	if err := u.repo.UpdateUser(ctx, user); err != nil {
+	if err := u.Repo.UpdateUser(ctx, user); err != nil {
 		return err
 	}
-	u.rdb.Del(ctx, verifyTokenKey)
+	u.RDB.Del(ctx, verifyTokenKey)
 	return nil
 }

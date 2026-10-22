@@ -1,17 +1,18 @@
-package usecase
+package impl
 
 import (
 	"context"
 	"encoding/json"
 
 	"lapakita-backend/internal/feature/public/dto"
+	"lapakita-backend/internal/feature/public/usecase"
 	sharedusecase "lapakita-backend/internal/feature/public/usecase"
 )
 
-func (u *PublicUsecase) GetLegalDocument(ctx context.Context, lang string, docType string, req *dto.LegalDocumentQueryRequest) (*dto.LegalDocumentResponse, error) {
+func GetLegalDocument(ctx context.Context, u *usecase.PublicUsecase, lang string, docType string, req *dto.LegalDocumentQueryRequest) (*dto.LegalDocumentResponse, error) {
 	activeLang := sharedusecase.ResolveLanguage(req.Lang, lang)
 
-	doc, err := u.cmsRepo.GetLegalDocument(ctx, docType, activeLang)
+	doc, err := u.CMSRepo.GetLegalDocument(ctx, docType, activeLang)
 	if err != nil || doc == nil {
 		return nil, err
 	}

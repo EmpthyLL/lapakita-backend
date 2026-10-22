@@ -5,7 +5,8 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/area/dto"
-	usecase "lapakita-backend/internal/feature/area/usecase/impl"
+	"lapakita-backend/internal/feature/area/usecase"
+	"lapakita-backend/internal/feature/area/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -48,7 +49,7 @@ func (h *AreaHandler) SearchGeneral(c *gin.Context) {
 
 	log.Printf("[DEBUG] Search Query Extracted: '%s'", req.Search)
 
-	areas, meta, err := h.usecase.SearchGeneral(c.Request.Context(), req)
+	areas, meta, err := impl.SearchGeneral(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		log.Printf("[ERROR] Usecase SearchGeneral Err: %v", err)
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
@@ -79,7 +80,7 @@ func (h *AreaHandler) SearchDetail(c *gin.Context) {
 		req.Search = c.Query("search")
 	}
 
-	details, meta, err := h.usecase.SearchDetail(c.Request.Context(), req)
+	details, meta, err := impl.SearchDetail(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		log.Printf("[ERROR] Usecase SearchDetail Err: %v", err)
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
@@ -106,7 +107,7 @@ func (h *AreaHandler) GetHistory(c *gin.Context) {
 		return
 	}
 
-	history, err := h.usecase.GetSearchHistory(c.Request.Context(), userID, deviceID)
+	history, err := impl.GetSearchHistory(c.Request.Context(), h.usecase, userID, deviceID)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
@@ -130,7 +131,7 @@ func (h *AreaHandler) SaveHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.SaveSearchHistory(c.Request.Context(), userID, deviceID, req); err != nil {
+	if err := impl.SaveSearchHistory(c.Request.Context(), h.usecase, userID, deviceID, req); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}
@@ -147,7 +148,7 @@ func (h *AreaHandler) ClearHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.ClearSearchHistory(c.Request.Context(), userID, deviceID); err != nil {
+	if err := impl.ClearSearchHistory(c.Request.Context(), h.usecase, userID, deviceID); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}
@@ -170,7 +171,7 @@ func (h *AreaHandler) DeleteItemHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.DeleteSearchHistoryItem(c.Request.Context(), userID, deviceID, req.FullLabel); err != nil {
+	if err := impl.DeleteSearchHistoryItem(c.Request.Context(), h.usecase, userID, deviceID, req.FullLabel); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}

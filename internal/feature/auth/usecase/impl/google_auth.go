@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
-func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest) (*dto.AuthResponseData, error) {
+func GoogleAuth(ctx context.Context, u *usecase.AuthUsecase, req dto.GoogleAuthRequest) (*dto.AuthResponseData, error) {
 	payload, err := idtoken.Validate(ctx, req.IDToken, "")
 	if err != nil {
 		return nil, errors.New(string(i18n.KeyGoogleAuthFailed))
@@ -23,14 +23,14 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 	email := fmt.Sprintf("%v", payload.Claims["email"])
 	name := fmt.Sprintf("%v", payload.Claims["name"])
 	picture := fmt.Sprintf("%v", payload.Claims["picture"])
-	user, _ := u.repo.FindUserByEmail(ctx, email)
+	user, _ := u.Repo.FindUserByEmail(ctx, email)
 	uploadAvatar := func(rawSource string) string {
 		cleanSource := strings.TrimSpace(rawSource)
 		if cleanSource == "" {
 			return ""
 		}
 		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
-		seaweedURL, err := u.seaweed.UploadFromURL(ctx, cleanSource, fileName, "/avatars")
+		seaweedURL, err := u.Seaweed.UploadFromURL(ctx, cleanSource, fileName, "/avatars")
 		if err != nil {
 			fmt.Printf("[SeaweedFS Upload Error]: %v\n", err)
 			return cleanSource
@@ -45,7 +45,7 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 			}
 		}
 		newUser := &entity.User{Name: name, Email: email, PasswordHash: "", DefaultAvatarURL: avatarPtr, ActiveRole: "tenant", SubscriptionPlan: "free", PhoneNumbers: entity.PhoneNumbers{}, RoleProfiles: entity.RoleProfiles{}}
-		if err := u.repo.CreateUser(ctx, newUser); err != nil {
+		if err := u.Repo.CreateUser(ctx, newUser); err != nil {
 			return nil, err
 		}
 		user = newUser
@@ -55,9 +55,9 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 			seaweedURL := uploadAvatar(picture)
 			if seaweedURL != "" && (user.DefaultAvatarURL == nil || seaweedURL != *user.DefaultAvatarURL) {
 				user.DefaultAvatarURL = &seaweedURL
-				_ = u.repo.UpdateUser(ctx, user)
+				_ = u.Repo.UpdateUser(ctx, user)
 			}
 		}
 	}
-	return usecase.BuildAuthResponse(u.jwtService, user)
+	return usecase.BuildAuthResponse(u.JWTService, user)
 }

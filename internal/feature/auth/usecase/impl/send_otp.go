@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -11,25 +11,25 @@ import (
 	"lapakita-backend/pkg/i18n"
 )
 
-func (u *AuthUsecase) SendOTP(ctx context.Context, req dto.SendOTPRequest) error {
+func SendOTP(ctx context.Context, u *usecase.AuthUsecase, req dto.SendOTPRequest) error {
 	switch req.Mode {
 	case "register":
 		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
-		exists, err := u.rdb.Exists(ctx, pendingKey).Result()
+		exists, err := u.RDB.Exists(ctx, pendingKey).Result()
 		if err != nil || exists == 0 {
 			return errors.New(string(i18n.KeyUserNotFound))
 		}
 	case "reset_password":
-		user, err := u.repo.FindUserByEmail(ctx, req.Email)
+		user, err := u.Repo.FindUserByEmail(ctx, req.Email)
 		if err != nil || user == nil {
 			return errors.New(string(i18n.KeyUserNotFound))
 		}
 	}
 	otpCode := usecase.GenerateOTP()
 	redisKey := fmt.Sprintf("otp:%s:%s", req.Mode, req.Email)
-	if err := u.rdb.Set(ctx, redisKey, otpCode, 5*time.Minute).Err(); err != nil {
+	if err := u.RDB.Set(ctx, redisKey, otpCode, 5*time.Minute).Err(); err != nil {
 		return err
 	}
-	go func(email, code, mode string) { _ = u.mailer.SendOTPEmail(email, code, mode) }(req.Email, otpCode, req.Mode)
+	go func(email, code, mode string) { _ = u.Mailer.SendOTPEmail(email, code, mode) }(req.Email, otpCode, req.Mode)
 	return nil
 }

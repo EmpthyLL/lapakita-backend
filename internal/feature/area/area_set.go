@@ -3,7 +3,7 @@ package area
 import (
 	"lapakita-backend/internal/feature/area/client"
 	"lapakita-backend/internal/feature/area/handler"
-	usecase "lapakita-backend/internal/feature/area/usecase/impl"
+	"lapakita-backend/internal/feature/area/usecase"
 
 	"github.com/google/wire"
 )

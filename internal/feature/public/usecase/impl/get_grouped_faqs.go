@@ -1,20 +1,21 @@
-package usecase
+package impl
 
 import (
 	"context"
 
 	"lapakita-backend/internal/feature/public/dto"
+	"lapakita-backend/internal/feature/public/usecase"
 	sharedusecase "lapakita-backend/internal/feature/public/usecase"
 	"lapakita-backend/pkg/api"
 )
 
-func (u *PublicUsecase) GetGroupedFAQs(ctx context.Context, lang string, roleType string, req *dto.FAQQueryRequest) ([]dto.FAQCategoryResponse, error) {
+func GetGroupedFAQs(ctx context.Context, u *usecase.PublicUsecase, lang string, roleType string, req *dto.FAQQueryRequest) ([]dto.FAQCategoryResponse, error) {
 	activeLang := sharedusecase.ResolveLanguage(req.Lang, lang)
 	if roleType == "" {
 		roleType = "all"
 	}
 
-	faqs, err := u.cmsRepo.GetFAQs(ctx, activeLang, roleType)
+	faqs, err := u.CMSRepo.GetFAQs(ctx, activeLang, roleType)
 	if err != nil {
 		return nil, err
 	}

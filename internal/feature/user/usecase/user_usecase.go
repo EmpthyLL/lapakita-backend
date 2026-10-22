@@ -4,7 +4,18 @@ import (
 	"strings"
 
 	"lapakita-backend/internal/entity"
+	"lapakita-backend/internal/feature/user/repository"
+	"lapakita-backend/pkg/storage"
 )
+
+type UserUsecase struct {
+	Repo    *repository.UserRepository
+	Seaweed *storage.SeaweedFSService
+}
+
+func NewUserUsecase(repo *repository.UserRepository, seaweed *storage.SeaweedFSService) *UserUsecase {
+	return &UserUsecase{Repo: repo, Seaweed: seaweed}
+}
 
 func TransferRolesToTarget(phoneNumbers entity.PhoneNumbers, targetIndex int, newRoles []string) entity.PhoneNumbers {
 	if len(newRoles) == 0 {

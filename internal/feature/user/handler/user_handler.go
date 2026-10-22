@@ -5,7 +5,8 @@ import (
 	"strconv"
 
 	"lapakita-backend/internal/feature/user/dto"
-	usecase "lapakita-backend/internal/feature/user/usecase/impl"
+	"lapakita-backend/internal/feature/user/usecase"
+	"lapakita-backend/internal/feature/user/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -32,7 +33,7 @@ func (h *UserHandler) GetGeneralProfile(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.GetGeneralProfile(c.Request.Context(), userID)
+	res, err := impl.GetGeneralProfile(c.Request.Context(), h.userUsecase, userID)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -54,7 +55,7 @@ func (h *UserHandler) UpdateGeneralProfile(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.UpdateGeneralProfile(c.Request.Context(), userID, req)
+	res, err := impl.UpdateGeneralProfile(c.Request.Context(), h.userUsecase, userID, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -80,7 +81,7 @@ func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
 		return
 	}
 
-	res, meta, err := h.userUsecase.GetPhoneNumbers(c.Request.Context(), userID, req)
+	res, meta, err := impl.GetPhoneNumbers(c.Request.Context(), h.userUsecase, userID, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -102,7 +103,7 @@ func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.AddPhoneNumber(c.Request.Context(), userID, req); err != nil {
+	if err := impl.AddPhoneNumber(c.Request.Context(), h.userUsecase, userID, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -130,7 +131,7 @@ func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.UpdatePhoneNumber(c.Request.Context(), userID, index, req); err != nil {
+	if err := impl.UpdatePhoneNumber(c.Request.Context(), h.userUsecase, userID, index, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -152,7 +153,7 @@ func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.DeletePhoneNumber(c.Request.Context(), userID, index); err != nil {
+	if err := impl.DeletePhoneNumber(c.Request.Context(), h.userUsecase, userID, index); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -177,7 +178,7 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.UpdatePassword(c.Request.Context(), userID, req); err != nil {
+	if err := impl.UpdatePassword(c.Request.Context(), h.userUsecase, userID, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -197,7 +198,7 @@ func (h *UserHandler) GetPersonaProfile(c *gin.Context) {
 	}
 
 	role := c.Param("role")
-	res, err := h.userUsecase.GetPersonaProfile(c.Request.Context(), userID, role)
+	res, err := impl.GetPersonaProfile(c.Request.Context(), h.userUsecase, userID, role)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -220,7 +221,7 @@ func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
 		return
 	}
 
-	res, err := h.userUsecase.UpdatePersonaProfile(c.Request.Context(), userID, role, req)
+	res, err := impl.UpdatePersonaProfile(c.Request.Context(), h.userUsecase, userID, role, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -246,7 +247,7 @@ func (h *UserHandler) GetDocument(c *gin.Context) {
 		return
 	}
 
-	res, meta, err := h.userUsecase.GetDocument(c.Request.Context(), userID, req)
+	res, meta, err := impl.GetDocument(c.Request.Context(), h.userUsecase, userID, req)
 	if err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
@@ -268,7 +269,7 @@ func (h *UserHandler) UploadDocument(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.UploadDocument(c.Request.Context(), userID, req); err != nil {
+	if err := impl.UploadDocument(c.Request.Context(), h.userUsecase, userID, req); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}
@@ -290,7 +291,7 @@ func (h *UserHandler) DeleteDocument(c *gin.Context) {
 		return
 	}
 
-	if err := h.userUsecase.DeleteDocument(c.Request.Context(), userID, docID); err != nil {
+	if err := impl.DeleteDocument(c.Request.Context(), h.userUsecase, userID, docID); err != nil {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
 		return
 	}

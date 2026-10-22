@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -10,21 +10,22 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/user/dto"
+	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 	"lapakita-backend/pkg/storage"
 
 	"github.com/google/uuid"
 )
 
-func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req dto.UploadDocumentRequest) error {
-	existingUserDoc, err := u.repo.FindIdentityByUserIDAndDocNumber(ctx, userID, req.DocumentNumber)
+func UploadDocument(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID, req dto.UploadDocumentRequest) error {
+	existingUserDoc, err := u.Repo.FindIdentityByUserIDAndDocNumber(ctx, userID, req.DocumentNumber)
 	if err != nil {
 		return err
 	}
 	if existingUserDoc != nil {
 		return errors.New(string(i18n.KeyUserDocumentNumberAlreadyAdded))
 	}
-	existingGlobalDoc, err := u.repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
+	existingGlobalDoc, err := u.Repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 	}
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
 	fileName := fmt.Sprintf("%s_%s_%d.jpg", req.DocumentType, userID.String(), time.Now().Unix())
-	uploadedURL, err := u.seaweed.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
+	uploadedURL, err := u.Seaweed.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
 	if err != nil {
 		return errors.New(string(i18n.KeyUserDocumentFailedToUpload))
 	}
@@ -58,5 +59,5 @@ func (u *UserUsecase) UploadDocument(ctx context.Context, userID uuid.UUID, req 
 		docLabel = "KTP"
 	}
 	identity := &entity.UserIdentityProfile{UserID: userID, CountryCode: countryCode, DocumentType: req.DocumentType, DocumentLabel: docLabel, FullNameIdentity: req.FullNameIdentity, DocumentNumber: req.DocumentNumber, DocumentPhotoURL: uploadedURL}
-	return u.repo.CreateIdentityProfile(ctx, identity)
+	return u.Repo.CreateIdentityProfile(ctx, identity)
 }

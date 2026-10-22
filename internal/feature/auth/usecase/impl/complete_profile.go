@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req dto.CompleteProfileRequest) (*dto.UserPayload, error) {
-	user, err := u.repo.FindUserByID(ctx, userID)
+func CompleteProfile(ctx context.Context, u *usecase.AuthUsecase, userID uuid.UUID, req dto.CompleteProfileRequest) (*dto.UserPayload, error) {
+	user, err := u.Repo.FindUserByID(ctx, userID)
 	if err != nil || user == nil {
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
@@ -23,14 +23,14 @@ func (u *AuthUsecase) CompleteProfile(ctx context.Context, userID uuid.UUID, req
 	if req.AvatarURL != "" {
 		avatarSource := strings.TrimSpace(req.AvatarURL)
 		fileName := fmt.Sprintf("avatar_%s.jpg", uuid.New().String())
-		seaweedURL, err := u.seaweed.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
+		seaweedURL, err := u.Seaweed.UploadFromURL(ctx, avatarSource, fileName, "/avatars")
 		if err == nil && seaweedURL != "" {
 			avatarSource = seaweedURL
 		}
 		user.DefaultAvatarURL = &avatarSource
 	}
 	user.PhoneNumbers = entity.PhoneNumbers{{DialCode: req.DialCode, Number: req.Phone, IsPrimary: true, Roles: []string{}, Label: "Primary Number"}}
-	if err := u.repo.UpdateUser(ctx, user); err != nil {
+	if err := u.Repo.UpdateUser(ctx, user); err != nil {
 		return nil, err
 	}
 	updatedPayload := usecase.BuildUserPayload(user)

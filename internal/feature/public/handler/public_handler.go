@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/public/dto"
-	usecase "lapakita-backend/internal/feature/public/usecase/impl"
+	"lapakita-backend/internal/feature/public/usecase"
+	"lapakita-backend/internal/feature/public/usecase/impl"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
@@ -31,7 +32,7 @@ func (h *PublicHandler) GetFAQs(c *gin.Context) {
 		return
 	}
 
-	faqs, err := h.publicUsecase.GetGroupedFAQs(c.Request.Context(), lang, roleType, &req)
+	faqs, err := impl.GetGroupedFAQs(c.Request.Context(), h.publicUsecase, lang, roleType, &req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyPublicFAQFailedToGet))
 		return
@@ -55,7 +56,7 @@ func (h *PublicHandler) GetLegalDocument(c *gin.Context) {
 		return
 	}
 
-	res, err := h.publicUsecase.GetLegalDocument(c.Request.Context(), lang, docType, &req)
+	res, err := impl.GetLegalDocument(c.Request.Context(), h.publicUsecase, lang, docType, &req)
 	if err != nil || res == nil {
 		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyPublicLegalNotFound))
 		return
@@ -71,7 +72,7 @@ func (h *PublicHandler) SubmitContact(c *gin.Context) {
 		return
 	}
 
-	res, err := h.publicUsecase.SubmitContact(c.Request.Context(), req)
+	res, err := impl.SubmitContact(c.Request.Context(), h.publicUsecase, req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyPublicContactInquirySubmitFailed))
 		return

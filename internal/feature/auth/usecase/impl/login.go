@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (u *AuthUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponseData, error) {
-	user, err := u.repo.FindUserByEmail(ctx, req.Email)
+func Login(ctx context.Context, u *usecase.AuthUsecase, req dto.LoginRequest) (*dto.AuthResponseData, error) {
+	user, err := u.Repo.FindUserByEmail(ctx, req.Email)
 	if err != nil || user == nil {
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		return nil, errors.New(string(i18n.KeyWrongPassword))
 	}
-	return usecase.BuildAuthResponse(u.jwtService, user)
+	return usecase.BuildAuthResponse(u.JWTService, user)
 }

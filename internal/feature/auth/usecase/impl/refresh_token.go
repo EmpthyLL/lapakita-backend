@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"lapakita-backend/pkg/jwt"
 )
 
-func (u *AuthUsecase) RefreshToken(ctx context.Context, req dto.RefreshTokenRequest) (*dto.AuthResponseData, error) {
-	parsedToken, err := u.jwtService.ValidateToken(req.RefreshToken)
+func RefreshToken(ctx context.Context, u *usecase.AuthUsecase, req dto.RefreshTokenRequest) (*dto.AuthResponseData, error) {
+	parsedToken, err := u.JWTService.ValidateToken(req.RefreshToken)
 	if err != nil || !parsedToken.Valid {
 		return nil, errors.New(string(i18n.KeyRefreshTokenExpired))
 	}
@@ -24,9 +24,9 @@ func (u *AuthUsecase) RefreshToken(ctx context.Context, req dto.RefreshTokenRequ
 	if err != nil {
 		return nil, errors.New(string(i18n.KeyRefreshTokenExpired))
 	}
-	user, err := u.repo.FindUserByID(ctx, userID)
+	user, err := u.Repo.FindUserByID(ctx, userID)
 	if err != nil || user == nil {
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
-	return usecase.BuildAuthResponse(u.jwtService, user)
+	return usecase.BuildAuthResponse(u.JWTService, user)
 }

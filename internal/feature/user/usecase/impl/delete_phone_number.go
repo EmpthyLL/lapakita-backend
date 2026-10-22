@@ -1,16 +1,17 @@
-package usecase
+package impl
 
 import (
 	"context"
 	"errors"
 
+	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/google/uuid"
 )
 
-func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, index int) error {
-	user, err := u.repo.FindByID(ctx, userID)
+func DeletePhoneNumber(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID, index int) error {
+	user, err := u.Repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
@@ -33,5 +34,5 @@ func (u *UserUsecase) DeletePhoneNumber(ctx context.Context, userID uuid.UUID, i
 			user.PhoneNumbers[0].IsPrimary = true
 		}
 	}
-	return u.repo.UpdateUser(ctx, user)
+	return u.Repo.UpdateUser(ctx, user)
 }

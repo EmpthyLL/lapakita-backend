@@ -6,10 +6,20 @@ import (
 	"fmt"
 	"time"
 
+	"lapakita-backend/internal/feature/area/client"
 	"lapakita-backend/internal/feature/area/dto"
 
 	"github.com/redis/go-redis/v9"
 )
+
+type AreaUsecase struct {
+	GeoClient *client.GeoapifyClient
+	RDB       *redis.Client
+}
+
+func NewAreaUsecase(geoClient *client.GeoapifyClient, rdb *redis.Client) *AreaUsecase {
+	return &AreaUsecase{GeoClient: geoClient, RDB: rdb}
+}
 
 const (
 	GuestHistoryTTL = 30 * 24 * time.Hour

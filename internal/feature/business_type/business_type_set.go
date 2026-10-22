@@ -3,7 +3,7 @@ package businesstype
 import (
 	"lapakita-backend/internal/feature/business_type/handler"
 	"lapakita-backend/internal/feature/business_type/repository"
-	usecase "lapakita-backend/internal/feature/business_type/usecase/impl"
+	"lapakita-backend/internal/feature/business_type/usecase"
 
 	"github.com/google/wire"
 )

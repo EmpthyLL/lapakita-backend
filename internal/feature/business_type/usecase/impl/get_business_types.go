@@ -1,23 +1,15 @@
-package usecase
+package impl
 
 import (
 	"context"
 	"encoding/json"
 
 	"lapakita-backend/internal/feature/business_type/dto"
-	"lapakita-backend/internal/feature/business_type/repository"
+	"lapakita-backend/internal/feature/business_type/usecase"
 	"lapakita-backend/pkg/api"
 )
 
-type BusinessTypeUsecase struct {
-	repo *repository.BusinessTypeRepository
-}
-
-func NewBusinessTypeUsecase(repo *repository.BusinessTypeRepository) *BusinessTypeUsecase {
-	return &BusinessTypeUsecase{repo: repo}
-}
-
-func (u *BusinessTypeUsecase) GetBusinessTypes(ctx context.Context, lang string, req *dto.GetBusinessTypesRequest) ([]dto.BusinessTypeResponse, api.PaginationMeta, error) {
+func GetBusinessTypes(ctx context.Context, u *usecase.BusinessTypeUsecase, lang string, req *dto.GetBusinessTypesRequest) ([]dto.BusinessTypeResponse, api.PaginationMeta, error) {
 	activeLang := req.Lang
 	if activeLang == "" {
 		activeLang = lang
@@ -26,7 +18,7 @@ func (u *BusinessTypeUsecase) GetBusinessTypes(ctx context.Context, lang string,
 		activeLang = "en"
 	}
 
-	items, meta, err := u.repo.GetBusinessTypes(ctx, activeLang, req)
+	items, meta, err := u.Repo.GetBusinessTypes(ctx, activeLang, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}

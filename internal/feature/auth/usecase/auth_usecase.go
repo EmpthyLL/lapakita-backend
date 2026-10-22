@@ -9,9 +9,26 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/auth/dto"
+	"lapakita-backend/internal/feature/auth/repository"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/jwt"
+	"lapakita-backend/pkg/mailer"
+	"lapakita-backend/pkg/storage"
+
+	"github.com/redis/go-redis/v9"
 )
+
+type AuthUsecase struct {
+	Repo       *repository.AuthRepository
+	RDB        *redis.Client
+	JWTService *jwt.JWTService
+	Mailer     *mailer.Mailer
+	Seaweed    *storage.SeaweedFSService
+}
+
+func NewAuthUsecase(repo *repository.AuthRepository, rdb *redis.Client, jwtService *jwt.JWTService, mailer *mailer.Mailer, seaweed *storage.SeaweedFSService) *AuthUsecase {
+	return &AuthUsecase{Repo: repo, RDB: rdb, JWTService: jwtService, Mailer: mailer, Seaweed: seaweed}
+}
 
 func GenerateOTP() string {
 	n, _ := rand.Int(rand.Reader, big.NewInt(900000))

@@ -1,18 +1,19 @@
-package usecase
+package impl
 
 import (
 	"context"
 	"errors"
 
 	"lapakita-backend/internal/feature/user/dto"
+	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (u *UserUsecase) UpdatePassword(ctx context.Context, userID uuid.UUID, req dto.ChangePasswordRequest) error {
-	user, err := u.repo.FindByID(ctx, userID)
+func UpdatePassword(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID, req dto.ChangePasswordRequest) error {
+	user, err := u.Repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
@@ -28,5 +29,5 @@ func (u *UserUsecase) UpdatePassword(ctx context.Context, userID uuid.UUID, req 
 	if err != nil {
 		return err
 	}
-	return u.repo.UpdatePassword(ctx, userID, string(newHash))
+	return u.Repo.UpdatePassword(ctx, userID, string(newHash))
 }

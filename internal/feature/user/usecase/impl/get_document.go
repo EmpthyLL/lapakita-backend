@@ -1,16 +1,17 @@
-package usecase
+package impl
 
 import (
 	"context"
 
 	"lapakita-backend/internal/feature/user/dto"
+	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/api"
 
 	"github.com/google/uuid"
 )
 
-func (u *UserUsecase) GetDocument(ctx context.Context, userID uuid.UUID, req dto.GetDocumentRequest) ([]dto.GetDocumentResponse, api.PaginationMeta, error) {
-	docs, meta, err := u.repo.GetDocument(ctx, userID, &req)
+func GetDocument(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID, req dto.GetDocumentRequest) ([]dto.GetDocumentResponse, api.PaginationMeta, error) {
+	docs, meta, err := u.Repo.GetDocument(ctx, userID, &req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
 	}

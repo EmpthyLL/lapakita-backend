@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req dto.AddPhoneNumberRequest) error {
-	user, err := u.repo.FindByID(ctx, userID)
+func AddPhoneNumber(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUID, req dto.AddPhoneNumberRequest) error {
+	user, err := u.Repo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
@@ -41,5 +41,5 @@ func (u *UserUsecase) AddPhoneNumber(ctx context.Context, userID uuid.UUID, req 
 	if !hasPrimary && len(user.PhoneNumbers) > 0 {
 		user.PhoneNumbers[0].IsPrimary = true
 	}
-	return u.repo.UpdateUser(ctx, user)
+	return u.Repo.UpdateUser(ctx, user)
 }

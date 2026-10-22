@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/public/dto"
+	"lapakita-backend/internal/feature/public/usecase"
 	"lapakita-backend/pkg/api"
 )
 
-func (u *PublicUsecase) SubmitContact(ctx context.Context, req dto.SubmitContactRequest) (*dto.ContactResponse, error) {
+func SubmitContact(ctx context.Context, u *usecase.PublicUsecase, req dto.SubmitContactRequest) (*dto.ContactResponse, error) {
 	inquiry := &entity.ContactInquiry{
 		Name:        req.Name,
 		Email:       req.Email,
@@ -20,12 +21,12 @@ func (u *PublicUsecase) SubmitContact(ctx context.Context, req dto.SubmitContact
 		Status:      "unread",
 	}
 
-	if err := u.cmsRepo.CreateContactInquiry(ctx, inquiry); err != nil {
+	if err := u.CMSRepo.CreateContactInquiry(ctx, inquiry); err != nil {
 		return nil, err
 	}
 
 	go func(email, name, persona, inqType, msg string) {
-		_ = u.mailer.SendContactAutoReply(email, name, persona, inqType, msg)
+		_ = u.Mailer.SendContactAutoReply(email, name, persona, inqType, msg)
 	}(inquiry.Email, inquiry.Name, inquiry.Persona, inquiry.InquiryType, inquiry.Message)
 
 	return &dto.ContactResponse{
