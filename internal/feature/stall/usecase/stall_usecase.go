@@ -3,17 +3,33 @@ package usecase
 import (
 	"context"
 	"fmt"
+	authRepo "lapakita-backend/internal/feature/auth/repository"
 	"strings"
 	"time"
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/stall/dto"
+	"lapakita-backend/internal/feature/stall/repository"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/storage"
 	"lapakita-backend/pkg/utils"
 
 	"github.com/google/uuid"
 )
+
+type StallUsecase struct {
+	StallRepository *repository.StallRepository
+	AuthRepository  *authRepo.AuthRepository
+	SeaweedFS       *storage.SeaweedFSService
+}
+
+func NewStallUsecase(repo *repository.StallRepository, userRepo *authRepo.AuthRepository, seaweed *storage.SeaweedFSService) *StallUsecase {
+	return &StallUsecase{
+		StallRepository: repo,
+		AuthRepository:  userRepo,
+		SeaweedFS:       seaweed,
+	}
+}
 
 func UploadMediaToSeaweedFS(ctx context.Context, seaweed *storage.SeaweedFSService, source string, folder string) (string, error) {
 	cleanSource := strings.TrimSpace(source)

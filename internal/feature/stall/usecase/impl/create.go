@@ -1,21 +1,21 @@
-package usecase
+package impl
 
 import (
 	"context"
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/stall/dto"
-	sharedusecase "lapakita-backend/internal/feature/stall/usecase"
+	usecase "lapakita-backend/internal/feature/stall/usecase"
 
 	"github.com/google/uuid"
 )
 
-func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.CreateStallRequest) (dto.StallDetailResponse, error) {
-	displayMedia, err := sharedusecase.ProcessDisplayMedia(ctx, u.seaweed, req.DisplayMedia)
+func Create(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req dto.CreateStallRequest) (dto.StallDetailResponse, error) {
+	displayMedia, err := usecase.ProcessDisplayMedia(ctx, u.SeaweedFS, req.DisplayMedia)
 	if err != nil {
 		return dto.StallDetailResponse{}, err
 	}
-	legalDocs, err := sharedusecase.ProcessLegalDocs(ctx, u.seaweed, req.LegalDocuments)
+	legalDocs, err := usecase.ProcessLegalDocs(ctx, u.SeaweedFS, req.LegalDocuments)
 	if err != nil {
 		return dto.StallDetailResponse{}, err
 	}
@@ -76,8 +76,8 @@ func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.Cr
 		val := entity.CancellationPolicyType(*req.EventCancellationPolicy)
 		stall.EventCancellationPolicy = &val
 	}
-	if err := u.repo.Create(ctx, stall); err != nil {
+	if err := u.StallRepository.Create(ctx, stall); err != nil {
 		return dto.StallDetailResponse{}, err
 	}
-	return u.GetByID(ctx, stall.ID)
+	return GetByID(ctx, u, stall.ID)
 }

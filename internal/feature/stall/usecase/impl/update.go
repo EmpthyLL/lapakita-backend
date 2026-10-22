@@ -1,4 +1,4 @@
-package usecase
+package impl
 
 import (
 	"context"
@@ -7,19 +7,19 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/stall/dto"
-	sharedusecase "lapakita-backend/internal/feature/stall/usecase"
+	usecase "lapakita-backend/internal/feature/stall/usecase"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/google/uuid"
 )
 
-func (u *StallUsecase) Update(ctx context.Context, ownerID uuid.UUID, req dto.UpdateStallRequest) (dto.StallDetailResponse, error) {
+func Update(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req dto.UpdateStallRequest) (dto.StallDetailResponse, error) {
 	stallID, err := api.DecodeRequest(req.ID)
 	if err != nil {
 		return dto.StallDetailResponse{}, errors.New(string(i18n.KeyInvalidPayload))
 	}
-	stall, err := u.repo.FindByID(ctx, stallID)
+	stall, err := u.StallRepository.FindByID(ctx, stallID)
 	if err != nil || stall == nil {
 		return dto.StallDetailResponse{}, errors.New("stall not found")
 	}
@@ -71,19 +71,19 @@ func (u *StallUsecase) Update(ctx context.Context, ownerID uuid.UUID, req dto.Up
 		stall.NearbyLandmarks = landmarks
 	}
 	if req.DisplayMedia.MainImage != "" || len(req.DisplayMedia.FacilityImages) > 0 {
-		stall.DisplayMedia, err = sharedusecase.ProcessDisplayMedia(ctx, u.seaweed, req.DisplayMedia)
+		stall.DisplayMedia, err = usecase.ProcessDisplayMedia(ctx, u.SeaweedFS, req.DisplayMedia)
 		if err != nil {
 			return dto.StallDetailResponse{}, err
 		}
 	}
 	if len(req.LegalDocuments) > 0 {
-		stall.LegalDocuments, err = sharedusecase.ProcessLegalDocs(ctx, u.seaweed, req.LegalDocuments)
+		stall.LegalDocuments, err = usecase.ProcessLegalDocs(ctx, u.SeaweedFS, req.LegalDocuments)
 		if err != nil {
 			return dto.StallDetailResponse{}, err
 		}
 	}
-	if err := u.repo.Update(ctx, stall); err != nil {
+	if err := u.StallRepository.Update(ctx, stall); err != nil {
 		return dto.StallDetailResponse{}, err
 	}
-	return u.GetByID(ctx, stall.ID)
+	return GetByID(ctx, u, stall.ID)
 }

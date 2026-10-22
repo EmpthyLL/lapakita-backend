@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"lapakita-backend/internal/feature/stall/dto"
-	usecase "lapakita-backend/internal/feature/stall/usecase/impl"
+	"lapakita-backend/internal/feature/stall/usecase"
+	"lapakita-backend/internal/feature/stall/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -28,7 +29,7 @@ func (h *StallHandler) Search(c *gin.Context) {
 		return
 	}
 
-	stalls, meta, err := h.usecase.Search(c.Request.Context(), req)
+	stalls, meta, err := impl.Search(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToGet))
 		return
@@ -46,7 +47,7 @@ func (h *StallHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	stall, err := h.usecase.GetByID(c.Request.Context(), id)
+	stall, err := impl.GetByID(c.Request.Context(), h.usecase, id)
 	if err != nil {
 		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyStallNotFound))
 		return
@@ -69,7 +70,7 @@ func (h *StallHandler) Create(c *gin.Context) {
 		return
 	}
 
-	stall, err := h.usecase.Create(c.Request.Context(), ownerID, req)
+	stall, err := impl.Create(c.Request.Context(), h.usecase, ownerID, req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToCreate))
 		return
@@ -94,7 +95,7 @@ func (h *StallHandler) Update(c *gin.Context) {
 
 	req.ID = c.Param("id")
 
-	stall, err := h.usecase.Update(c.Request.Context(), ownerID, req)
+	stall, err := impl.Update(c.Request.Context(), h.usecase, ownerID, req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToUpdate))
 		return
@@ -118,7 +119,7 @@ func (h *StallHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.Delete(c.Request.Context(), ownerID, id); err != nil {
+	if err := impl.Delete(c.Request.Context(), h.usecase, ownerID, id); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToDelete))
 		return
 	}
@@ -145,7 +146,7 @@ func (h *StallHandler) GetByOwner(c *gin.Context) {
 		req.OwnerID = api.EncodeResponse(ownerID)
 	}
 
-	stalls, meta, err := h.usecase.GetByOwnerID(c.Request.Context(), req)
+	stalls, meta, err := impl.GetByOwnerID(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToGet))
 		return
@@ -168,7 +169,7 @@ func (h *StallHandler) GetSimilar(c *gin.Context) {
 		return
 	}
 
-	stalls, meta, err := h.usecase.GetSimilar(c.Request.Context(), req)
+	stalls, meta, err := impl.GetSimilar(c.Request.Context(), h.usecase, req)
 	if err != nil {
 		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyStallNotFound))
 		return
