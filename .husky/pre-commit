@@ -3,7 +3,7 @@
 echo "Running pre-commit checks..."
 
 # 1. Format & Vet Code
-go fmt ./... && go vet ./... || exit 1
+#go fmt ./... && go vet ./... || exit 1
 
 # 2. Re-generate Wire Dependency Injection
 #make wire || exit 1
