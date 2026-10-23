@@ -84,6 +84,15 @@ const (
 	KeyUserProfileFailedToGet    MessageKey = "user.profile_failed_to_get"
 	KeyUserProfileFailedToUpdate MessageKey = "user.profile_failed_to_update"
 
+	KeyPayoutMethodGetSuccess         MessageKey = "wallet.payout_method_get_success"
+	KeyPayoutMethodCreateSuccess      MessageKey = "wallet.payout_method_create_success"
+	KeyPayoutMethodDeleteSuccess      MessageKey = "wallet.payout_method_delete_success"
+	KeyPayoutMethodSetPrimarySuccess  MessageKey = "wallet.payout_method_set_primary_success"
+	KeyPayoutMethodNotFound           MessageKey = "wallet.payout_method_not_found"
+	KeyPayoutMethodFailedToCreate     MessageKey = "wallet.payout_method_failed_to_create"
+	KeyPayoutMethodFailedToDelete     MessageKey = "wallet.payout_method_failed_to_delete"
+	KeyPayoutMethodFailedToSetPrimary MessageKey = "wallet.payout_method_failed_to_set_primary"
+
 	KeyUserPhoneGetSuccess                MessageKey = "user.phone_get_success"
 	KeyUserPhoneCannotBeEmpty             MessageKey = "user.phone_cannot_be_empty"
 	KeyUserPhonePrimaryRequired           MessageKey = "user.phone_primary_required"

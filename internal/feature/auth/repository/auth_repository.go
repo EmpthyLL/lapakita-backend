@@ -31,7 +31,7 @@ func (r *AuthRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*entit
 	var user entity.User
 	err := r.db.WithContext(ctx).
 		Preload("IdentityProfile").
-		Preload("BankAccounts").
+		Preload("PaymentMethod").
 		First(&user, "id = ?", id).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +44,7 @@ func (r *AuthRepository) FindUserByEmail(ctx context.Context, email string) (*en
 	var user entity.User
 	err := r.db.WithContext(ctx).
 		Preload("IdentityProfile").
-		Preload("BankAccounts").
+		Preload("PaymentMethod").
 		First(&user, "email = ?", email).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {

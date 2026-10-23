@@ -5,12 +5,11 @@ package main
 
 import (
 	"lapakita-backend/config"
-	"lapakita-backend/internal/feature/area"
 	"lapakita-backend/internal/feature/auth"
-	businesstype "lapakita-backend/internal/feature/business_type"
-	"lapakita-backend/internal/feature/public"
+	"lapakita-backend/internal/feature/master"
 	"lapakita-backend/internal/feature/stall"
 	"lapakita-backend/internal/feature/user"
+	"lapakita-backend/internal/feature/wallet"
 	"lapakita-backend/pkg/cache"
 	"lapakita-backend/pkg/database"
 	"lapakita-backend/pkg/firebase"
@@ -36,10 +35,9 @@ var infrastructureSet = wire.NewSet(
 )
 
 var featureSet = wire.NewSet(
-	area.AreaFeatureSet,
-	public.PublicFeatureSet,
-	businesstype.BusinessTypeFeatureSet,
+	master.MasterFeatureSet,
 	auth.AuthFeatureSet,
+	wallet.WalletFeatureSet,
 	stall.StallFeatureSet,
 	user.UserFeatureSet,
 )

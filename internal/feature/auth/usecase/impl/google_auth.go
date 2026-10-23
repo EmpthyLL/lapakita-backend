@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	authmessages "lapakita-backend/internal/feature/auth/messages"
 	"strings"
 
 	"lapakita-backend/internal/entity"
@@ -18,7 +19,7 @@ import (
 func GoogleAuth(ctx context.Context, u *usecase.AuthUsecase, req dto.GoogleAuthRequest) (*dto.AuthResponseData, error) {
 	payload, err := idtoken.Validate(ctx, req.IDToken, "")
 	if err != nil {
-		return nil, errors.New(string(i18n.KeyGoogleAuthFailed))
+		return nil, errors.New(string(authmessages.KeyGoogleAuthFailed))
 	}
 	email := fmt.Sprintf("%v", payload.Claims["email"])
 	name := fmt.Sprintf("%v", payload.Claims["name"])

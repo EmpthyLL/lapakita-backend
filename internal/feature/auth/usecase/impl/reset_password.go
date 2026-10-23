@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"lapakita-backend/internal/feature/auth/dto"
+	authmessages "lapakita-backend/internal/feature/auth/messages"
 	"lapakita-backend/internal/feature/auth/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -17,7 +18,7 @@ func ResetPassword(ctx context.Context, u *usecase.AuthUsecase, email string, re
 	verifyTokenKey := fmt.Sprintf("verified:reset_password:%s", email)
 	storedVal, err := u.RDB.Get(ctx, verifyTokenKey).Result()
 	if err == redis.Nil || storedVal != req.VerificationToken {
-		return errors.New(string(i18n.KeyResetTokenExpired))
+		return errors.New(string(authmessages.KeyResetTokenExpired))
 	}
 	user, err := u.Repo.FindUserByEmail(ctx, email)
 	if err != nil || user == nil {

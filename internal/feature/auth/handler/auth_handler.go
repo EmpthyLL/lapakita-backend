@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"lapakita-backend/internal/feature/auth/dto"
+	authmessages "lapakita-backend/internal/feature/auth/messages"
 	"lapakita-backend/internal/feature/auth/usecase"
 	"lapakita-backend/internal/feature/auth/usecase/impl"
 	"lapakita-backend/internal/middleware"
@@ -34,7 +36,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyOTPSendSuccess))
 }
 
 // POST /api/v1/auth/login
@@ -47,11 +49,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	res, err := impl.Login(c.Request.Context(), h.usecase, req)
 	if err != nil {
-		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.MessageKey(err.Error())))
+		messageKey := i18n.MessageKey(err.Error())
+		switch messageKey {
+		case i18n.KeyUserNotFound, authmessages.KeyWrongPassword:
+			api.Error(c, http.StatusUnauthorized, i18n.T(c, messageKey))
+		default:
+			log.Printf("auth login failed: %v", err)
+			api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
+		}
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyLoginSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyLoginSuccess), res)
 }
 
 // POST /api/v1/auth/google
@@ -68,7 +77,7 @@ func (h *AuthHandler) GoogleAuth(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyLoginSuccess), authRes)
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyLoginSuccess), authRes)
 }
 
 // PUT /api/v1/auth/complete-profile (Protected Route via JWT Middleware)
@@ -91,7 +100,7 @@ func (h *AuthHandler) CompleteProfile(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyProfileCompleteSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyProfileCompleteSuccess), res)
 }
 
 // POST /api/v1/auth/otp/send
@@ -107,7 +116,7 @@ func (h *AuthHandler) SendOTP(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPSendSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyOTPSendSuccess))
 }
 
 // POST /api/v1/auth/otp/verify
@@ -124,7 +133,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyOTPVerifySuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyOTPVerifySuccess), res)
 }
 
 // POST /api/v1/auth/reset-password/:email
@@ -145,7 +154,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyResetPasswordSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyResetPasswordSuccess))
 }
 
 // POST /api/v1/auth/refresh
@@ -162,5 +171,5 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyTokenRefreshSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, authmessages.KeyTokenRefreshSuccess), res)
 }

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"lapakita-backend/internal/feature/user/dto"
+	usermessages "lapakita-backend/internal/feature/user/messages"
 	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/internal/feature/user/usecase/impl"
 	"lapakita-backend/internal/middleware"
@@ -39,7 +40,7 @@ func (h *UserHandler) GetGeneralProfile(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserProfileGetSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserProfileGetSuccess), res)
 }
 
 func (h *UserHandler) UpdateGeneralProfile(c *gin.Context) {
@@ -61,7 +62,7 @@ func (h *UserHandler) UpdateGeneralProfile(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserProfileUpdateSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserProfileUpdateSuccess), res)
 }
 
 // -----------------------------------------------------------------------------
@@ -87,7 +88,7 @@ func (h *UserHandler) GetPhoneNumbers(c *gin.Context) {
 		return
 	}
 
-	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneGetSuccess), res, meta)
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, usermessages.KeyUserPhoneGetSuccess), res, meta)
 }
 
 func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
@@ -108,7 +109,7 @@ func (h *UserHandler) AddPhoneNumber(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserPhoneAddSuccess))
+	api.Success(c, http.StatusCreated, i18n.T(c, usermessages.KeyUserPhoneAddSuccess))
 }
 
 func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
@@ -121,7 +122,7 @@ func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
 	indexStr := c.Param("index")
 	index, err := strconv.Atoi(indexStr)
 	if err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyUserPhoneIndexInvalid))
+		api.Error(c, http.StatusBadRequest, i18n.T(c, usermessages.KeyUserPhoneIndexInvalid))
 		return
 	}
 
@@ -136,7 +137,7 @@ func (h *UserHandler) UpdatePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneUpdateSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserPhoneUpdateSuccess))
 }
 
 func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
@@ -149,7 +150,7 @@ func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
 	indexStr := c.Param("index")
 	index, err := strconv.Atoi(indexStr)
 	if err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyUserPhoneIndexInvalid))
+		api.Error(c, http.StatusBadRequest, i18n.T(c, usermessages.KeyUserPhoneIndexInvalid))
 		return
 	}
 
@@ -158,7 +159,7 @@ func (h *UserHandler) DeletePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPhoneDeleteSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserPhoneDeleteSuccess))
 }
 
 // -----------------------------------------------------------------------------
@@ -183,7 +184,7 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPasswordChangeSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserPasswordChangeSuccess))
 }
 
 // -----------------------------------------------------------------------------
@@ -204,7 +205,7 @@ func (h *UserHandler) GetPersonaProfile(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPersonaGetSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserPersonaGetSuccess), res)
 }
 
 func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
@@ -227,7 +228,7 @@ func (h *UserHandler) UpdatePersonaProfile(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserPersonaUpdateSuccess), res)
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserPersonaUpdateSuccess), res)
 }
 
 // -----------------------------------------------------------------------------
@@ -253,7 +254,7 @@ func (h *UserHandler) GetDocument(c *gin.Context) {
 		return
 	}
 
-	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyUserDocumentGetSuccess), res, meta)
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, usermessages.KeyUserDocumentGetSuccess), res, meta)
 }
 
 func (h *UserHandler) UploadDocument(c *gin.Context) {
@@ -274,7 +275,7 @@ func (h *UserHandler) UploadDocument(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyUserDocumentUploadSuccess))
+	api.Success(c, http.StatusCreated, i18n.T(c, usermessages.KeyUserDocumentUploadSuccess))
 }
 
 func (h *UserHandler) DeleteDocument(c *gin.Context) {
@@ -296,5 +297,5 @@ func (h *UserHandler) DeleteDocument(c *gin.Context) {
 		return
 	}
 
-	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyUserDocumentDeleteSuccess))
+	api.Success(c, http.StatusOK, i18n.T(c, usermessages.KeyUserDocumentDeleteSuccess))
 }

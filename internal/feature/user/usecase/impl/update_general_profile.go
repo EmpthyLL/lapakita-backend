@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"lapakita-backend/internal/feature/user/dto"
+	usermessages "lapakita-backend/internal/feature/user/messages"
 	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -33,7 +34,7 @@ func UpdateGeneralProfile(ctx context.Context, u *usecase.UserUsecase, userID uu
 	}
 	if req.PhoneNumberIndex != nil {
 		if *req.PhoneNumberIndex < 0 || *req.PhoneNumberIndex >= len(user.PhoneNumbers) {
-			return dto.GetGeneralProfileResponse{}, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
+			return dto.GetGeneralProfileResponse{}, errors.New(string(usermessages.KeyUserPhoneIndexInvalid))
 		}
 		for i := range user.PhoneNumbers {
 			user.PhoneNumbers[i].IsPrimary = i == *req.PhoneNumberIndex

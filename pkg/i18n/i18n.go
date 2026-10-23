@@ -45,9 +45,9 @@ func T(c *gin.Context, key MessageKey) string {
 
 func Init() {
 	RegisterMessages(locale.GeneralMessages)
-	RegisterMessages(locale.AreaMessages)
-	RegisterMessages(locale.PublicMessages)
+	RegisterMessages(locale.MasterMessages)
 	RegisterMessages(locale.AuthMessages)
 	RegisterMessages(locale.StallMessages)
 	RegisterMessages(locale.UserMessages)
+	RegisterMessages(locale.WalletMessages)
 }

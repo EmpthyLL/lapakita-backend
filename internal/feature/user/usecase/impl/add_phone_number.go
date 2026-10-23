@@ -6,6 +6,7 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/user/dto"
+	usermessages "lapakita-backend/internal/feature/user/messages"
 	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -19,7 +20,7 @@ func AddPhoneNumber(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUI
 	}
 	for _, phone := range user.PhoneNumbers {
 		if phone.DialCode == req.DialCode && phone.Number == req.Number {
-			return errors.New(string(i18n.KeyUserPhoneDuplicate))
+			return errors.New(string(usermessages.KeyUserPhoneDuplicate))
 		}
 	}
 	user.PhoneNumbers = usecase.TransferRolesToTarget(user.PhoneNumbers, -1, req.Roles)
