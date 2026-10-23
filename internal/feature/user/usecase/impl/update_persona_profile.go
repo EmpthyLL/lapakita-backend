@@ -8,7 +8,6 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/user/dto"
-	usermessages "lapakita-backend/internal/feature/user/messages"
 	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -41,7 +40,7 @@ func UpdatePersonaProfile(ctx context.Context, u *usecase.UserUsecase, userID uu
 	if req.PhoneNumberIndex != nil {
 		targetIdx := *req.PhoneNumberIndex
 		if targetIdx < 0 || targetIdx >= len(user.PhoneNumbers) {
-			return dto.PersonaProfileResponse{}, errors.New(string(usermessages.KeyUserPhoneIndexInvalid))
+			return dto.PersonaProfileResponse{}, errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 		}
 		user.PhoneNumbers.AssignRoleToPhoneNumberIndex(targetIdx, role)
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"lapakita-backend/internal/feature/auth/dto"
-	authmessages "lapakita-backend/internal/feature/auth/messages"
 	"lapakita-backend/internal/feature/auth/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -21,7 +20,7 @@ func Login(ctx context.Context, u *usecase.AuthUsecase, req dto.LoginRequest) (*
 		return nil, errors.New(string(i18n.KeyUserNotFound))
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, errors.New(string(authmessages.KeyWrongPassword))
+		return nil, errors.New(string(i18n.KeyWrongPassword))
 	}
 	return usecase.BuildAuthResponse(u.JWTService, user)
 }

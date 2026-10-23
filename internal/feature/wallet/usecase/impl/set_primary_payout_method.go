@@ -7,6 +7,6 @@ import (
 	"lapakita-backend/internal/feature/wallet/usecase"
 )
 
-func SetPrimaryPayoutMethod(ctx context.Context, u *usecase.PayoutMethodUsecase, userID, methodID uuid.UUID) error {
+func SetPrimaryPayoutMethod(ctx context.Context, u *usecase.WalletUsecase, userID, methodID uuid.UUID) error {
 	return u.Repo.SetPrimary(ctx, userID, methodID)
 }

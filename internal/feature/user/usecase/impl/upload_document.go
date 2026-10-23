@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	usermessages "lapakita-backend/internal/feature/user/messages"
 	"strings"
 	"time"
 
@@ -24,14 +23,14 @@ func UploadDocument(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUI
 		return err
 	}
 	if existingUserDoc != nil {
-		return errors.New(string(usermessages.KeyUserDocumentNumberAlreadyAdded))
+		return errors.New(string(i18n.KeyUserDocumentNumberAlreadyAdded))
 	}
 	existingGlobalDoc, err := u.Repo.FindIdentityByDocumentNumber(ctx, req.DocumentNumber)
 	if err != nil {
 		return err
 	}
 	if existingGlobalDoc != nil && existingGlobalDoc.UserID != userID {
-		return errors.New(string(usermessages.KeyUserDocumentNIKExists))
+		return errors.New(string(i18n.KeyUserDocumentNIKExists))
 	}
 	rawBase64 := req.DocumentPhoto
 	if idx := strings.Index(rawBase64, ","); idx != -1 {
@@ -39,17 +38,17 @@ func UploadDocument(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUI
 	}
 	decodedBytes, err := base64.StdEncoding.DecodeString(rawBase64)
 	if err != nil {
-		return errors.New(string(usermessages.KeyUserDocumentFileInvalid))
+		return errors.New(string(i18n.KeyUserDocumentFileInvalid))
 	}
 	watermarkedBytes, err := storage.ApplyWatermarkFromBytes(decodedBytes, storage.PurposeStallVerification)
 	if err != nil {
-		return errors.New(string(usermessages.KeyUserDocumentWatermarkFailed))
+		return errors.New(string(i18n.KeyUserDocumentWatermarkFailed))
 	}
 	watermarkedBase64 := base64.StdEncoding.EncodeToString(watermarkedBytes)
 	fileName := fmt.Sprintf("%s_%s_%d.jpg", req.DocumentType, userID.String(), time.Now().Unix())
 	uploadedURL, err := u.Seaweed.UploadFromURL(ctx, watermarkedBase64, fileName, "/legals")
 	if err != nil {
-		return errors.New(string(usermessages.KeyUserDocumentFailedToUpload))
+		return errors.New(string(i18n.KeyUserDocumentFailedToUpload))
 	}
 	countryCode := req.CountryCode
 	if countryCode == "" {

@@ -3,12 +3,9 @@ package main
 import (
 	"lapakita-backend/config"
 	authHandler "lapakita-backend/internal/feature/auth/handler"
-	areaHandler "lapakita-backend/internal/feature/master/area/handler"
-	businessTypeHandler "lapakita-backend/internal/feature/master/business_type/handler"
-	publicHandler "lapakita-backend/internal/feature/master/public/handler"
-	stallHandler "lapakita-backend/internal/feature/stall/handler"
+	masterHandler "lapakita-backend/internal/feature/master/handler"
 	userHandler "lapakita-backend/internal/feature/user/handler"
-	payoutMethodHandler "lapakita-backend/internal/feature/wallet/handler"
+	walletHandler "lapakita-backend/internal/feature/wallet/handler"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
@@ -18,13 +15,10 @@ import (
 )
 
 type Handlers struct {
-	AreaHandler         *areaHandler.AreaHandler
-	PublicHandler       *publicHandler.PublicHandler
-	BusinessTypeHandler *businessTypeHandler.BusinessTypeHandler
-	AuthHandler         *authHandler.AuthHandler
-	PayoutMethodHandler *payoutMethodHandler.PayoutMethodHandler
-	StallHandler        *stallHandler.StallHandler
-	UserHandler         *userHandler.UserHandler
+	MasterHandler *masterHandler.MasterHandler
+	AuthHandler   *authHandler.AuthHandler
+	WalletHandler *walletHandler.WalletHandler
+	UserHandler   *userHandler.UserHandler
 }
 
 type Server struct {
@@ -76,17 +70,17 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		areaGroup := apiGroup.Group("/areas")
 		{
 			// Public Area Search Endpoints (Tanpa Middleware Auth)
-			areaGroup.GET("", h.AreaHandler.SearchGeneral)
-			areaGroup.GET("/detail", h.AreaHandler.SearchDetail)
+			areaGroup.GET("", h.MasterHandler.SearchGeneral)
+			areaGroup.GET("/detail", h.MasterHandler.SearchDetail)
 
 			// History Endpoints (Khusus yang butuh Optional Auth/Device ID)
 			historyGroup := areaGroup.Group("/history")
 			historyGroup.Use(middleware.OptionalJWTAuthMiddleware(jwtService))
 			{
-				historyGroup.GET("", h.AreaHandler.GetHistory)
-				historyGroup.POST("", h.AreaHandler.SaveHistory)
-				historyGroup.DELETE("", h.AreaHandler.ClearHistory)
-				historyGroup.DELETE("/item", h.AreaHandler.DeleteItemHistory)
+				historyGroup.GET("", h.MasterHandler.GetHistory)
+				historyGroup.POST("", h.MasterHandler.SaveHistory)
+				historyGroup.DELETE("", h.MasterHandler.ClearHistory)
+				historyGroup.DELETE("/item", h.MasterHandler.DeleteItemHistory)
 			}
 		}
 
@@ -95,9 +89,9 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		// ---------------------------------------------------------------------
 		publicGroup := apiGroup.Group("/public")
 		{
-			publicGroup.GET("/faqs/:role_type", h.PublicHandler.GetFAQs)
-			publicGroup.GET("/legals/:doc_type", h.PublicHandler.GetLegalDocument)
-			publicGroup.POST("/contact", h.PublicHandler.SubmitContact)
+			publicGroup.GET("/faqs/:role_type", h.MasterHandler.GetFAQs)
+			publicGroup.GET("/legals/:doc_type", h.MasterHandler.GetLegalDocument)
+			publicGroup.POST("/contact", h.MasterHandler.SubmitContact)
 		}
 
 		// ---------------------------------------------------------------------
@@ -105,32 +99,11 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		// ---------------------------------------------------------------------
 		businessTypeGroup := apiGroup.Group("/business-types")
 		{
-			businessTypeGroup.GET("", h.BusinessTypeHandler.GetBusinessTypes)
+			businessTypeGroup.GET("", h.MasterHandler.GetBusinessTypes)
 		}
 
 		// ---------------------------------------------------------------------
-		// 4. STALL ROUTES
-		// ---------------------------------------------------------------------
-		stallGroup := apiGroup.Group("/stalls")
-		{
-			// Public Routes
-			stallGroup.GET("", h.StallHandler.Search)
-			stallGroup.GET("/:id", h.StallHandler.GetByID)
-			stallGroup.GET("/:id/similar", h.StallHandler.GetSimilar)
-
-			// Protected Routes (Owner Only)
-			protectedStalls := stallGroup.Group("")
-			protectedStalls.Use(middleware.JWTAuthMiddleware(jwtService))
-			{
-				protectedStalls.GET("/my-stalls", h.StallHandler.GetByOwner)
-				protectedStalls.POST("", h.StallHandler.Create)
-				protectedStalls.PUT("/:id", h.StallHandler.Update)
-				protectedStalls.DELETE("/:id", h.StallHandler.Delete)
-			}
-		}
-
-		// ---------------------------------------------------------------------
-		// 6. USER / SETTINGS ROUTES (Protected)
+		// 5. USER / SETTINGS ROUTES (Protected)
 		// ---------------------------------------------------------------------
 		userGroup := apiGroup.Group("/users")
 		userGroup.Use(middleware.JWTAuthMiddleware(jwtService))
@@ -175,10 +148,10 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 			// Payout Methods
 			payoutMethodGroup := userGroup.Group("/payout-methods")
 			{
-				payoutMethodGroup.GET("", h.PayoutMethodHandler.Get)
-				payoutMethodGroup.POST("", h.PayoutMethodHandler.Create)
-				payoutMethodGroup.DELETE("/:id", h.PayoutMethodHandler.Delete)
-				payoutMethodGroup.PUT("/:id/primary", h.PayoutMethodHandler.SetPrimary)
+				payoutMethodGroup.GET("", h.WalletHandler.Get)
+				payoutMethodGroup.POST("", h.WalletHandler.Create)
+				payoutMethodGroup.DELETE("/:id", h.WalletHandler.Delete)
+				payoutMethodGroup.PUT("/:id/primary", h.WalletHandler.SetPrimary)
 			}
 		}
 	}

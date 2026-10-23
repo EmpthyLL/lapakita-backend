@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"lapakita-backend/internal/feature/user/dto"
-	usermessages "lapakita-backend/internal/feature/user/messages"
 	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -20,10 +19,10 @@ func UpdatePassword(ctx context.Context, u *usecase.UserUsecase, userID uuid.UUI
 	}
 	if user.PasswordHash != "" {
 		if req.CurrentPassword == nil || *req.CurrentPassword == "" {
-			return errors.New(string(usermessages.KeyUserPasswordIncorrect))
+			return errors.New(string(i18n.KeyUserPasswordIncorrect))
 		}
 		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(*req.CurrentPassword)); err != nil {
-			return errors.New(string(usermessages.KeyUserPasswordIncorrect))
+			return errors.New(string(i18n.KeyUserPasswordIncorrect))
 		}
 	}
 	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)

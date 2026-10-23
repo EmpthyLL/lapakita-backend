@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"lapakita-backend/internal/feature/user/dto"
-	usermessages "lapakita-backend/internal/feature/user/messages"
 	"lapakita-backend/internal/feature/user/usecase"
 	"lapakita-backend/pkg/i18n"
 
@@ -18,11 +17,11 @@ func UpdatePhoneNumber(ctx context.Context, u *usecase.UserUsecase, userID uuid.
 		return errors.New(string(i18n.KeyUserNotFound))
 	}
 	if index < 0 || index >= len(user.PhoneNumbers) {
-		return errors.New(string(usermessages.KeyUserPhoneIndexInvalid))
+		return errors.New(string(i18n.KeyUserPhoneIndexInvalid))
 	}
 	for i, phone := range user.PhoneNumbers {
 		if i != index && phone.DialCode == req.DialCode && phone.Number == req.Number {
-			return errors.New(string(usermessages.KeyUserPhoneDuplicate))
+			return errors.New(string(i18n.KeyUserPhoneDuplicate))
 		}
 	}
 	isCurrentlyPrimary := user.PhoneNumbers[index].IsPrimary
@@ -35,7 +34,7 @@ func UpdatePhoneNumber(ctx context.Context, u *usecase.UserUsecase, userID uuid.
 			}
 		}
 		if !hasOtherPrimary {
-			return errors.New(string(usermessages.KeyUserPhonePrimaryRequired))
+			return errors.New(string(i18n.KeyUserPhonePrimaryRequired))
 		}
 	}
 	user.PhoneNumbers = usecase.TransferRolesToTarget(user.PhoneNumbers, index, req.Roles)

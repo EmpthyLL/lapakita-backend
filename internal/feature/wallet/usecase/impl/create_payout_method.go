@@ -13,7 +13,7 @@ import (
 
 var ErrInvalidPayoutMethod = errors.New("invalid payout method")
 
-func CreatePayoutMethod(ctx context.Context, u *usecase.PayoutMethodUsecase, userID uuid.UUID, req dto.CreatePayoutMethodRequest) error {
+func CreatePayoutMethod(ctx context.Context, u *usecase.WalletUsecase, userID uuid.UUID, req dto.CreatePayoutMethodRequest) error {
 	method := &entity.PayoutMethod{
 		UserID:            userID,
 		PayoutType:        req.PayoutType,

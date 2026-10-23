@@ -1,5 +1,15 @@
 package wallet
 
-import "github.com/google/wire"
+import (
+	"lapakita-backend/internal/feature/wallet/handler"
+	"lapakita-backend/internal/feature/wallet/repository"
+	"lapakita-backend/internal/feature/wallet/usecase"
 
-var WalletFeatureSet = wire.NewSet(PayoutMethodFeatureSet)
+	"github.com/google/wire"
+)
+
+var WalletFeatureSet = wire.NewSet(
+	repository.NewWalletRepository,
+	usecase.NewWalletUsecase,
+	handler.NewWalletHandler,
+)

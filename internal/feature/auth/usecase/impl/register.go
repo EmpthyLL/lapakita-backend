@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	authmessages "lapakita-backend/internal/feature/auth/messages"
 	"time"
 
 	"lapakita-backend/internal/feature/auth/dto"
@@ -18,7 +17,7 @@ import (
 func Register(ctx context.Context, u *usecase.AuthUsecase, req dto.RegisterRequest) error {
 	existingUser, _ := u.Repo.FindUserByEmail(ctx, req.Email)
 	if existingUser != nil {
-		return errors.New(string(authmessages.KeyEmailAlreadyRegistered))
+		return errors.New(string(i18n.KeyEmailAlreadyRegistered))
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {

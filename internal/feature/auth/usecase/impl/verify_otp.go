@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	authmessages "lapakita-backend/internal/feature/auth/messages"
 	"time"
 
 	"lapakita-backend/internal/entity"
@@ -21,17 +20,17 @@ func VerifyOTP(ctx context.Context, u *usecase.AuthUsecase, req dto.VerifyOTPReq
 	redisKey := fmt.Sprintf("otp:%s:%s", req.Mode, req.Email)
 	storedOTP, err := u.RDB.Get(ctx, redisKey).Result()
 	if err == redis.Nil || storedOTP != req.OTPCode {
-		return nil, errors.New(string(authmessages.KeyOTPExpired))
+		return nil, errors.New(string(i18n.KeyOTPExpired))
 	}
 	if req.Mode == "register" {
 		pendingKey := fmt.Sprintf("pending_reg:%s", req.Email)
 		pendingStr, err := u.RDB.Get(ctx, pendingKey).Result()
 		if err == redis.Nil {
-			return nil, errors.New(string(authmessages.KeyOTPExpired))
+			return nil, errors.New(string(i18n.KeyOTPExpired))
 		}
 		var regData map[string]string
 		if err := json.Unmarshal([]byte(pendingStr), &regData); err != nil {
-			return nil, errors.New(string(authmessages.KeyOTPExpired))
+			return nil, errors.New(string(i18n.KeyOTPExpired))
 		}
 		newUser := &entity.User{
 			Name: regData["name"], Email: regData["email"], PasswordHash: regData["password_hash"], ActiveRole: "tenant", SubscriptionPlan: "free",

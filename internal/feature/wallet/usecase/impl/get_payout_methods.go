@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func GetPayoutMethods(ctx context.Context, u *usecase.PayoutMethodUsecase, userID uuid.UUID, req dto.GetPayoutMethodsRequest) ([]dto.PayoutMethodResponse, api.PaginationMeta, error) {
+func GetPayoutMethods(ctx context.Context, u *usecase.WalletUsecase, userID uuid.UUID, req dto.GetPayoutMethodsRequest) ([]dto.PayoutMethodResponse, api.PaginationMeta, error) {
 	methods, meta, err := u.Repo.GetByUserID(ctx, userID, req)
 	if err != nil {
 		return nil, api.PaginationMeta{}, err
