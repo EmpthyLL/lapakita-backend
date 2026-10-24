@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/wallet/dto"
@@ -29,7 +30,33 @@ func (r *WalletRepository) GetByUserID(ctx context.Context, userID uuid.UUID, re
 	query := r.db.WithContext(ctx).
 		Model(&entity.PayoutMethod{}).
 		Where("user_id = ?", userID)
-	if err := database.AutoPaginate(query, req.BasePaginationRequest, "payout_methods", &methods, &meta, ""); err != nil {
+
+	// Filter Search Gabungan: Nomor Rekening / Nama Pemilik Rekening
+	if req.Search != "" {
+		searchPattern := "%" + strings.ToLower(req.Search) + "%"
+		query = query.Where("(LOWER(account_number) LIKE ? OR LOWER(account_holder_name) LIKE ?)", searchPattern, searchPattern)
+	}
+
+	// Filter Provider Gabungan: Code (e.g. "BCA") / Name (e.g. "Bank Central Asia")
+	if req.Provider != "" {
+		providerPattern := "%" + strings.ToLower(req.Provider) + "%"
+		query = query.Where("(LOWER(provider_code) LIKE ? OR LOWER(provider_name) LIKE ?)", providerPattern, providerPattern)
+	}
+
+	// Filter Payout Type (bank_account / e_wallet)
+	if req.PayoutType != "" {
+		query = query.Where("payout_type = ?", req.PayoutType)
+	}
+
+	// Filter Is Primary
+	if req.IsPrimary != nil {
+		query = query.Where("is_primary = ?", *req.IsPrimary)
+	}
+
+	// Order: utamakan metode primary terlebih dahulu, kemudian tanggal dibuat paling baru
+	orderClause := "is_primary DESC, created_at DESC"
+
+	if err := database.AutoPaginate(query, req.BasePaginationRequest, "payout_methods", &methods, &meta, orderClause); err != nil {
 		return nil, api.PaginationMeta{}, err
 	}
 
