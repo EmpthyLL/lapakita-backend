@@ -24,7 +24,7 @@ func NewWalletHandler(usecase *usecase.WalletUsecase) *WalletHandler {
 	return &WalletHandler{usecase: usecase}
 }
 
-func (h *WalletHandler) Get(c *gin.Context) {
+func (h *WalletHandler) GetPaymentMethods(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
@@ -46,7 +46,7 @@ func (h *WalletHandler) Get(c *gin.Context) {
 	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyPayoutMethodGetSuccess), methods, meta)
 }
 
-func (h *WalletHandler) Create(c *gin.Context) {
+func (h *WalletHandler) CreatePaymentMethod(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
@@ -70,7 +70,7 @@ func (h *WalletHandler) Create(c *gin.Context) {
 	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyPayoutMethodCreateSuccess), nil)
 }
 
-func (h *WalletHandler) Delete(c *gin.Context) {
+func (h *WalletHandler) DeletePaymentMethod(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
@@ -95,7 +95,7 @@ func (h *WalletHandler) Delete(c *gin.Context) {
 	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyPayoutMethodDeleteSuccess), nil)
 }
 
-func (h *WalletHandler) SetPrimary(c *gin.Context) {
+func (h *WalletHandler) SetPrimaryPaymentMethod(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
 		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))

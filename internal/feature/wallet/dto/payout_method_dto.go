@@ -8,6 +8,10 @@ import (
 
 type GetPayoutMethodsRequest struct {
 	api.BasePaginationRequest
+	Search     string `form:"search" binding:"omitempty"`
+	PayoutType string `form:"payout_type" binding:"omitempty,oneof=bank_account e_wallet"`
+	Provider   string `form:"provider" binding:"omitempty"`
+	IsPrimary  *bool  `form:"is_primary" binding:"omitempty"`
 }
 
 type CreatePayoutMethodRequest struct {

@@ -145,14 +145,16 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 				documentGroup.DELETE("/:id", h.UserHandler.DeleteDocument)
 			}
 
-			// Payout Methods
-			payoutMethodGroup := userGroup.Group("/payout-methods")
-			{
-				payoutMethodGroup.GET("", h.WalletHandler.Get)
-				payoutMethodGroup.POST("", h.WalletHandler.Create)
-				payoutMethodGroup.DELETE("/:id", h.WalletHandler.Delete)
-				payoutMethodGroup.PUT("/:id/primary", h.WalletHandler.SetPrimary)
-			}
+		}
+
+		// Payout Methods
+		payoutMethodGroup := apiGroup.Group("/payment-method")
+		payoutMethodGroup.Use(middleware.JWTAuthMiddleware(jwtService))
+		{
+			payoutMethodGroup.GET("", h.WalletHandler.GetPaymentMethods)
+			payoutMethodGroup.POST("", h.WalletHandler.CreatePaymentMethod)
+			payoutMethodGroup.DELETE("/:id", h.WalletHandler.DeletePaymentMethod)
+			payoutMethodGroup.PUT("/:id/primary", h.WalletHandler.SetPrimaryPaymentMethod)
 		}
 	}
 
