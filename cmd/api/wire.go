@@ -7,6 +7,7 @@ import (
 	"lapakita-backend/config"
 	"lapakita-backend/internal/feature/auth"
 	"lapakita-backend/internal/feature/master"
+	"lapakita-backend/internal/feature/stall"
 	"lapakita-backend/internal/feature/user"
 	"lapakita-backend/internal/feature/wallet"
 	"lapakita-backend/pkg/cache"
@@ -38,6 +39,7 @@ var featureSet = wire.NewSet(
 	auth.AuthFeatureSet,
 	wallet.WalletFeatureSet,
 	user.UserFeatureSet,
+	stall.StallFeatureSet,
 )
 
 var HandlersSet = wire.NewSet(

@@ -4,8 +4,8 @@ import (
 	"lapakita-backend/config"
 	authHandler "lapakita-backend/internal/feature/auth/handler"
 	masterHandler "lapakita-backend/internal/feature/master/handler"
+	stallHandler "lapakita-backend/internal/feature/stall/handler"
 	userHandler "lapakita-backend/internal/feature/user/handler"
-	walletHandler "lapakita-backend/internal/feature/wallet/handler"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
@@ -17,7 +17,7 @@ import (
 type Handlers struct {
 	MasterHandler *masterHandler.MasterHandler
 	AuthHandler   *authHandler.AuthHandler
-	WalletHandler *walletHandler.WalletHandler
+	StallHandler  *stallHandler.StallHandler
 	UserHandler   *userHandler.UserHandler
 }
 
@@ -103,7 +103,28 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		}
 
 		// ---------------------------------------------------------------------
-		// 5. USER / SETTINGS ROUTES (Protected)
+		// 4. STALL ROUTES
+		// ---------------------------------------------------------------------
+		stallGroup := apiGroup.Group("/stalls")
+		{
+			// Public Routes
+			stallGroup.GET("", h.StallHandler.Search)
+			stallGroup.GET("/:id", h.StallHandler.GetByID)
+			stallGroup.GET("/:id/similar", h.StallHandler.GetSimilar)
+
+			// Protected Routes (Owner Only)
+			protectedStalls := stallGroup.Group("")
+			protectedStalls.Use(middleware.JWTAuthMiddleware(jwtService))
+			{
+				protectedStalls.GET("/my-stalls", h.StallHandler.GetByOwner)
+				protectedStalls.POST("", h.StallHandler.Create)
+				protectedStalls.PUT("/:id", h.StallHandler.Update)
+				protectedStalls.DELETE("/:id", h.StallHandler.Delete)
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 6. USER / SETTINGS ROUTES (Protected)
 		// ---------------------------------------------------------------------
 		userGroup := apiGroup.Group("/users")
 		userGroup.Use(middleware.JWTAuthMiddleware(jwtService))
@@ -144,17 +165,6 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 				documentGroup.POST("", h.UserHandler.UploadDocument)
 				documentGroup.DELETE("/:id", h.UserHandler.DeleteDocument)
 			}
-
-		}
-
-		// Payout Methods
-		payoutMethodGroup := apiGroup.Group("/payment-method")
-		payoutMethodGroup.Use(middleware.JWTAuthMiddleware(jwtService))
-		{
-			payoutMethodGroup.GET("", h.WalletHandler.GetPaymentMethods)
-			payoutMethodGroup.POST("", h.WalletHandler.CreatePaymentMethod)
-			payoutMethodGroup.DELETE("/:id", h.WalletHandler.DeletePaymentMethod)
-			payoutMethodGroup.PUT("/:id/primary", h.WalletHandler.SetPrimaryPaymentMethod)
 		}
 	}
 

@@ -1,0 +1,179 @@
+package handler
+
+import (
+	"net/http"
+
+	"lapakita-backend/internal/feature/stall/dto"
+	"lapakita-backend/internal/feature/stall/usecase"
+	"lapakita-backend/internal/feature/stall/usecase/impl"
+	"lapakita-backend/internal/middleware"
+	"lapakita-backend/pkg/api"
+	"lapakita-backend/pkg/i18n"
+
+	"github.com/gin-gonic/gin"
+)
+
+type StallHandler struct {
+	usecase *usecase.StallUsecase
+}
+
+func NewStallHandler(usecase *usecase.StallUsecase) *StallHandler {
+	return &StallHandler{usecase: usecase}
+}
+
+// GET /api/v1/stalls (Search with Filters)
+func (h *StallHandler) Search(c *gin.Context) {
+	var req dto.SearchStallRequest
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
+		return
+	}
+
+	stalls, meta, err := impl.Search(c.Request.Context(), h.usecase, req)
+	if err != nil {
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToGet))
+		return
+	}
+
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyStallSearchSuccess), stalls, meta)
+}
+
+// GET /api/v1/stalls/:id
+func (h *StallHandler) GetByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := api.DecodeRequest(idStr)
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	stall, err := impl.GetByID(c.Request.Context(), h.usecase, id)
+	if err != nil {
+		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyStallNotFound))
+		return
+	}
+
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyStallGetSuccess), stall)
+}
+
+// POST /api/v1/stalls (Protected)
+func (h *StallHandler) Create(c *gin.Context) {
+	ownerID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	var req dto.CreateStallRequest
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
+		return
+	}
+
+	stall, err := impl.Create(c.Request.Context(), h.usecase, ownerID, req)
+	if err != nil {
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToCreate))
+		return
+	}
+
+	api.Success(c, http.StatusCreated, i18n.T(c, i18n.KeyStallCreateSuccess), stall)
+}
+
+// PUT /api/v1/stalls/:id (Protected)
+func (h *StallHandler) Update(c *gin.Context) {
+	ownerID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	var req dto.UpdateStallRequest
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
+		return
+	}
+
+	req.ID = c.Param("id")
+
+	stall, err := impl.Update(c.Request.Context(), h.usecase, ownerID, req)
+	if err != nil {
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToUpdate))
+		return
+	}
+
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyStallUpdateSuccess), stall)
+}
+
+// DELETE /api/v1/stalls/:id (Protected)
+func (h *StallHandler) Delete(c *gin.Context) {
+	ownerID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := api.DecodeRequest(idStr)
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	if err := impl.Delete(c.Request.Context(), h.usecase, ownerID, id); err != nil {
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToDelete))
+		return
+	}
+
+	api.Success(c, http.StatusOK, i18n.T(c, i18n.KeyStallDeleteSuccess))
+}
+
+// GET /api/v1/stalls/my-stalls
+func (h *StallHandler) GetByOwner(c *gin.Context) {
+	ownerID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, i18n.T(c, i18n.KeyUnauthorized))
+		return
+	}
+
+	var req dto.GetOwnerStallsRequest
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
+		return
+	}
+
+	// Auto-fill owner_id dari JWT jika tidak dikirimkan di query param
+	if req.OwnerID == "" {
+		req.OwnerID = api.EncodeResponse(ownerID)
+	}
+
+	stalls, meta, err := impl.GetByOwnerID(c.Request.Context(), h.usecase, req)
+	if err != nil {
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyStallFailedToGet))
+		return
+	}
+
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyStallSearchSuccess), stalls, meta)
+}
+
+// GET /api/v1/stalls/:id/similar
+func (h *StallHandler) GetSimilar(c *gin.Context) {
+	id, err := api.DecodeRequest(c.Param("id"))
+	if err != nil {
+		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
+		return
+	}
+
+	req := dto.GetSimilarStallsRequest{ID: id}
+	if err := api.BindAndValidate(c, &req); err != nil {
+		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
+		return
+	}
+
+	stalls, meta, err := impl.GetSimilar(c.Request.Context(), h.usecase, req)
+	if err != nil {
+		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyStallNotFound))
+		return
+	}
+
+	api.SuccessWithPagination(c, http.StatusOK, i18n.T(c, i18n.KeyStallGetSimilarSuccess), stalls, meta)
+}
