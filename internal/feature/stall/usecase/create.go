@@ -1,21 +1,20 @@
-package impl
+package usecase
 
 import (
 	"context"
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/stall/dto"
-	usecase "lapakita-backend/internal/feature/stall/usecase"
 
 	"github.com/google/uuid"
 )
 
-func Create(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req dto.CreateStallRequest) (dto.StallDetailResponse, error) {
-	displayMedia, err := usecase.ProcessDisplayMedia(ctx, u.SeaweedFS, req.DisplayMedia)
+func (u *StallUsecase) Create(ctx context.Context, ownerID uuid.UUID, req dto.CreateStallRequest) (dto.StallDetailResponse, error) {
+	displayMedia, err := ProcessDisplayMedia(ctx, u.SeaweedFS, req.DisplayMedia)
 	if err != nil {
 		return dto.StallDetailResponse{}, err
 	}
-	legalDocs, err := usecase.ProcessLegalDocs(ctx, u.SeaweedFS, req.LegalDocuments)
+	legalDocs, err := ProcessLegalDocs(ctx, u.SeaweedFS, req.LegalDocuments)
 	if err != nil {
 		return dto.StallDetailResponse{}, err
 	}
@@ -79,5 +78,5 @@ func Create(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req
 	if err := u.StallRepository.Create(ctx, stall); err != nil {
 		return dto.StallDetailResponse{}, err
 	}
-	return GetByID(ctx, u, stall.ID)
+	return u.GetByID(ctx, stall.ID)
 }

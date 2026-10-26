@@ -1,4 +1,4 @@
-package impl
+package usecase
 
 import (
 	"context"
@@ -7,14 +7,13 @@ import (
 
 	"lapakita-backend/internal/entity"
 	"lapakita-backend/internal/feature/stall/dto"
-	usecase "lapakita-backend/internal/feature/stall/usecase"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
 
 	"github.com/google/uuid"
 )
 
-func Update(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req dto.UpdateStallRequest) (dto.StallDetailResponse, error) {
+func (u *StallUsecase) Update(ctx context.Context, ownerID uuid.UUID, req dto.UpdateStallRequest) (dto.StallDetailResponse, error) {
 	stallID, err := api.DecodeRequest(req.ID)
 	if err != nil {
 		return dto.StallDetailResponse{}, errors.New(string(i18n.KeyInvalidPayload))
@@ -71,13 +70,13 @@ func Update(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req
 		stall.NearbyLandmarks = landmarks
 	}
 	if req.DisplayMedia.MainImage != "" || len(req.DisplayMedia.FacilityImages) > 0 {
-		stall.DisplayMedia, err = usecase.ProcessDisplayMedia(ctx, u.SeaweedFS, req.DisplayMedia)
+		stall.DisplayMedia, err = ProcessDisplayMedia(ctx, u.SeaweedFS, req.DisplayMedia)
 		if err != nil {
 			return dto.StallDetailResponse{}, err
 		}
 	}
 	if len(req.LegalDocuments) > 0 {
-		stall.LegalDocuments, err = usecase.ProcessLegalDocs(ctx, u.SeaweedFS, req.LegalDocuments)
+		stall.LegalDocuments, err = ProcessLegalDocs(ctx, u.SeaweedFS, req.LegalDocuments)
 		if err != nil {
 			return dto.StallDetailResponse{}, err
 		}
@@ -85,5 +84,5 @@ func Update(ctx context.Context, u *usecase.StallUsecase, ownerID uuid.UUID, req
 	if err := u.StallRepository.Update(ctx, stall); err != nil {
 		return dto.StallDetailResponse{}, err
 	}
-	return GetByID(ctx, u, stall.ID)
+	return u.GetByID(ctx, stall.ID)
 }
