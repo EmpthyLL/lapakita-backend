@@ -6,7 +6,6 @@ import (
 
 	"lapakita-backend/internal/feature/master/dto"
 	"lapakita-backend/internal/feature/master/usecase"
-	"lapakita-backend/internal/feature/master/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -35,7 +34,7 @@ func (h *MasterHandler) SearchGeneral(c *gin.Context) {
 		req.Search = c.Query("search")
 	}
 
-	areas, meta, err := impl.SearchGeneral(c.Request.Context(), h.usecase, req)
+	areas, meta, err := h.usecase.SearchGeneral(c.Request.Context(), req)
 	if err != nil {
 		log.Printf("area search failed: %v", err)
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
@@ -57,7 +56,7 @@ func (h *MasterHandler) SearchDetail(c *gin.Context) {
 		req.Search = c.Query("search")
 	}
 
-	details, meta, err := impl.SearchDetail(c.Request.Context(), h.usecase, req)
+	details, meta, err := h.usecase.SearchDetail(c.Request.Context(), req)
 	if err != nil {
 		log.Printf("area detail search failed: %v", err)
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyAreaSearchFailed))
@@ -79,7 +78,7 @@ func (h *MasterHandler) GetHistory(c *gin.Context) {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyAreaDeviceIDRequired))
 		return
 	}
-	history, err := impl.GetSearchHistory(c.Request.Context(), h.usecase, userID, deviceID)
+	history, err := h.usecase.GetSearchHistory(c.Request.Context(), userID, deviceID)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
@@ -98,7 +97,7 @@ func (h *MasterHandler) SaveHistory(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
-	if err := impl.SaveSearchHistory(c.Request.Context(), h.usecase, userID, deviceID, req); err != nil {
+	if err := h.usecase.SaveSearchHistory(c.Request.Context(), userID, deviceID, req); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}
@@ -111,7 +110,7 @@ func (h *MasterHandler) ClearHistory(c *gin.Context) {
 		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyAreaDeviceIDRequired))
 		return
 	}
-	if err := impl.ClearSearchHistory(c.Request.Context(), h.usecase, userID, deviceID); err != nil {
+	if err := h.usecase.ClearSearchHistory(c.Request.Context(), userID, deviceID); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}
@@ -129,7 +128,7 @@ func (h *MasterHandler) DeleteItemHistory(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
-	if err := impl.DeleteSearchHistoryItem(c.Request.Context(), h.usecase, userID, deviceID, req.FullLabel); err != nil {
+	if err := h.usecase.DeleteSearchHistoryItem(c.Request.Context(), userID, deviceID, req.FullLabel); err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}
@@ -144,7 +143,7 @@ func (h *MasterHandler) GetFAQs(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid), api.BindErrorFields(err))
 		return
 	}
-	faqs, err := impl.GetGroupedFAQs(c.Request.Context(), h.usecase, lang, roleType, &req)
+	faqs, err := h.usecase.GetGroupedFAQs(c.Request.Context(), lang, roleType, &req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyPublicFAQFailedToGet))
 		return
@@ -164,7 +163,7 @@ func (h *MasterHandler) GetLegalDocument(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid), api.BindErrorFields(err))
 		return
 	}
-	res, err := impl.GetLegalDocument(c.Request.Context(), h.usecase, lang, docType, &req)
+	res, err := h.usecase.GetLegalDocument(c.Request.Context(), lang, docType, &req)
 	if err != nil || res == nil {
 		api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyPublicLegalNotFound))
 		return
@@ -178,7 +177,7 @@ func (h *MasterHandler) SubmitContact(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
-	res, err := impl.SubmitContact(c.Request.Context(), h.usecase, req)
+	res, err := h.usecase.SubmitContact(c.Request.Context(), req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyPublicContactInquirySubmitFailed))
 		return
@@ -193,7 +192,7 @@ func (h *MasterHandler) GetBusinessTypes(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyQueryInvalid), api.BindErrorFields(err))
 		return
 	}
-	data, meta, err := impl.GetBusinessTypes(c.Request.Context(), h.usecase, lang, &req)
+	data, meta, err := h.usecase.GetBusinessTypes(c.Request.Context(), lang, &req)
 	if err != nil {
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyBusinessTypeFailedToGet))
 		return

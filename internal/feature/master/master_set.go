@@ -10,7 +10,7 @@ import (
 )
 
 var MasterFeatureSet = wire.NewSet(
-	client.NewGeoapifyClient,
+	client.NewMasterClient,
 	repository.NewMasterRepository,
 	usecase.NewMasterUsecase,
 	handler.NewMasterHandler,
