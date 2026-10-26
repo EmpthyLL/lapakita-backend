@@ -6,6 +6,7 @@ import (
 	masterHandler "lapakita-backend/internal/feature/master/handler"
 	stallHandler "lapakita-backend/internal/feature/stall/handler"
 	userHandler "lapakita-backend/internal/feature/user/handler"
+	walletHandler "lapakita-backend/internal/feature/wallet/handler"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/jwt"
 	"lapakita-backend/pkg/logger"
@@ -18,6 +19,7 @@ type Handlers struct {
 	MasterHandler *masterHandler.MasterHandler
 	AuthHandler   *authHandler.AuthHandler
 	StallHandler  *stallHandler.StallHandler
+	WalletHandler *walletHandler.WalletHandler
 	UserHandler   *userHandler.UserHandler
 }
 
@@ -164,6 +166,16 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 				documentGroup.GET("", h.UserHandler.GetDocument)
 				documentGroup.POST("", h.UserHandler.UploadDocument)
 				documentGroup.DELETE("/:id", h.UserHandler.DeleteDocument)
+			}
+
+			// Payout Methods
+			payoutMethodGroup := apiGroup.Group("/payment-method")
+			payoutMethodGroup.Use(middleware.JWTAuthMiddleware(jwtService))
+			{
+				payoutMethodGroup.GET("", h.WalletHandler.GetPaymentMethods)
+				payoutMethodGroup.POST("", h.WalletHandler.CreatePaymentMethod)
+				payoutMethodGroup.DELETE("/:id", h.WalletHandler.DeletePaymentMethod)
+				payoutMethodGroup.PUT("/:id/primary", h.WalletHandler.SetPrimaryPaymentMethod)
 			}
 		}
 	}
