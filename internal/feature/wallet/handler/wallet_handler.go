@@ -7,7 +7,6 @@ import (
 
 	"lapakita-backend/internal/feature/wallet/dto"
 	"lapakita-backend/internal/feature/wallet/usecase"
-	"lapakita-backend/internal/feature/wallet/usecase/impl"
 	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 	"lapakita-backend/pkg/i18n"
@@ -37,7 +36,7 @@ func (h *WalletHandler) GetPaymentMethods(c *gin.Context) {
 		return
 	}
 
-	methods, meta, err := impl.GetPayoutMethods(c.Request.Context(), h.usecase, userID, req)
+	methods, meta, err := h.usecase.GetPayoutMethods(c.Request.Context(), userID, req)
 	if err != nil {
 		log.Printf("get payout methods failed: %v", err)
 		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
@@ -58,8 +57,8 @@ func (h *WalletHandler) CreatePaymentMethod(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload), api.BindErrorFields(err))
 		return
 	}
-	if err := impl.CreatePayoutMethod(c.Request.Context(), h.usecase, userID, req); err != nil {
-		if errors.Is(err, impl.ErrInvalidPayoutMethod) {
+	if err := h.usecase.CreatePayoutMethod(c.Request.Context(), userID, req); err != nil {
+		if errors.Is(err, usecase.ErrInvalidPayoutMethod) {
 			api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 			return
 		}
@@ -82,7 +81,7 @@ func (h *WalletHandler) DeletePaymentMethod(c *gin.Context) {
 		return
 	}
 
-	err = impl.DeletePayoutMethod(c.Request.Context(), h.usecase, userID, methodID)
+	err = h.usecase.DeletePayoutMethod(c.Request.Context(), userID, methodID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyPayoutMethodNotFound))
@@ -107,7 +106,7 @@ func (h *WalletHandler) SetPrimaryPaymentMethod(c *gin.Context) {
 		return
 	}
 
-	err = impl.SetPrimaryPayoutMethod(c.Request.Context(), h.usecase, userID, methodID)
+	err = h.usecase.SetPrimaryPayoutMethod(c.Request.Context(), userID, methodID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			api.Error(c, http.StatusNotFound, i18n.T(c, i18n.KeyPayoutMethodNotFound))

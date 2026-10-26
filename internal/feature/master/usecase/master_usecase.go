@@ -15,18 +15,18 @@ import (
 )
 
 type MasterUsecase struct {
-	Repo      *repository.MasterRepository
-	GeoClient *client.GeoapifyClient
-	RDB       *redis.Client
-	Mailer    *mailer.Mailer
+	Repo         *repository.MasterRepository
+	MasterClient *client.MasterClient
+	RDB          *redis.Client
+	Mailer       *mailer.Mailer
 }
 
-func NewMasterUsecase(repo *repository.MasterRepository, geoClient *client.GeoapifyClient, rdb *redis.Client, mailer *mailer.Mailer) *MasterUsecase {
+func NewMasterUsecase(repo *repository.MasterRepository, masterClient *client.MasterClient, rdb *redis.Client, mailer *mailer.Mailer) *MasterUsecase {
 	return &MasterUsecase{
-		Repo:      repo,
-		GeoClient: geoClient,
-		RDB:       rdb,
-		Mailer:    mailer,
+		Repo:         repo,
+		MasterClient: masterClient,
+		RDB:          rdb,
+		Mailer:       mailer,
 	}
 }
 
