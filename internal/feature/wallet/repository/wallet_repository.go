@@ -23,6 +23,16 @@ func NewWalletRepository(db *gorm.DB) *WalletRepository {
 	return &WalletRepository{db: db}
 }
 
+func (r *WalletRepository) Exists(ctx context.Context, userID uuid.UUID, payoutType, providerCode, accountNumber string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&entity.PayoutMethod{}).
+		Where("user_id = ? AND LOWER(payout_type) = LOWER(?) AND LOWER(provider_code) = LOWER(?) AND TRIM(account_number) = ?",
+			userID, payoutType, providerCode, strings.TrimSpace(accountNumber)).
+		Count(&count).Error
+	return count > 0, err
+}
+
 func (r *WalletRepository) GetByUserID(ctx context.Context, userID uuid.UUID, req dto.GetPayoutMethodsRequest) ([]entity.PayoutMethod, api.PaginationMeta, error) {
 	var methods []entity.PayoutMethod
 	var meta api.PaginationMeta

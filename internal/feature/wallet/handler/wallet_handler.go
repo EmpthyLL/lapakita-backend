@@ -58,6 +58,10 @@ func (h *WalletHandler) CreatePaymentMethod(c *gin.Context) {
 		return
 	}
 	if err := h.usecase.CreatePayoutMethod(c.Request.Context(), userID, req); err != nil {
+		if errors.Is(err, usecase.ErrPayoutMethodAlreadyExists) {
+			api.Error(c, http.StatusConflict, i18n.T(c, i18n.KeyPayoutMethodAlreadyExists))
+			return
+		}
 		if errors.Is(err, usecase.ErrInvalidPayoutMethod) {
 			api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyInvalidPayload))
 			return

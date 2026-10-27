@@ -89,6 +89,7 @@ const (
 	KeyPayoutMethodDeleteSuccess      MessageKey = "wallet.payout_method_delete_success"
 	KeyPayoutMethodSetPrimarySuccess  MessageKey = "wallet.payout_method_set_primary_success"
 	KeyPayoutMethodNotFound           MessageKey = "wallet.payout_method_not_found"
+	KeyPayoutMethodAlreadyExists      MessageKey = "wallet.payout_method_already_exists"
 	KeyPayoutMethodFailedToCreate     MessageKey = "wallet.payout_method_failed_to_create"
 	KeyPayoutMethodFailedToDelete     MessageKey = "wallet.payout_method_failed_to_delete"
 	KeyPayoutMethodFailedToSetPrimary MessageKey = "wallet.payout_method_failed_to_set_primary"
