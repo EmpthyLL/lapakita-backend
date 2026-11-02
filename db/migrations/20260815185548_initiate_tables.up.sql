@@ -15,24 +15,24 @@ CREATE TYPE cancellation_policy_type AS ENUM ('pro_rata', 'deposit_refundable', 
 -- =============================================================================
 -- 1. USERS, IDENTITIES & MULTI-ROLE PROFILES
 -- =============================================================================
-
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL, -- Primary Identity & Login ID
+    email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     default_avatar_url TEXT,
     
-    -- Telepon Kontak (Multi-Nomor: Primary, Secondary, WhatsApp)
     phone_numbers JSONB NOT NULL DEFAULT '[{"dial_code": "+62", "number": "", "is_primary": true, "roles": []}]'::jsonb,
-    
-    -- Profil Kustom Per Role (Avatar & Display Name Independen Per Role)
     role_profiles JSONB DEFAULT '{}'::jsonb,
     
-    -- Active Context & Platform Subscription
-    active_role VARCHAR(32) DEFAULT 'tenant', -- tenant, owner, supplier
-    subscription_plan VARCHAR(32) DEFAULT 'free', -- free, single_role, all_access
+    active_role VARCHAR(32) DEFAULT 'tenant',
+    subscription_plan VARCHAR(32) DEFAULT 'free',
     subscription_expires_at TIMESTAMP WITH TIME ZONE,
+    
+    -- ── ANTI-SPAM & LEASE COMMITMENT TRACKER ─────────────────────────────────
+    unpaid_cancelled_applications_count INT DEFAULT 0, -- Counter pengajuan disetujui tapi ghosting (reset rolling 30 hari)
+    is_flagged_for_commitment_deposit BOOLEAN DEFAULT FALSE, -- Flag wajib bayar 35% commitment deposit
+    commitment_flag_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- Masa sanksi commitment deposit (misal 30 hari)
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -501,19 +501,23 @@ CREATE TABLE notifications (
     
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
-    type VARCHAR(64) NOT NULL,
-    target_role VARCHAR(32) NOT NULL DEFAULT 'tenant',
+    
+    category VARCHAR(32) NOT NULL DEFAULT 'operational', -- 'finance', 'operational', 'system'
+    type VARCHAR(64) NOT NULL,                           -- e.g. 'finance_subscription_paid', 'sys_subscription_expiring'
+    target_role VARCHAR(32) NOT NULL DEFAULT 'all',      -- 'tenant', 'owner', 'supplier', 'all'
     
     action_url TEXT,
-    metadata JSONB DEFAULT '{}'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,                  -- Snapshot payload (amount, plan_type, expiry_date, etc)
     
     is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_user_category ON notifications(user_id, category);
+CREATE INDEX idx_notifications_target_role ON notifications(user_id, target_role);
+CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read);
 
 CREATE TABLE contact_inquiries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
