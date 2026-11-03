@@ -3,6 +3,7 @@ package main
 import (
 	"lapakita-backend/config"
 	authHandler "lapakita-backend/internal/feature/auth/handler"
+	businessHandler "lapakita-backend/internal/feature/business/handler"
 	masterHandler "lapakita-backend/internal/feature/master/handler"
 	stallHandler "lapakita-backend/internal/feature/stall/handler"
 	userHandler "lapakita-backend/internal/feature/user/handler"
@@ -16,11 +17,12 @@ import (
 )
 
 type Handlers struct {
-	MasterHandler *masterHandler.MasterHandler
-	AuthHandler   *authHandler.AuthHandler
-	StallHandler  *stallHandler.StallHandler
-	WalletHandler *walletHandler.WalletHandler
-	UserHandler   *userHandler.UserHandler
+	MasterHandler   *masterHandler.MasterHandler
+	AuthHandler     *authHandler.AuthHandler
+	BusinessHandler *businessHandler.BusinessHandler
+	StallHandler    *stallHandler.StallHandler
+	WalletHandler   *walletHandler.WalletHandler
+	UserHandler     *userHandler.UserHandler
 }
 
 type Server struct {
@@ -105,7 +107,24 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		}
 
 		// ---------------------------------------------------------------------
-		// 4. STALL ROUTES
+		// 5. BUSINESS ROUTES
+		// ---------------------------------------------------------------------
+		businessGroup := apiGroup.Group("/businesses")
+		{
+			businessGroup.GET("", h.BusinessHandler.List)
+			businessGroup.GET("/:id", h.BusinessHandler.GetByID)
+
+			protectedBusinesses := businessGroup.Group("")
+			protectedBusinesses.Use(middleware.JWTAuthMiddleware(jwtService))
+			{
+				protectedBusinesses.POST("", h.BusinessHandler.Create)
+				protectedBusinesses.PUT("/:id", h.BusinessHandler.Update)
+				protectedBusinesses.DELETE("/:id", h.BusinessHandler.Delete)
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 6. STALL ROUTES
 		// ---------------------------------------------------------------------
 		stallGroup := apiGroup.Group("/stalls")
 		{
@@ -126,7 +145,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		}
 
 		// ---------------------------------------------------------------------
-		// 6. USER / SETTINGS ROUTES (Protected)
+		// 7. USER / SETTINGS ROUTES (Protected)
 		// ---------------------------------------------------------------------
 		userGroup := apiGroup.Group("/users")
 		userGroup.Use(middleware.JWTAuthMiddleware(jwtService))
