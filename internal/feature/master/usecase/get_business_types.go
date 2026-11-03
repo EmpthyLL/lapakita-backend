@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"lapakita-backend/internal/feature/master/dto"
 	"lapakita-backend/pkg/api"
@@ -24,20 +25,22 @@ func (u *MasterUsecase) GetBusinessTypes(ctx context.Context, lang string, req *
 
 	responses := make([]dto.BusinessTypeResponse, 0, len(items))
 	for _, item := range items {
-		labelMap := make(map[string]string)
-		groupMap := make(map[string]string)
-
-		_ = json.Unmarshal(item.LabelLang, &labelMap)
-		_ = json.Unmarshal(item.GroupNameLang, &groupMap)
-
-		label := labelMap[activeLang]
+		label := item.LabelLang.ID
+		groupName := item.GroupNameLang.ID
+		if activeLang == "en" {
+			label = item.LabelLang.EN
+			groupName = item.GroupNameLang.EN
+		}
 		if label == "" {
-			label = labelMap["en"]
+			label = item.LabelLang.EN
+		}
+		if groupName == "" {
+			groupName = item.GroupNameLang.EN
 		}
 
-		groupName := groupMap[activeLang]
-		if groupName == "" {
-			groupName = groupMap["en"]
+		recommendedLandmarks, err := json.Marshal(item.RecommendedLandmarks)
+		if err != nil {
+			return nil, api.PaginationMeta{}, fmt.Errorf("marshal business type recommended landmarks: %w", err)
 		}
 
 		responses = append(responses, dto.BusinessTypeResponse{
@@ -49,7 +52,7 @@ func (u *MasterUsecase) GetBusinessTypes(ctx context.Context, lang string, req *
 			AvgGrossMarginRatio:        item.AvgGrossMarginRatio,
 			IndustryRentToRevenueRatio: item.IndustryRentToRevenueRatio,
 			PermanencePresets:          item.PermanencePresets,
-			RecommendedLandmarks:       item.RecommendedLandmarks,
+			RecommendedLandmarks:       recommendedLandmarks,
 		})
 	}
 

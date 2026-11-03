@@ -165,6 +165,7 @@ type User struct {
 
 	IdentityProfile *UserIdentityProfile `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"identity_profile,omitempty"`
 	PaymentMethod   []PayoutMethod       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"payment_method,omitempty"`
+	Businesses      []Business           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"businesses,omitempty"`
 }
 
 func (User) TableName() string {

@@ -250,18 +250,18 @@ CREATE INDEX idx_stalls_is_published ON stalls(is_published);
 CREATE INDEX idx_stalls_lat_lon ON stalls(latitude, longitude);
 CREATE INDEX idx_stalls_deleted_at ON stalls(deleted_at);
 
+
 -- =============================================================================
--- 5. LEASE CONTRACTS & REVIEWS
+-- 5. LEASE CONTRACTS & REVIEWS (BERSIH & TANPA BUSINESS_ID REDUNDAN)
 -- =============================================================================
 
 CREATE TABLE lease_contracts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
-    -- Relasi Entitas Utama
+    -- Relasi Entitas Utama (Murni Subjek Hukum & Objek Properti)
     stall_id UUID NOT NULL REFERENCES stalls(id),
     tenant_user_id UUID NOT NULL REFERENCES users(id),
     stall_owner_id UUID NOT NULL REFERENCES users(id),
-    business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
     
     -- Snapshots Identitas Dokumen Legal (Di-lock saat pengajuan)
     tenant_identity_snapshot JSONB NOT NULL, 
@@ -280,7 +280,7 @@ CREATE TABLE lease_contracts (
     owner_signature JSONB DEFAULT NULL,
     contract_hash_sha256 VARCHAR(64) DEFAULT NULL,
 
-    -- Status Kontrak Utama (Tanpa Atribut Escrow Ribet)
+    -- Status Kontrak Utama
     status VARCHAR(32) NOT NULL DEFAULT 'pending_approval', 
     -- 'pending_approval', 'payment_pending', 'active', 'rejected', 'cancelled', 'completed'
     
