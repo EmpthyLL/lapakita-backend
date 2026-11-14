@@ -5,6 +5,7 @@ import (
 
 	"lapakita-backend/internal/feature/business/dto"
 	"lapakita-backend/internal/feature/business/usecase"
+	"lapakita-backend/internal/middleware"
 	"lapakita-backend/pkg/api"
 
 	"github.com/gin-gonic/gin"
@@ -21,12 +22,19 @@ func NewBusinessHandler(businessUsecase *usecase.BusinessUsecase) *BusinessHandl
 }
 
 func (h *BusinessHandler) Create(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
 	var req dto.CreateBusinessRequest
 	if err := api.BindAndValidate(c, &req); err != nil {
 		fields := api.BindErrorFields(err)
 		api.ErrorWithFields(c, http.StatusBadRequest, "Invalid request payload", fields)
 		return
 	}
+	req.UserID = userID
 
 	res, err := h.businessUsecase.Create(c.Request.Context(), req)
 	if err != nil {

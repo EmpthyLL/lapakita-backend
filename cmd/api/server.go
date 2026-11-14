@@ -110,17 +110,14 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		// 5. BUSINESS ROUTES
 		// ---------------------------------------------------------------------
 		businessGroup := apiGroup.Group("/businesses")
+		businessGroup.Use(middleware.JWTAuthMiddleware(jwtService))
 		{
 			businessGroup.GET("", h.BusinessHandler.List)
 			businessGroup.GET("/:id", h.BusinessHandler.GetByID)
+			businessGroup.POST("", h.BusinessHandler.Create)
+			businessGroup.PUT("/:id", h.BusinessHandler.Update)
+			businessGroup.DELETE("/:id", h.BusinessHandler.Delete)
 
-			protectedBusinesses := businessGroup.Group("")
-			protectedBusinesses.Use(middleware.JWTAuthMiddleware(jwtService))
-			{
-				protectedBusinesses.POST("", h.BusinessHandler.Create)
-				protectedBusinesses.PUT("/:id", h.BusinessHandler.Update)
-				protectedBusinesses.DELETE("/:id", h.BusinessHandler.Delete)
-			}
 		}
 
 		// ---------------------------------------------------------------------
