@@ -14,7 +14,10 @@ import (
 )
 
 func (u *AuthUsecase) Register(ctx context.Context, req dto.RegisterRequest) error {
-	existingUser, _ := u.Repo.FindUserByEmail(ctx, req.Email)
+	existingUser, err := u.Repo.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return err
+	}
 	if existingUser != nil {
 		return errors.New(string(i18n.KeyEmailAlreadyRegistered))
 	}

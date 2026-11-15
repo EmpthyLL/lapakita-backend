@@ -22,7 +22,10 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 	email := fmt.Sprintf("%v", payload.Claims["email"])
 	name := fmt.Sprintf("%v", payload.Claims["name"])
 	picture := fmt.Sprintf("%v", payload.Claims["picture"])
-	user, _ := u.Repo.FindUserByEmail(ctx, email)
+	user, err := u.Repo.FindUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
 	uploadAvatar := func(rawSource string) string {
 		cleanSource := strings.TrimSpace(rawSource)
 		if cleanSource == "" {

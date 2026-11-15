@@ -37,19 +37,6 @@ func (r *BusinessRepository) FindByID(ctx context.Context, id uuid.UUID) (*entit
 	return &business, err
 }
 
-func (r *BusinessRepository) FindByIDWithPreload(ctx context.Context, id uuid.UUID) (*entity.Business, error) {
-	var business entity.Business
-	err := r.db.WithContext(ctx).
-		Preload("User").
-		Preload("BusinessType").
-		Where("deleted_at IS NULL").
-		First(&business, "id = ?", id).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	return &business, err
-}
-
 func (r *BusinessRepository) List(ctx context.Context, req dto.ListBusinessRequest) ([]entity.Business, api.PaginationMeta, error) {
 	var businesses []entity.Business
 	var meta api.PaginationMeta

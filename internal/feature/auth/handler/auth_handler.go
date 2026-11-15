@@ -30,7 +30,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.usecase.Register(c.Request.Context(), req); err != nil {
-		api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.MessageKey(err.Error())))
+		if i18n.MessageKey(err.Error()) == i18n.KeyEmailAlreadyRegistered {
+			api.Error(c, http.StatusBadRequest, i18n.T(c, i18n.KeyEmailAlreadyRegistered))
+			return
+		}
+		log.Printf("auth registration failed: %v", err)
+		api.Error(c, http.StatusInternalServerError, i18n.T(c, i18n.KeyInternalServerError))
 		return
 	}
 

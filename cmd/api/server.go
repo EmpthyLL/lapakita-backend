@@ -113,7 +113,6 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		businessGroup.Use(middleware.JWTAuthMiddleware(jwtService))
 		{
 			businessGroup.GET("", h.BusinessHandler.List)
-			businessGroup.GET("/:id", h.BusinessHandler.GetByID)
 			businessGroup.POST("", h.BusinessHandler.Create)
 			businessGroup.PUT("/:id", h.BusinessHandler.Update)
 			businessGroup.DELETE("/:id", h.BusinessHandler.Delete)

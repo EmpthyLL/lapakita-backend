@@ -49,34 +49,6 @@ func (h *BusinessHandler) Create(c *gin.Context) {
 	api.Success(c, http.StatusCreated, "Business created successfully", res)
 }
 
-func (h *BusinessHandler) GetByID(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
-		api.Error(c, http.StatusBadRequest, "Business ID is required")
-		return
-	}
-
-	req := dto.GetBusinessByIDRequest{ID: id}
-	lang := api.GetLanguageFromHeader(c)
-
-	res, err := h.businessUsecase.GetByID(c.Request.Context(), req, lang)
-	if err != nil {
-		if err == api.ErrInvalidID {
-			api.Error(c, http.StatusBadRequest, "Invalid business ID format")
-			return
-		}
-		api.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if res == nil {
-		api.Error(c, http.StatusNotFound, "Business not found")
-		return
-	}
-
-	api.Success(c, http.StatusOK, "Business retrieved successfully", res)
-}
-
 func (h *BusinessHandler) List(c *gin.Context) {
 	var req dto.ListBusinessRequest
 	if err := api.BindAndValidate(c, &req); err != nil {
@@ -84,6 +56,13 @@ func (h *BusinessHandler) List(c *gin.Context) {
 		api.ErrorWithFields(c, http.StatusBadRequest, "Invalid query parameters", fields)
 		return
 	}
+
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		api.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	req.UserID = &userID
 
 	lang := api.GetLanguageFromHeader(c)
 	items, meta, err := h.businessUsecase.List(c.Request.Context(), req, lang)

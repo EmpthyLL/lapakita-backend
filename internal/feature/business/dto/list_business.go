@@ -8,7 +8,7 @@ import (
 
 type ListBusinessRequest struct {
 	api.BasePaginationRequest
-	UserID         *uuid.UUID `form:"user_id" binding:"omitempty"`
+	UserID         *uuid.UUID `form:"-" binding:"-"`
 	BusinessTypeID *uuid.UUID `form:"business_type_id" binding:"omitempty"`
 	Search         string     `form:"search" binding:"omitempty"`
 }

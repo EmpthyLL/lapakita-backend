@@ -37,7 +37,10 @@ func (r *AuthRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*entit
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
-	return &user, err
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *AuthRepository) FindUserByEmail(ctx context.Context, email string) (*entity.User, error) {
@@ -50,7 +53,10 @@ func (r *AuthRepository) FindUserByEmail(ctx context.Context, email string) (*en
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
-	return &user, err
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *AuthRepository) UpdateUser(ctx context.Context, user *entity.User) error {
