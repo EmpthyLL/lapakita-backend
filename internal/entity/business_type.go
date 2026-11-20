@@ -37,17 +37,11 @@ func (i *I18nText) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, i)
 }
 
-// RecommendedLandmarkItem mewakili 1 rekomendasi landmark dalam JSONB business_types
-type RecommendedLandmarkItem struct {
-	CategoryValue string `json:"category_value"`
-	Name          string `json:"name"`
-}
-
-type RecommendedLandmarkArray []RecommendedLandmarkItem
+type RecommendedLandmarkArray []string
 
 func (r RecommendedLandmarkArray) Value() (driver.Value, error) {
 	if r == nil {
-		return json.Marshal([]RecommendedLandmarkItem{})
+		return json.Marshal([]string{})
 	}
 	return json.Marshal(r)
 }
