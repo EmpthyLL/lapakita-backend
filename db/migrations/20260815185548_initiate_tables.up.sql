@@ -120,6 +120,35 @@ CREATE TABLE businesses (
 CREATE INDEX idx_businesses_user_id ON businesses(user_id);
 CREATE INDEX idx_businesses_deleted_at ON businesses(deleted_at);
 
+CREATE TABLE business_fronts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    
+    -- Identitas Etalase / Platform
+    platform VARCHAR(64) NOT NULL,               -- 'google_maps', 'shopee', 'tokopedia', 'gofood', 'grabfood', 'custom_web'
+    store_name VARCHAR(255) NOT NULL,
+    store_url TEXT NOT NULL,
+    
+    -- Rating & Skala Asli Platform (Apa adanya: misal 4.8/5 atau 8.9/10 atau 5.4/6)
+    rating_avg NUMERIC(4, 2) DEFAULT 0.00,
+    max_scale INT NOT NULL DEFAULT 5,
+    total_reviews INT DEFAULT 0,
+    
+    -- Distribusi Jumlah per Angka Rating (Key dinamis sesuai max_scale, misal {"5": 120, "4": 15...} atau {"10": 50, "9": 12...})
+    rating_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+    
+    -- Sampel Testimoni Terpisah per Angka Rating (Key dinamis sesuai max_scale)
+    reviews_by_star JSONB NOT NULL DEFAULT '{}'::jsonb,
+    
+    -- Penanda Cooldown & Sync
+    last_synced_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_business_fronts_business_id ON business_fronts(business_id);
+
 -- =============================================================================
 -- 3. SUPPLIER PROFILES & REGULARS
 -- =============================================================================

@@ -52,6 +52,8 @@ DROP TABLE IF EXISTS businesses CASCADE;
 
 DROP TABLE IF EXISTS business_types CASCADE;
 
+DROP TABLE IF EXISTS business_fronts CASCADE;
+
 DROP TABLE IF EXISTS payout_methods CASCADE;
 
 -- 8. Drop Identities & Users
