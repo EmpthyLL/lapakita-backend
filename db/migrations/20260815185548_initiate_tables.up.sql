@@ -79,26 +79,21 @@ CREATE TABLE payout_methods (
 CREATE INDEX idx_payout_methods_user_id ON payout_methods(user_id);
 
 -- =============================================================================
--- 2. BUSINESS TYPES & TENANT BUSINESS PROFILES
+-- 2. BUSINESS TYPES, BUSINESSES & SALES CHANNELS (FRONTS)
 -- =============================================================================
 
 CREATE TABLE business_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
-    -- Label & Group Name Multi-Bahasa (I18n)
     label_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     group_name_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     
-    -- Financial Benchmarks
     default_bep_months INT NOT NULL DEFAULT 6,
     default_capital NUMERIC(15, 2) NOT NULL DEFAULT 35000000.00,
     avg_gross_margin_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.5000,
     industry_rent_to_revenue_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.1500,
     
-    -- Presets Per Permanence Tab (Permanent, Semi-Permanent, Temporary)
     permanence_presets JSONB NOT NULL DEFAULT '{}'::jsonb,
-    
-    -- Target Landmark Tags
     recommended_landmarks JSONB DEFAULT '[]'::jsonb,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -120,34 +115,23 @@ CREATE TABLE businesses (
 CREATE INDEX idx_businesses_user_id ON businesses(user_id);
 CREATE INDEX idx_businesses_deleted_at ON businesses(deleted_at);
 
+-- Channel Penjualan / Etalase Bisnis (Offline Kios, Shopee, Tokopedia, GoFood, GrabFood, dll)
 CREATE TABLE business_fronts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     
-    -- Identitas Etalase / Platform
-    platform VARCHAR(64) NOT NULL,               -- 'google_maps', 'shopee', 'tokopedia', 'gofood', 'grabfood', 'custom_web'
-    store_name VARCHAR(255) NOT NULL,
-    store_url TEXT NOT NULL,
-    
-    -- Rating & Skala Asli Platform (Apa adanya: misal 4.8/5 atau 8.9/10 atau 5.4/6)
-    rating_avg NUMERIC(4, 2) DEFAULT 0.00,
-    max_scale INT NOT NULL DEFAULT 5,
-    total_reviews INT DEFAULT 0,
-    
-    -- Distribusi Jumlah per Angka Rating (Key dinamis sesuai max_scale, misal {"5": 120, "4": 15...} atau {"10": 50, "9": 12...})
-    rating_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
-    
-    -- Sampel Testimoni Terpisah per Angka Rating (Key dinamis sesuai max_scale)
-    reviews_by_star JSONB NOT NULL DEFAULT '{}'::jsonb,
-    
-    -- Penanda Cooldown & Sync
-    last_synced_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    platform VARCHAR(64) NOT NULL,               -- 'offline_stall', 'shopee', 'tokopedia', 'gofood', 'grabfood', 'website', 'other'
+    store_name VARCHAR(255) NOT NULL,            -- e.g. "Kopi Susu - Kios Margonda" atau "Kopi Susu Official Shopee"
+    store_url TEXT DEFAULT NULL,                 -- Opsional (misal NULL jika offline_stall)
+    is_active BOOLEAN DEFAULT TRUE,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX idx_business_fronts_business_id ON business_fronts(business_id);
+CREATE INDEX idx_business_fronts_deleted_at ON business_fronts(deleted_at);
 
 -- =============================================================================
 -- 3. SUPPLIER PROFILES & REGULARS

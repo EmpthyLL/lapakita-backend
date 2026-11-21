@@ -13,7 +13,7 @@ INSERT INTO business_types (
 ) VALUES
 
 -- =============================================================================
--- F&B (FOOD & BEVERAGES)
+-- 1. F&B (FOOD & BEVERAGES)
 -- =============================================================================
 
 (
@@ -31,7 +31,7 @@ INSERT INTO business_types (
             "defaultPlacement": "indoor",
             "recommendedSizeSqm": {"min": 40, "max": 120},
             "recommendedFloors": {"min": 1, "max": 2},
-            "facilities": ["power", "high-power", "water", "drainage", "grease-trap", "ventilation", "air-conditioner", "seating", "toilet", "parking", "trash-area"]
+            "facilities": ["power", "high-power", "water", "drainage", "grease-trap", "ventilation", "gas-pipeline", "air-conditioner", "seating", "toilet", "parking", "trash-area"]
         },
         "semi-permanent": {
             "allowedPropertyTypes": ["mall-shop", "food-court-counter"],
@@ -39,7 +39,7 @@ INSERT INTO business_types (
             "defaultPlacement": "indoor",
             "defaultOpeningTime": "10:00",
             "defaultClosingTime": "22:00",
-            "facilities": ["power", "high-power", "water", "drainage", "grease-trap", "ventilation", "air-conditioner", "seating", "toilet", "parking", "trash-area", "cleaning-service"]
+            "facilities": ["power", "high-power", "water", "drainage", "grease-trap", "ventilation", "gas-pipeline", "air-conditioner", "seating", "toilet", "parking", "trash-area", "cleaning-service"]
         }
     }'::jsonb,
     '["office", "market", "residential", "culinary-center"]'::jsonb
@@ -95,7 +95,7 @@ INSERT INTO business_types (
             "defaultPlacement": "indoor",
             "recommendedSizeSqm": {"min": 15, "max": 40},
             "recommendedFloors": {"min": 1, "max": 1},
-            "facilities": ["power", "high-power", "water", "ventilation", "air-conditioner", "storage", "display-case", "toilet"]
+            "facilities": ["power", "high-power", "water", "ventilation", "gas-pipeline", "air-conditioner", "storage", "display-case", "toilet"]
         },
         "semi-permanent": {
             "allowedPropertyTypes": ["mall-shop", "mall-island", "traditional-market-shop"],
@@ -131,7 +131,7 @@ INSERT INTO business_types (
             "defaultPlacement": "semi-outdoor",
             "recommendedSizeSqm": {"min": 15, "max": 35},
             "recommendedFloors": {"min": 1, "max": 1},
-            "facilities": ["power", "water", "drainage", "grease-trap", "ventilation", "trash-area", "parking"]
+            "facilities": ["power", "water", "drainage", "grease-trap", "ventilation", "gas-pipeline", "trash-area", "parking"]
         },
         "semi-permanent": {
             "allowedPropertyTypes": ["food-court-counter", "mall-island", "traditional-market-shop"],
@@ -139,7 +139,7 @@ INSERT INTO business_types (
             "defaultPlacement": "semi-outdoor",
             "defaultOpeningTime": "10:00",
             "defaultClosingTime": "22:00",
-            "facilities": ["power", "water", "drainage", "trash-area"]
+            "facilities": ["power", "water", "drainage", "gas-pipeline", "trash-area"]
         },
         "temporary": {
             "allowedPropertyTypes": ["bazaar-booth", "street-vendor-spot"],
@@ -280,9 +280,37 @@ INSERT INTO business_types (
     }'::jsonb,
     '["culinary-center", "campus", "office"]'::jsonb
 ),
+(
+    gen_random_uuid(),
+    '{"en": "Cloud Kitchen & Pre-Order Culinary", "id": "Dapur Komersial & Kuliner Pre-Order"}'::jsonb,
+    '{"en": "F&B (Food & Beverages)", "id": "Makanan & Minuman"}'::jsonb,
+    5,
+    15000000.00,
+    0.6000,
+    0.1000,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 12, "max": 35},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "high-power", "water", "drainage", "grease-trap", "ventilation", "gas-pipeline", "storage", "trash-area", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["food-court-counter", "traditional-market-shop"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "08:00",
+            "defaultClosingTime": "22:00",
+            "facilities": ["power", "water", "drainage", "grease-trap", "gas-pipeline", "trash-area"]
+        }
+    }'::jsonb,
+    '["residential", "office", "campus", "culinary-center"]'::jsonb
+),
 
 -- =============================================================================
--- RETAIL & COMMERCE
+-- 2. RETAIL & COMMERCE
 -- =============================================================================
 
 (
@@ -421,9 +449,45 @@ INSERT INTO business_types (
     }'::jsonb,
     '["residential", "market", "school"]'::jsonb
 ),
+(
+    gen_random_uuid(),
+    '{"en": "Gadget, Electronics & Accessories", "id": "Gawai, Elektronik & Aksesori"}'::jsonb,
+    '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
+    10,
+    45000000.00,
+    0.3000,
+    0.1200,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "street-kiosk"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 10, "max": 30},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "air-conditioner", "display-case", "storage", "security", "cctv", "wifi"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop", "mall-island"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "10:00",
+            "defaultClosingTime": "21:00",
+            "facilities": ["power", "display-case", "security", "cctv", "wifi"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "registrationWindowDaysBefore": 7,
+            "typicalDurationDays": 3,
+            "facilities": ["power", "display-case", "security"]
+        }
+    }'::jsonb,
+    '["campus", "office", "market", "transit-station"]'::jsonb
+),
 
 -- =============================================================================
--- SERVICES
+-- 3. SERVICES
 -- =============================================================================
 
 (
@@ -469,7 +533,7 @@ INSERT INTO business_types (
             "defaultPlacement": "semi-outdoor",
             "recommendedSizeSqm": {"min": 15, "max": 40},
             "recommendedFloors": {"min": 1, "max": 1},
-            "facilities": ["power", "high-power", "water", "drainage", "storage", "parking"]
+            "facilities": ["power", "high-power", "water", "drainage", "gas-pipeline", "storage", "parking"]
         },
         "semi-permanent": {
             "allowedPropertyTypes": ["traditional-market-shop"],
@@ -497,7 +561,7 @@ INSERT INTO business_types (
             "defaultPlacement": "indoor",
             "recommendedSizeSqm": {"min": 20, "max": 60},
             "recommendedFloors": {"min": 1, "max": 2},
-            "facilities": ["power", "high-power", "wifi", "air-conditioner", "security", "toilet", "parking"]
+            "facilities": ["power", "high-power", "wifi", "air-conditioner", "reception", "security", "toilet", "parking"]
         },
         "semi-permanent": {
             "allowedPropertyTypes": ["mall-shop"],
@@ -505,7 +569,7 @@ INSERT INTO business_types (
             "defaultPlacement": "indoor",
             "defaultOpeningTime": "09:00",
             "defaultClosingTime": "18:00",
-            "facilities": ["power", "high-power", "wifi", "air-conditioner", "security", "toilet"]
+            "facilities": ["power", "high-power", "wifi", "air-conditioner", "reception", "security", "toilet"]
         }
     }'::jsonb,
     '["office", "market", "government"]'::jsonb
@@ -537,4 +601,109 @@ INSERT INTO business_types (
         }
     }'::jsonb,
     '["school", "campus", "residential"]'::jsonb
+),
+
+-- =============================================================================
+-- 4. CRAFTS, PRODUCTION & WORKSHOP
+-- =============================================================================
+
+(
+    gen_random_uuid(),
+    '{"en": "Handicraft, Florist & Custom Hampers", "id": "Kerajinan Tangan, Florist & Hampers"}'::jsonb,
+    '{"en": "Crafts, Production & Workshop", "id": "Kerajinan, Produksi & Workshop"}'::jsonb,
+    6,
+    15000000.00,
+    0.5500,
+    0.1200,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 12, "max": 35},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "water", "air-conditioner", "display-case", "storage", "trash-area", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop", "mall-island", "traditional-market-shop"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "10:00",
+            "defaultClosingTime": "21:00",
+            "facilities": ["power", "display-case", "storage", "trash-area"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth"],
+            "allowedPlacements": ["indoor", "semi-outdoor", "outdoor"],
+            "defaultPlacement": "indoor",
+            "registrationWindowDaysBefore": 5,
+            "typicalDurationDays": 3,
+            "facilities": ["power", "display-case", "trash-area"]
+        }
+    }'::jsonb,
+    '["mall-shop", "campus", "office", "residential", "healthcare"]'::jsonb
+),
+(
+    gen_random_uuid(),
+    '{"en": "Custom Printing, Merch & Apparel Production", "id": "Percetakan Kilat, Sablon & Konveksi"}'::jsonb,
+    '{"en": "Crafts, Production & Workshop", "id": "Kerajinan, Produksi & Workshop"}'::jsonb,
+    8,
+    30000000.00,
+    0.4500,
+    0.1200,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 20, "max": 50},
+            "recommendedFloors": {"min": 1, "max": 2},
+            "facilities": ["power", "high-power", "ventilation", "air-conditioner", "wifi", "storage", "trash-area", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop", "traditional-market-shop"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "09:00",
+            "defaultClosingTime": "20:00",
+            "facilities": ["power", "high-power", "wifi", "storage", "trash-area"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "registrationWindowDaysBefore": 7,
+            "typicalDurationDays": 3,
+            "facilities": ["power", "display-case"]
+        }
+    }'::jsonb,
+    '["campus", "school", "office", "government"]'::jsonb
+),
+(
+    gen_random_uuid(),
+    '{"en": "Light Woodworking, Leather & Artisan Workshop", "id": "Workshop Kayu Ringan, Kulit & Kriya"}'::jsonb,
+    '{"en": "Crafts, Production & Workshop", "id": "Kerajinan, Produksi & Workshop"}'::jsonb,
+    9,
+    25000000.00,
+    0.5000,
+    0.1000,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "recommendedSizeSqm": {"min": 20, "max": 60},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "high-power", "water", "ventilation", "storage", "trash-area", "parking"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth"],
+            "allowedPlacements": ["indoor", "semi-outdoor", "outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "registrationWindowDaysBefore": 7,
+            "typicalDurationDays": 3,
+            "facilities": ["power", "display-case", "trash-area"]
+        }
+    }'::jsonb,
+    '["residential", "campus", "market"]'::jsonb
 );
