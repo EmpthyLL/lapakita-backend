@@ -142,8 +142,8 @@ func (m *Mailer) SendOTPEmail(toEmail string, otpCode string, mode string) error
 
 func resolvePersonaLabel(persona string) string {
 	switch persona {
-	case "tenant":
-		return "Tenant / Business"
+	case "venture":
+		return "Venture / Tenant"
 	case "owner":
 		return "Stall Owner"
 	case "supplier":
@@ -172,7 +172,7 @@ func resolveInquiryTypeLabel(inquiryType string) string {
 		"deposit_refund":       "Escrow Deposit Refund",
 		"billing_subscription": "Pro Subscription Billing",
 		"supplier_order":       "Supplier Raw Material Order Issues",
-		"other_tenant":         "Other (Tenant Issues)",
+		"other_venture":        "Other (Venture Issues)",
 		"stall_listing":        "Stall Listing & Verification Help",
 		"bazaar_creation":      "Bazaar / Festival Event Slot Creation",
 		"tenant_vetting":       "Tenant Approval / Rejection",

@@ -46,7 +46,7 @@ func (u *AuthUsecase) GoogleAuth(ctx context.Context, req dto.GoogleAuthRequest)
 				avatarPtr = &seaweedURL
 			}
 		}
-		newUser := &entity.User{Name: name, Email: email, PasswordHash: "", DefaultAvatarURL: avatarPtr, ActiveRole: "tenant", SubscriptionPlan: "free", PhoneNumbers: entity.PhoneNumbers{}, RoleProfiles: entity.RoleProfiles{}}
+		newUser := &entity.User{Name: name, Email: email, PasswordHash: "", DefaultAvatarURL: avatarPtr, ActiveRole: "venture", SubscriptionPlan: "free", PhoneNumbers: entity.PhoneNumbers{}, RoleProfiles: entity.RoleProfiles{}}
 		if err := u.Repo.CreateUser(ctx, newUser); err != nil {
 			return nil, err
 		}

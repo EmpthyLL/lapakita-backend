@@ -12,7 +12,7 @@ type CMSPublicFAQ struct {
 	SubTopicTitle string    `gorm:"type:varchar(255);not null" json:"sub_topic_title"`
 	Question      string    `gorm:"type:text;not null" json:"question"`
 	Answer        string    `gorm:"type:text;not null" json:"answer"`
-	RoleType      string    `gorm:"type:varchar(32)" json:"role_type"` // 'all', 'tenant', 'owner', 'supplier'
+	RoleType      string    `gorm:"type:varchar(32)" json:"role_type"` // 'all', 'venture', 'owner', 'supplier'
 	SortOrder     int       `gorm:"default:0" json:"sort_order"`
 	CreatedAt     time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updated_at"`

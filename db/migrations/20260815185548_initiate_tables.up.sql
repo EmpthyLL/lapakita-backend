@@ -25,7 +25,7 @@ CREATE TABLE users (
     phone_numbers JSONB NOT NULL DEFAULT '[{"dial_code": "+62", "number": "", "is_primary": true, "roles": []}]'::jsonb,
     role_profiles JSONB DEFAULT '{}'::jsonb,
     
-    active_role VARCHAR(32) DEFAULT 'tenant',
+    active_role VARCHAR(32) DEFAULT 'venture', -- 'venture', 'owner', 'supplier'
     subscription_plan VARCHAR(32) DEFAULT 'free',
     subscription_expires_at TIMESTAMP WITH TIME ZONE,
     
@@ -55,7 +55,6 @@ CREATE TABLE user_identity_profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexing untuk mempercepat pencarian query
 CREATE INDEX idx_user_identity_doc_num ON user_identity_profiles(document_number);
 CREATE INDEX idx_user_identity_user_id ON user_identity_profiles(user_id);
 
@@ -85,15 +84,20 @@ CREATE INDEX idx_payout_methods_user_id ON payout_methods(user_id);
 CREATE TABLE business_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
+    -- Label & Group Name Multi-Bahasa (I18n)
     label_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     group_name_lang JSONB NOT NULL DEFAULT '{"en": "", "id": ""}'::jsonb,
     
+    -- Financial Benchmarks
     default_bep_months INT NOT NULL DEFAULT 6,
     default_capital NUMERIC(15, 2) NOT NULL DEFAULT 35000000.00,
     avg_gross_margin_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.5000,
     industry_rent_to_revenue_ratio NUMERIC(5, 4) NOT NULL DEFAULT 0.1500,
     
+    -- Presets Per Permanence Tab (Permanent, Semi-Permanent, Temporary)
     permanence_presets JSONB NOT NULL DEFAULT '{}'::jsonb,
+    
+    -- Target Landmark Tags
     recommended_landmarks JSONB DEFAULT '[]'::jsonb,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -161,14 +165,14 @@ CREATE INDEX idx_supplier_profiles_supplier_code ON supplier_profiles(supplier_c
 
 CREATE TABLE supplier_regulars (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    venture_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
     supplier_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_user_id, supplier_user_id)
+    UNIQUE(venture_user_id, supplier_user_id)
 );
 
-CREATE INDEX idx_supplier_regulars_tenant_user_id ON supplier_regulars(tenant_user_id);
+CREATE INDEX idx_supplier_regulars_venture_user_id ON supplier_regulars(venture_user_id);
 CREATE INDEX idx_supplier_regulars_supplier_user_id ON supplier_regulars(supplier_user_id);
 
 -- =============================================================================
@@ -265,7 +269,7 @@ CREATE INDEX idx_stalls_deleted_at ON stalls(deleted_at);
 
 
 -- =============================================================================
--- 5. LEASE CONTRACTS & REVIEWS (BERSIH & TANPA BUSINESS_ID REDUNDAN)
+-- 5. LEASE CONTRACTS & REVIEWS (KONTEKS SEWA-MENYEWA -> TENANT)
 -- =============================================================================
 
 CREATE TABLE lease_contracts (
@@ -387,7 +391,7 @@ CREATE TABLE key_requests (
 CREATE INDEX idx_key_requests_contract ON key_requests(lease_contract_id);
 
 -- =============================================================================
--- 6. POS CASHIER SYSTEM
+-- 6. POS, INVENTORY STOCKS & STOCK LEDGER (VENTURE OPERATIONS)
 -- =============================================================================
 
 CREATE TABLE pos_staff_accounts (
@@ -406,74 +410,166 @@ CREATE TABLE pos_categories (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
+-- 1. POS STOCKS: Inventori Fisik / Bahan Baku / Barang Mentah per Front
+CREATE TABLE pos_stocks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    business_front_id UUID REFERENCES business_fronts(id) ON DELETE CASCADE, -- NULL jika gudang pusat bisnis
+    
+    name VARCHAR(255) NOT NULL,                        -- e.g. "Beras Pandan Wangi", "Kaos Hitam XL", "Cup 16oz"
+    sku VARCHAR(64),
+    unit VARCHAR(32) NOT NULL DEFAULT 'pcs',           -- 'gram', 'ml', 'pcs', 'cm', 'box'
+    
+    current_quantity NUMERIC(15, 3) NOT NULL DEFAULT 0,
+    low_stock_threshold NUMERIC(15, 3) NOT NULL DEFAULT 5,
+    cost_per_unit NUMERIC(15, 4) NOT NULL DEFAULT 0,   -- HPP rata-rata per 1 unit (untuk hitung modal item otomatis)
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+);
+
+CREATE INDEX idx_pos_stocks_business_id ON pos_stocks(business_id);
+CREATE INDEX idx_pos_stocks_front_id ON pos_stocks(business_front_id);
+
+-- 2. POS STOCK HISTORIES: Audit Trail Mutasi Stok (Masuk, Keluar, Terjual, Rusak/Expired, Opname)
+CREATE TABLE pos_stock_histories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pos_stock_id UUID NOT NULL REFERENCES pos_stocks(id) ON DELETE CASCADE,
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    business_front_id UUID REFERENCES business_fronts(id) ON DELETE SET NULL,
+    
+    movement_type VARCHAR(32) NOT NULL,                -- 'restock_in', 'supplier_order_in', 'sale_deduction', 'spoilage_out', 'adjustment'
+    quantity_change NUMERIC(15, 3) NOT NULL,           -- Positif (+) untuk masuk, Negatif (-) untuk keluar
+    balance_before NUMERIC(15, 3) NOT NULL,
+    balance_after NUMERIC(15, 3) NOT NULL,
+    unit_cost_snapshot NUMERIC(15, 4) DEFAULT NULL,    -- Harga beli per unit saat restock
+    
+    reference_type VARCHAR(32) DEFAULT NULL,           -- 'pos_transaction', 'supplier_order', 'manual'
+    reference_id UUID DEFAULT NULL,                    -- ID dari pos_transactions atau supplier_orders
+    notes TEXT DEFAULT NULL,
+    created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pos_stock_histories_stock_id ON pos_stock_histories(pos_stock_id);
+CREATE INDEX idx_pos_stock_histories_business_created ON pos_stock_histories(business_id, created_at DESC);
+
+-- 3. POS ITEMS: Produk Jual / Menu / Jasa (Apa yang dijual ke pembeli)
 CREATE TABLE pos_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     category_id UUID REFERENCES pos_categories(id) ON DELETE SET NULL,
-    name VARCHAR(255) NOT NULL,
+    
+    name VARCHAR(255) NOT NULL,                        -- e.g. "Nasi Goreng Spesial", "Kaos Hitam XL", "Potong Rambut"
     sku VARCHAR(64),
+    item_type VARCHAR(32) NOT NULL DEFAULT 'product',  -- 'product' (barang/menu fisik) atau 'service' (jasa tanpa stok)
     
     price NUMERIC(15, 2) NOT NULL,
     discount_price NUMERIC(15, 2) DEFAULT NULL,
-    cost_price NUMERIC(15, 2) DEFAULT 0.00,
+    cost_price NUMERIC(15, 2) DEFAULT 0.00,            -- Manual atau auto-sum dari pos_item_stocks
     
-    stock_quantity INT DEFAULT 0,
-    track_stock BOOLEAN DEFAULT TRUE,
-    is_favorite BOOLEAN DEFAULT FALSE,
-    is_bestseller BOOLEAN DEFAULT FALSE,
+    track_stock BOOLEAN DEFAULT TRUE,                  -- FALSE untuk jasa atau item tanpa pelacakan stok
+    is_favorite BOOLEAN DEFAULT FALSE,                 -- Pin shortcut manual kasir
+    is_bestseller BOOLEAN DEFAULT FALSE,               -- Auto-label berbasis performa penjualan
     
     image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX idx_pos_items_business_id ON pos_items(business_id);
 
+-- 4. POS ITEM STOCKS (BOM / Resep): 1 Item Jual bisa menggunakan N jenis Stok Bahan/Barang
+CREATE TABLE pos_item_stocks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pos_item_id UUID NOT NULL REFERENCES pos_items(id) ON DELETE CASCADE,
+    pos_stock_id UUID NOT NULL REFERENCES pos_stocks(id) ON DELETE RESTRICT,
+    
+    quantity_required NUMERIC(15, 3) NOT NULL DEFAULT 1, -- e.g. 200 (gram beras), 1 (pcs kaos), 2 (pcs telur)
+    
+    UNIQUE(pos_item_id, pos_stock_id)
+);
+
+CREATE INDEX idx_pos_item_stocks_item_id ON pos_item_stocks(pos_item_id);
+CREATE INDEX idx_pos_item_stocks_stock_id ON pos_item_stocks(pos_stock_id);
+
+-- 5. POS TRANSACTIONS: Transaksi Penjualan Kasir per Front
 CREATE TABLE pos_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-    staff_id UUID REFERENCES pos_staff_accounts(id),
+    business_front_id UUID REFERENCES business_fronts(id) ON DELETE SET NULL,
+    staff_id UUID REFERENCES pos_staff_accounts(id) ON DELETE SET NULL,
+    
     receipt_number VARCHAR(64) UNIQUE NOT NULL,
     total_amount NUMERIC(15, 2) NOT NULL,
     payment_method VARCHAR(32) NOT NULL,
     items_json JSONB NOT NULL,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_pos_transactions_business_id ON pos_transactions(business_id);
+CREATE INDEX idx_pos_transactions_front_id ON pos_transactions(business_front_id);
+CREATE INDEX idx_pos_transactions_created_at ON pos_transactions(created_at);
 
 -- =============================================================================
--- 7. SUPPLIER B2B MARKETPLACE
+-- 7. SUPPLIER B2B MARKETPLACE & CATALOG STOCK LEDGER
 -- =============================================================================
 
 CREATE TABLE supplier_catalogs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     supplier_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     target_business_type_ids JSONB DEFAULT '[]'::jsonb, 
+    
     name VARCHAR(255) NOT NULL,
     description TEXT,
     unit_type VARCHAR(32) NOT NULL,
     price_per_unit NUMERIC(15, 2) NOT NULL,
     moq INT DEFAULT 1,
     tiered_pricing JSONB,
+    
+    stock_quantity INT NOT NULL DEFAULT 0,             -- Stok tersedia di gudang Supplier
     is_available BOOLEAN DEFAULT TRUE,
     image_url TEXT,
     favorited_by_user_ids JSONB DEFAULT '[]'::jsonb,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX idx_supplier_catalogs_supplier_user_id ON supplier_catalogs(supplier_user_id);
 
+-- Riwayat Mutasi Stok Katalog Supplier
+CREATE TABLE supplier_stock_histories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    supplier_catalog_id UUID NOT NULL REFERENCES supplier_catalogs(id) ON DELETE CASCADE,
+    supplier_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    movement_type VARCHAR(32) NOT NULL,                -- 'restock_in', 'b2b_order_out', 'order_cancelled_in', 'spoilage_out', 'adjustment'
+    quantity_change INT NOT NULL,
+    balance_before INT NOT NULL,
+    balance_after INT NOT NULL,
+    
+    reference_order_id UUID DEFAULT NULL,              -- ID dari supplier_orders jika mutasi berasal dari transaksi B2B
+    notes TEXT DEFAULT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_supplier_stock_histories_catalog ON supplier_stock_histories(supplier_catalog_id);
+CREATE INDEX idx_supplier_stock_histories_supplier ON supplier_stock_histories(supplier_user_id, created_at DESC);
+
 CREATE TABLE supplier_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_user_id UUID NOT NULL REFERENCES users(id),
+    venture_user_id UUID NOT NULL REFERENCES users(id),
     business_id UUID NOT NULL REFERENCES businesses(id),
     supplier_user_id UUID NOT NULL REFERENCES users(id),
     
@@ -486,7 +582,7 @@ CREATE TABLE supplier_orders (
     
     -- Informasi Kurir & Pengiriman (Shipping Details)
     shipping_provider VARCHAR(64),                        -- e.g. "biteship", "lalamove", "manual"
-    courier_company VARCHAR(32),                          -- e.g. "gosend", "lalamove", "jne", "s"
+    courier_company VARCHAR(32),                          -- e.g. "gosend", "lalamove", "jne"
     courier_type VARCHAR(32),                             -- e.g. "instant", "same_day", "cargo"
     tracking_number VARCHAR(128),                         -- Nomor resi / Waybill ID
     shipping_status VARCHAR(32) DEFAULT 'pending',        -- 'pending', 'allocated', 'picking_up', 'in_transit', 'delivered'
@@ -497,10 +593,10 @@ CREATE TABLE supplier_orders (
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
-CREATE INDEX idx_supplier_orders_tenant_user_id ON supplier_orders(tenant_user_id);
+CREATE INDEX idx_supplier_orders_venture_user_id ON supplier_orders(venture_user_id);
 CREATE INDEX idx_supplier_orders_supplier_user_id ON supplier_orders(supplier_user_id);
 CREATE INDEX idx_supplier_orders_tracking ON supplier_orders(tracking_number);
 
@@ -517,7 +613,7 @@ CREATE TABLE notifications (
     
     category VARCHAR(32) NOT NULL DEFAULT 'operational', -- 'finance', 'operational', 'system'
     type VARCHAR(64) NOT NULL,                           -- e.g. 'finance_subscription_paid', 'sys_subscription_expiring'
-    target_role VARCHAR(32) NOT NULL DEFAULT 'all',      -- 'tenant', 'owner', 'supplier', 'all'
+    target_role VARCHAR(32) NOT NULL DEFAULT 'all',      -- 'venture', 'owner', 'supplier', 'all'
     
     action_url TEXT,
     metadata JSONB DEFAULT '{}'::jsonb,                  -- Snapshot payload (amount, plan_type, expiry_date, etc)
@@ -568,14 +664,14 @@ CREATE TABLE cms_legal_documents (
 );
 
 -- =============================================================================
--- 9. GENERATED REPORTS (Multi-Role Analysis History)
+-- 9. GENERATED REPORTS & PAYMENT TRANSACTIONS
 -- =============================================================================
 
 CREATE TABLE generated_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    role_type VARCHAR(32) NOT NULL,             -- 'tenant', 'stall_owner', 'supplier'
+    role_type VARCHAR(32) NOT NULL,             -- 'venture', 'owner', 'supplier'
     report_type VARCHAR(64) NOT NULL,           -- 'multi_timeline_forecast', 'vacancy_loss_analysis', 'opportunity_gap_analysis'
     
     business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
@@ -596,7 +692,7 @@ CREATE TABLE payment_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Pihak Utama
-    payer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- Pembayar (Tenant / Buyer)
+    payer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- Pembayar (Tenant / Venture / Buyer)
     payee_user_id UUID REFERENCES users(id) ON DELETE SET NULL,             -- Penerima (Owner / Supplier / NULL jika bayar ke Lapakita)
     
     -- Relasi Entitas Spesifik (Nullable tergantung jenis transaksi)

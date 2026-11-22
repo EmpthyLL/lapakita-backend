@@ -12,7 +12,7 @@ type UpdateGeneralProfileRequest struct {
 	Name             string  `json:"name" binding:"required,max=255"`
 	DefaultAvatarURL *string `json:"default_avatar_url" binding:"omitempty"`
 	PhoneNumberIndex *int    `json:"phone_number_index" binding:"omitempty,min=0"`
-	ActiveRole       *string `json:"active_role" binding:"omitempty,oneof=tenant owner supplier"`
+	ActiveRole       *string `json:"active_role" binding:"omitempty,oneof=venture owner supplier"`
 }
 
 type PhoneNumber struct {

@@ -16,8 +16,10 @@ DROP TABLE IF EXISTS contact_inquiries CASCADE;
 -- 3. Drop Notifications
 DROP TABLE IF EXISTS notifications CASCADE;
 
--- 4. Drop Supplier B2B Marketplace Tables
+-- 4. Drop Supplier B2B Marketplace & Stock Ledger Tables
 DROP TABLE IF EXISTS supplier_orders CASCADE;
+
+DROP TABLE IF EXISTS supplier_stock_histories CASCADE;
 
 DROP TABLE IF EXISTS supplier_catalogs CASCADE;
 
@@ -25,10 +27,16 @@ DROP TABLE IF EXISTS supplier_regulars CASCADE;
 
 DROP TABLE IF EXISTS supplier_profiles CASCADE;
 
--- 5. Drop POS Cashier System Tables
+-- 5. Drop POS Cashier, Inventory Stocks & Stock Ledger Tables
 DROP TABLE IF EXISTS pos_transactions CASCADE;
 
+DROP TABLE IF EXISTS pos_item_stocks CASCADE;
+
 DROP TABLE IF EXISTS pos_items CASCADE;
+
+DROP TABLE IF EXISTS pos_stock_histories CASCADE;
+
+DROP TABLE IF EXISTS pos_stocks CASCADE;
 
 DROP TABLE IF EXISTS pos_categories CASCADE;
 
@@ -45,14 +53,14 @@ DROP TABLE IF EXISTS stall_reviews CASCADE;
 
 DROP TABLE IF EXISTS lease_contracts CASCADE;
 
--- 7. Drop Stalls, Businesses & Payout Methods
-DROP TABLE IF EXISTS stalls CASCADE;
+-- 7. Drop Stalls, Businesses, Fronts & Payout Methods
+DROP TABLE IF EXISTS business_fronts CASCADE;
 
 DROP TABLE IF EXISTS businesses CASCADE;
 
 DROP TABLE IF EXISTS business_types CASCADE;
 
-DROP TABLE IF EXISTS business_fronts CASCADE;
+DROP TABLE IF EXISTS stalls CASCADE;
 
 DROP TABLE IF EXISTS payout_methods CASCADE;
 

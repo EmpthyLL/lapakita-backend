@@ -17,7 +17,7 @@ type PhoneNumberItem struct {
 	DialCode  string   `json:"dial_code"`
 	Number    string   `json:"number"`
 	IsPrimary bool     `json:"is_primary"`
-	Roles     []string `json:"roles"` // e.g. ["tenant", "owner"]
+	Roles     []string `json:"roles"` // e.g. ["venture", "owner"]
 }
 
 // PhoneNumbers menampung daftar/array banyak nomor telepon per user
@@ -157,7 +157,7 @@ type User struct {
 	DefaultAvatarURL      *string      `gorm:"type:text" json:"default_avatar_url"`
 	PhoneNumbers          PhoneNumbers `gorm:"type:jsonb;not null;default:'[]'" json:"phone_numbers"`
 	RoleProfiles          RoleProfiles `gorm:"type:jsonb;not null;default:'{}'" json:"role_profiles"`
-	ActiveRole            string       `gorm:"type:varchar(32);default:'tenant'" json:"active_role"`
+	ActiveRole            string       `gorm:"type:varchar(32);default:'venture'" json:"active_role"`
 	SubscriptionPlan      string       `gorm:"type:varchar(32);default:'free'" json:"subscription_plan"`
 	SubscriptionExpiresAt *time.Time   `gorm:"type:timestamp with time zone" json:"subscription_expires_at"`
 	CreatedAt             time.Time    `gorm:"autoCreateTime" json:"created_at"`
@@ -177,7 +177,7 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 		u.ID = uuid.New()
 	}
 	if u.ActiveRole == "" {
-		u.ActiveRole = "tenant"
+		u.ActiveRole = "venture"
 	}
 	if u.SubscriptionPlan == "" {
 		u.SubscriptionPlan = "free"

@@ -1,6 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Clean existing data (Optional)
 TRUNCATE TABLE cms_legal_documents;
 
 -- =============================================================================
@@ -14,7 +13,7 @@ VALUES
     'terms',
     'en',
     'Terms and Conditions',
-    'These terms govern your use of Lapakita as a Tenant, Stall Owner, or Supplier. Please read them carefully before using the platform.',
+    'These terms govern your use of Lapakita across Venture, Stall Owner, and Supplier roles. Please read them carefully before using the platform.',
     $json$[
       {
         "id": "platform-nature",
@@ -22,7 +21,7 @@ VALUES
         "title": "Introduction & Platform Nature",
         "subsections": [
           {
-            "body": "Lapakita is an online venue and operating platform connecting Tenants (Business Operators), Stall Owners, and B2B Suppliers. Lapakita is not a real estate broker, property manager, cleaner, law enforcement agent, or direct seller of physical products. Lapakita provides digital infrastructure, lease contract tools, escrow payment facilitation, and business intelligence analytics."
+            "body": "Lapakita is an online venue and operating platform connecting Ventures (business operators), Stall Owners, and B2B Suppliers. Lapakita is not a real estate broker, property manager, cleaner, law enforcement agent, or direct seller of physical products. Lapakita provides digital infrastructure, lease contract tools, escrow payment facilitation, and business intelligence analytics."
           }
         ]
       },
@@ -32,7 +31,7 @@ VALUES
         "title": "User Roles & Multi-Persona Profiles",
         "subsections": [
           {
-            "body": "A user registers a primary account verified by email and phone number. A single account may operate across three personas (Tenant, Stall Owner, Supplier) with customizable role-specific display names and avatars. Users remain responsible for all activities under their credentials."
+            "body": "A user registers a primary account verified by email and phone number. A single account may operate across three roles (Venture, Stall Owner, Supplier) with customizable role-specific display names and avatars. Users remain responsible for all activities under their credentials."
           }
         ]
       },
@@ -47,7 +46,7 @@ VALUES
           },
           {
             "title": "Peer-to-Peer Document Review",
-            "body": "Lapakita facilitates the encrypted display of watermarked identity documents for mutual inspection between Tenants and Stall Owners. Users are advised to verify their counterparty's identity details prior to executing any digital lease agreement."
+            "body": "Lapakita facilitates the encrypted display of watermarked identity documents for mutual inspection between Tenants and Stall Owners during leasing. Users are advised to verify their counterparty's identity details prior to executing any digital lease agreement."
           }
         ]
       },
@@ -85,7 +84,7 @@ VALUES
           },
           {
             "title": "Refundable Anti-Spam Commitment Fee",
-            "body": "To protect Owners from application spam, Tenants with two (2) or more unpaid or cancelled approved applications within a 30-day window are flagged. Flagged Tenants are required to submit a temporary 35% commitment deposit when applying. This deposit is 100% REFUNDABLE and non-punitive: if the lease becomes active, 100% of the deposit is applied directly toward the Tenant's initial rent and security deposit balance. If the application is cancelled or fails to proceed before the Start Date, the commitment deposit is fully refunded back to the Tenant's account."
+            "body": "To protect Owners from application spam, users with two (2) or more unpaid or cancelled approved lease applications within a 30-day window are flagged. Flagged users are required to submit a temporary 35% commitment deposit when applying to rent a stall. This deposit is 100% REFUNDABLE and non-punitive: if the lease becomes active, 100% of the deposit is applied directly toward the Tenant's initial rent and security deposit balance. If the application is cancelled or fails to proceed before the Start Date, the commitment deposit is fully refunded back to the user's account."
           }
         ]
       },
@@ -108,7 +107,7 @@ VALUES
           },
           {
             "title": "Deposit Limits & Major Property Damage",
-            "body": "The Security Deposit set by the Owner represents the maximum escrow guarantee recoverable directly through the platform. Lapakita is not liable for repair costs exceeding the deposited amount. In cases of severe property destruction or vandalism exceeding the deposit, Lapakita will disburse 100% of the available deposit to the Owner and provide verified identity document records to assist the Owner in formal legal proceedings. The offending Tenant's account will be permanently blacklisted."
+            "body": "The Security Deposit set by the Owner represents the maximum escrow guarantee recoverable directly through the platform. Lapakita is not liable for repair costs exceeding the deposited amount. In cases of severe property destruction or vandalism exceeding the deposit, Lapakita will disburse 100% of the available deposit to the Owner and provide verified identity document records to assist the Owner in formal legal proceedings. The offending user's account will be permanently blacklisted."
           }
         ]
       },
@@ -188,7 +187,7 @@ VALUES
         "subsections": [
           {
             "title": "Peer-to-Peer Transactions",
-            "body": "The B2B Supplier Marketplace connects Tenants directly with Suppliers."
+            "body": "The B2B Supplier Marketplace connects Ventures directly with Suppliers."
           },
           {
             "title": "Dispute Handling",
@@ -202,7 +201,7 @@ VALUES
         "title": "Payouts & Bank Account Requirements",
         "subsections": [
           {
-            "body": "Owners and Suppliers must register a valid bank account for automated payout disbursements. Tenants must register a valid bank account to receive potential deposit refunds."
+            "body": "Owners and Suppliers must register a valid bank account for automated payout disbursements. Users must register a valid bank account to receive potential security deposit refunds."
           }
         ]
       },
@@ -213,7 +212,7 @@ VALUES
         "subsections": [
           {
             "title": "Report Generation & Execution",
-            "body": "Subscribed users (Premium or Active Tier) may execute automated data analysis reports, including Tenant Multi-Timeline Business Forecasts, Owner Vacancy Loss Analyses, and Supplier Market Opportunity Gap Analyses."
+            "body": "Subscribed users (Premium or Active Tier) may execute automated data analysis reports, including Venture Multi-Timeline Business Forecasts, Owner Vacancy Loss Analyses, and Supplier Market Opportunity Gap Analyses."
           },
           {
             "title": "Historical Data Archive Rights",
@@ -229,7 +228,7 @@ VALUES
     'terms',
     'id',
     'Syarat dan Ketentuan',
-    'Ketentuan ini mengatur penggunaan Lapakita sebagai Penyewa, Pemilik Lapak, atau Supplier. Harap baca dengan cermat sebelum menggunakan platform.',
+    'Ketentuan ini mengatur penggunaan Lapakita pada peran Venture, Pemilik Lapak, maupun Supplier. Harap baca dengan cermat sebelum menggunakan platform.',
     $json$[
       {
         "id": "platform-nature",
@@ -237,7 +236,7 @@ VALUES
         "title": "Pengenalan & Sifat Platform",
         "subsections": [
           {
-            "body": "Lapakita adalah platform operasional dan tempat daring yang menghubungkan Penyewa (Pelaku Usaha), Pemilik Lapak, dan Supplier B2B. Lapakita bukan perantara real estat, pengelola properti, petugas kebersihan, aparat penegak hukum, atau penjual langsung produk fisik. Lapakita menyediakan infrastruktur digital, alat kontrak sewa, fasilitasi pembayaran escrow, dan analitik kecerdasan bisnis."
+            "body": "Lapakita adalah platform operasional dan tempat daring yang menghubungkan Venture (pelaku usaha), Pemilik Lapak, dan Supplier B2B. Lapakita bukan perantara real estat, pengelola properti, petugas kebersihan, aparat penegak hukum, atau penjual langsung produk fisik. Lapakita menyediakan infrastruktur digital, alat kontrak sewa, fasilitasi pembayaran escrow, dan analitik kecerdasan bisnis."
           }
         ]
       },
@@ -247,7 +246,7 @@ VALUES
         "title": "Peran Pengguna & Profil Multi-Persona",
         "subsections": [
           {
-            "body": "Pengguna mendaftarkan satu akun utama yang diverifikasi melalui email dan nomor telepon. Satu akun dapat beroperasi di tiga persona (Penyewa, Pemilik Lapak, Supplier) dengan nama tampilan dan avatar yang dapat disesuaikan per peran. Pengguna tetap bertanggung jawab penuh atas seluruh aktivitas di bawah kredensial mereka."
+            "body": "Pengguna mendaftarkan satu akun utama yang diverifikasi melalui email dan nomor telepon. Satu akun dapat beroperasi di tiga peran (Venture, Pemilik Lapak, Supplier) dengan nama tampilan dan avatar yang dapat disesuaikan per peran. Pengguna tetap bertanggung jawab penuh atas seluruh aktivitas di bawah kredensial mereka."
           }
         ]
       },
@@ -262,7 +261,7 @@ VALUES
           },
           {
             "title": "Pemeriksaan Dokumen Antar-Pihak",
-            "body": "Lapakita memfasilitasi penayangan dokumen identitas ber-watermark untuk diperiksa secara transparan antara Penyewa dan Pemilik Lapak. Pengguna disarankan untuk memeriksa detail identitas mitra sebelum menandatangani perjanjian sewa digital."
+            "body": "Lapakita memfasilitasi penayangan dokumen identitas ber-watermark untuk diperiksa secara transparan antara Penyewa dan Pemilik Lapak saat proses sewa. Pengguna disarankan untuk memeriksa detail identitas mitra sebelum menandatangani perjanjian sewa digital."
           }
         ]
       },
@@ -300,7 +299,7 @@ VALUES
           },
           {
             "title": "Biaya Komitmen Anti-Spam (Dapat Dikembalikan)",
-            "body": "Untuk melindungi Pemilik dari spam pengajuan, Penyewa dengan dua (2) atau lebih pengajuan yang disetujui namun tidak dibayar/dibatalkan dalam kurun 30 hari akan ditandai. Penyewa yang ditandai wajib menyerahkan deposit komitmen sementara sebesar 35% saat mengajukan sewa. Deposit ini 100% DAPAT DIKEMBALIKAN dan tidak bersifat sanksi: jika sewa aktif, 100% deposit langsung dialokasikan ke pembayaran sewa awal & deposit jaminan Penyewa. Jika pengajuan dibatalkan sebelum Tanggal Mulai, deposit komitmen dikembalikan penuh ke akun Penyewa."
+            "body": "Untuk melindungi Pemilik dari spam pengajuan, pengguna dengan dua (2) atau lebih pengajuan sewa yang disetujui namun tidak dibayar/dibatalkan dalam kurun 30 hari akan ditandai. Pengguna yang ditandai wajib menyerahkan deposit komitmen sementara sebesar 35% saat mengajukan sewa lapak. Deposit ini 100% DAPAT DIKEMBALIKAN dan tidak bersifat sanksi: jika sewa aktif, 100% deposit langsung dialokasikan ke pembayaran sewa awal & deposit jaminan Penyewa. Jika pengajuan dibatalkan sebelum Tanggal Mulai, deposit komitmen dikembalikan penuh ke akun pengguna."
           }
         ]
       },
@@ -323,7 +322,7 @@ VALUES
           },
           {
             "title": "Batas Deposit & Kerusakan Properti Mayor",
-            "body": "Deposit Jaminan yang ditetapkan Pemilik merupakan batas jaminan escrow maksimum yang dapat dipulihkan langsung melalui platform. Lapakita tidak bertanggung jawab atas biaya perbaikan yang melebihi jumlah deposit. Dalam kasus perusakan properti secara berat yang melebihi deposit, Lapakita akan mencairkan 100% deposit yang tersedia kepada Pemilik dan menyerahkan bukti dokumen identitas terverifikasi untuk membantu Pemilik dalam proses hukum formal. Akun Penyewa yang melanggar akan di-blacklist permanen."
+            "body": "Deposit Jaminan yang ditetapkan Pemilik merupakan batas jaminan escrow maksimum yang dapat dipulihkan langsung melalui platform. Lapakita tidak bertanggung jawab atas biaya perbaikan yang melebihi jumlah deposit. Dalam kasus perusakan properti secara berat yang melebihi deposit, Lapakita akan mencairkan 100% deposit yang tersedia kepada Pemilik dan menyerahkan bukti dokumen identitas terverifikasi untuk membantu Pemilik dalam proses hukum formal. Akun pengguna yang melanggar akan di-blacklist permanen."
           }
         ]
       },
@@ -403,7 +402,7 @@ VALUES
         "subsections": [
           {
             "title": "Transaksi Peer-to-Peer",
-            "body": "Marketplace Supplier B2B menghubungkan Penyewa secara langsung dengan Supplier."
+            "body": "Marketplace Supplier B2B menghubungkan Venture secara langsung dengan Supplier."
           },
           {
             "title": "Penanganan Sengketa",
@@ -417,7 +416,7 @@ VALUES
         "title": "Pencairan Dana & Persyaratan Rekening Bank",
         "subsections": [
           {
-            "body": "Pemilik dan Supplier wajib mendaftarkan rekening bank yang valid untuk pencairan dana otomatis. Penyewa wajib mendaftarkan rekening bank yang valid untuk menerima potensi pengembalian deposit."
+            "body": "Pemilik dan Supplier wajib mendaftarkan rekening bank yang valid untuk pencairan dana otomatis. Pengguna wajib mendaftarkan rekening bank yang valid untuk menerima potensi pengembalian deposit."
           }
         ]
       },
@@ -428,7 +427,7 @@ VALUES
         "subsections": [
           {
             "title": "Generasi & Eksekusi Laporan",
-            "body": "Pengguna berlangganan (Tier Premium atau Aktif) dapat menjalankan laporan analisis data otomatis, termasuk Proyeksi Bisnis Multi-Timeline Penyewa, Analisis Kerugian Kekosongan Pemilik, dan Analisis Celah Peluang Pasar Supplier."
+            "body": "Pengguna berlangganan (Tier Premium atau Aktif) dapat menjalankan laporan analisis data otomatis, termasuk Proyeksi Bisnis Multi-Timeline Venture, Analisis Kerugian Kekosongan Pemilik, dan Analisis Celah Peluang Pasar Supplier."
           },
           {
             "title": "Hak Arsip Riwayat Data",
@@ -453,7 +452,7 @@ VALUES
     'privacy',
     'en',
     'Privacy Policy',
-    'This policy explains what data Lapakita collects, how it is used, and the protections in place across Tenant, Owner, and Supplier accounts.',
+    'This policy explains what data Lapakita collects, how it is used, and the protections in place across Venture, Owner, and Supplier roles.',
     $json$[
       {
         "id": "data-collected",
@@ -487,7 +486,7 @@ VALUES
             "body": "To facilitate digital lease contracts, short-term bazaar booth bookings, billing, and automated payout transfers."
           },
           {
-            "body": "To display B2B supplier catalogs to relevant tenant business categories."
+            "body": "To display B2B supplier catalogs to relevant venture business categories."
           },
           {
             "body": "To compile historical business forecast analysis and store structured report history accessible via user dashboards."
@@ -508,7 +507,7 @@ VALUES
           },
           {
             "title": "Privacy of Revenue Data",
-            "body": "Individual tenant revenue figures and POS ledgers are strictly private to the tenant's business account. Stall Owners cannot view a tenant's exact gross revenue or profit margins."
+            "body": "Individual venture revenue figures and POS ledgers are strictly private to the user's business account. Stall Owners cannot view a tenant's exact gross revenue or profit margins."
           },
           {
             "title": "Secure Infrastructure",
@@ -533,7 +532,7 @@ VALUES
     'privacy',
     'id',
     'Kebijakan Privasi',
-    'Kebijakan ini menjelaskan data apa yang dikumpulkan Lapakita, bagaimana data digunakan, dan perlindungan yang diterapkan untuk akun Penyewa, Pemilik, dan Supplier.',
+    'Kebijakan ini menjelaskan data apa yang dikumpulkan Lapakita, bagaimana data digunakan, dan perlindungan yang diterapkan pada peran Venture, Pemilik, dan Supplier.',
     $json$[
       {
         "id": "data-collected",
@@ -567,7 +566,7 @@ VALUES
             "body": "Untuk memfasilitasi kontrak sewa digital, pemesanan booth bazaar temporer, penagihan, dan transfer pencairan otomatis."
           },
           {
-            "body": "Untuk menampilkan katalog supplier B2B ke kategori bisnis penyewa yang relevan."
+            "body": "Untuk menampilkan katalog supplier B2B ke kategori bisnis Venture yang relevan."
           },
           {
             "body": "Untuk menyusun analisis proyeksi bisnis historis dan menyimpan riwayat laporan terstruktur yang dapat diakses melalui dashboard pengguna."
@@ -588,7 +587,7 @@ VALUES
           },
           {
             "title": "Kerahasiaan Data Pendapatan",
-            "body": "Angka pendapatan individu penyewa dan pembukuan POS bersifat pribadi khusus untuk akun bisnis penyewa. Pemilik Lapak tidak dapat melihat pendapatan kotor atau margin keuntungan penyewa secara tepat."
+            "body": "Angka pendapatan individu Venture dan pembukuan POS bersifat pribadi khusus untuk akun bisnis pengguna. Pemilik Lapak tidak dapat melihat pendapatan kotor atau margin keuntungan penyewa secara tepat."
           },
           {
             "title": "Infrastruktur Aman",
@@ -636,7 +635,7 @@ VALUES
           },
           {
             "title": "Active Role & Profile Preference",
-            "body": "Remembering whether you last operated in Tenant, Owner, or Supplier mode."
+            "body": "Remembering whether you last operated in Venture, Owner, or Supplier mode."
           },
           {
             "title": "POS Cache",
@@ -674,7 +673,7 @@ VALUES
           },
           {
             "title": "Peran Aktif & Preferensi Profil",
-            "body": "Mengingat apakah Anda terakhir beroperasi dalam mode Penyewa, Pemilik, atau Supplier."
+            "body": "Mengingat apakah Anda terakhir beroperasi dalam mode Venture, Pemilik, atau Supplier."
           },
           {
             "title": "Tembolok (Cache) POS",

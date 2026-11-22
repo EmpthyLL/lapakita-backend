@@ -32,7 +32,7 @@ func (u *AuthUsecase) VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (
 			return nil, errors.New(string(i18n.KeyOTPExpired))
 		}
 		newUser := &entity.User{
-			Name: regData["name"], Email: regData["email"], PasswordHash: regData["password_hash"], ActiveRole: "tenant", SubscriptionPlan: "free",
+			Name: regData["name"], Email: regData["email"], PasswordHash: regData["password_hash"], ActiveRole: "venture", SubscriptionPlan: "free",
 			PhoneNumbers: entity.PhoneNumbers{{DialCode: regData["dial_code"], Number: regData["phone"], IsPrimary: true, Roles: []string{}, Label: "Primary Number"}}, RoleProfiles: entity.RoleProfiles{},
 		}
 		if err := u.Repo.CreateUser(ctx, newUser); err != nil {

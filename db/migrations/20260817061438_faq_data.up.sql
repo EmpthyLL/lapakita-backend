@@ -32,7 +32,7 @@ VALUES
         'en',
         'Platform Fundamentals',
         'How does the single account multi-role system work?',
-        'You only need one email and phone number to register. From your profile menu, you can toggle between Tenant, Stall Owner, and Supplier modes. Each role has its own isolated dashboard, settings, and workflows, eliminating the need for multiple accounts.',
+        'You only need one email and phone number to register. From your profile menu, you can toggle between Venture, Stall Owner, and Supplier modes. Each role has its own isolated dashboard, settings, and workflows, eliminating the need for multiple accounts.',
         'all',
         2
     ),
@@ -59,7 +59,7 @@ VALUES
         'en',
         'Pricing, Plans & Subscriptions',
         'What is the difference between Single-Role and All-Access Plans?',
-        'Our Single-Role Plan is Rp 55,000/month (or Rp 495,000/year) and unlocks premium features for just one role (e.g. Tenant only). The All-Access Ecosystem Bundle is Rp 125,000/month (or Rp 1,125,000/year) and unlocks premium analytics across all three roles simultaneously.',
+        'Our Single-Role Plan is Rp 55,000/month (or Rp 495,000/year) and unlocks premium features for just one role (e.g. Venture only). The All-Access Ecosystem Bundle is Rp 125,000/month (or Rp 1,125,000/year) and unlocks premium analytics across all three roles simultaneously.',
         'all',
         5
     ),
@@ -117,7 +117,7 @@ VALUES
         'id',
         'Dasar Platform',
         'Bagaimana cara kerja sistem satu akun multi-peran?',
-        'Anda hanya membutuhkan satu email dan nomor telepon untuk mendaftar. Dari menu profil, Anda dapat beralih antara mode Penyewa, Pemilik Lapak, dan Supplier. Setiap peran memiliki dashboard, pengaturan, dan alur kerja mandiri, tanpa perlu membuat banyak akun.',
+        'Anda hanya membutuhkan satu email dan nomor telepon untuk mendaftar. Dari menu profil, Anda dapat beralih antara mode Venture, Pemilik Lapak, dan Supplier. Setiap peran memiliki dashboard, pengaturan, dan alur kerja mandiri, tanpa perlu membuat banyak akun.',
         'all',
         2
     ),
@@ -144,7 +144,7 @@ VALUES
         'id',
         'Harga, Paket & Berlangganan',
         'Apa perbedaan antara Paket Single-Role dan All-Access?',
-        'Paket Single-Role seharga Rp 55.000/bulan (atau Rp 495.000/tahun) membuka fitur premium untuk satu peran saja (misal: Penyewa saja). Paket All-Access Bundle seharga Rp 125.000/bulan (atau Rp 1.125.000/tahun) membuka analitik premium di ketiga peran sekaligus secara bersamaan.',
+        'Paket Single-Role seharga Rp 55.000/bulan (atau Rp 495.000/tahun) membuka fitur premium untuk satu peran saja (misal: Venture saja). Paket All-Access Bundle seharga Rp 125.000/bulan (atau Rp 1.125.000/tahun) membuka analitik premium di ketiga peran sekaligus secara bersamaan.',
         'all',
         5
     ),
@@ -177,7 +177,7 @@ VALUES
     );
 
 -- =============================================================================
--- 2. TENANT & BUSINESS OPERATIONS (role_type: 'tenant')
+-- 2. VENTURE & BUSINESS OPERATIONS (role_type: 'venture')
 -- =============================================================================
 -- English (en)
 INSERT INTO
@@ -197,7 +197,7 @@ VALUES
         'POS & Non-Stall Business Operations',
         'Can I use Lapakita if I don''t rent a physical stall from the platform?',
         'Yes! Home-based businesses, cloud kitchens, online stores, or businesses renting spaces elsewhere can fully use our POS cashier, product/inventory management, staff access, and supplier marketplace.',
-        'tenant',
+        'venture',
         1
     ),
     (
@@ -206,7 +206,7 @@ VALUES
         'POS & Non-Stall Business Operations',
         'How do restricted cashier accounts work?',
         'You can create staff credentials for your cashiers. Staff members can process customer orders, issue receipts, and log cash/QRIS payments, but they cannot access financial profit reports or cost breakdowns.',
-        'tenant',
+        'venture',
         2
     ),
     (
@@ -215,7 +215,7 @@ VALUES
         'Stall Search, Permanence & Target ROI Filter',
         'How do the Operational Permanence Search Tabs work?',
         'You can filter spaces by 3 operational levels: Permanent (standalone shophouses with 24/7 access & sqm physical specs), Semi-Permanent (mall shops, food courts, and traditional market stalls bound by parent complex operating hours), and Temporary (short-term bazaar booths, food truck spots, and street vendor spots).',
-        'tenant',
+        'venture',
         3
     ),
     (
@@ -224,7 +224,7 @@ VALUES
         'Stall Search, Permanence & Target ROI Filter',
         'How does the Landmark & Radius search work?',
         'You can search by city or street, or pair a specific landmark (such as a university, school, or office complex) with a custom radius distance (e.g., within 3 km) to find nearby available stalls.',
-        'tenant',
+        'venture',
         4
     ),
     (
@@ -233,7 +233,7 @@ VALUES
         'Stall Search, Permanence & Target ROI Filter',
         'What is the Budget & Target ROI Match filter?',
         'For Permanent & Semi-Permanent stalls, input your total capital, business preset, and target BEP months to filter mathematically viable rents. For Temporary Bazaar spots, input your Target Daily Revenue to surface daily or monthly event rates that match your sales goals.',
-        'tenant',
+        'venture',
         5
     ),
     (
@@ -241,8 +241,8 @@ VALUES
         'en',
         'Stall Search, Permanence & Target ROI Filter',
         'Can I inspect the stall before signing a lease?',
-        'We highly recommend visiting the location in person to verify physical facilities, street access, and neighborhood conditions before submitting an application or signing the digital contract.',
-        'tenant',
+        'We highly recommend visiting the location in person to verify physical facilities, street access, and neighborhood conditions before submitting a lease application or signing the digital contract.',
+        'venture',
         6
     ),
     (
@@ -250,8 +250,8 @@ VALUES
         'en',
         'Lease Contracts, Keys & Deposits',
         'What happens once the owner approves my lease request?',
-        'A digital contract is created with price-locked terms. Once you make the initial rent payment and security deposit through the Payment Gateway on or before your selected start date, the lease becomes active.',
-        'tenant',
+        'A digital contract is created with price-locked terms. Once you complete the initial rent payment and security deposit through the Payment Gateway on or before your selected start date, the lease becomes active.',
+        'venture',
         7
     ),
     (
@@ -260,7 +260,7 @@ VALUES
         'Lease Contracts, Keys & Deposits',
         'Where does my security deposit go?',
         'Your deposit is stored safely in a neutral Escrow Payment Gateway account — not in the owner''s personal bank account. It is fully refunded to your registered bank account upon lease completion, provided there are no unreturned key fees or physical property damages.',
-        'tenant',
+        'venture',
         8
     ),
     (
@@ -269,16 +269,16 @@ VALUES
         'Lease Contracts, Keys & Deposits',
         'How do lease rules work for Temporary Bazaar Events?',
         'Temporary spots do not use monthly lease terms. Instead, they define minimum lease days, event operating days (e.g., Everyday vs. Weekends Only), attendance requirements (Mandatory Full vs. Flexible), and clear cancellation policies (Pro-Rata, Deposit Refundable, or Strict Non-Refundable).',
-        'tenant',
+        'venture',
         9
     ),
     (
         gen_random_uuid (),
         'en',
         'Lease Contracts, Keys & Deposits',
-        'What if I lose my physical keys during the lease?',
-        'You are free to duplicate keys independently at local locksmiths. If all keys are lost, the owner replaces the lock cylinder; you pay strictly for the cost of the new key duplicated for your use.',
-        'tenant',
+        'What if I lose my physical keys during a lease?',
+        'As a tenant, you are free to duplicate keys independently at local locksmiths. If all keys are lost, the owner replaces the lock cylinder; you pay strictly for the cost of the new key duplicated for your use.',
+        'venture',
         10
     ),
     (
@@ -287,7 +287,7 @@ VALUES
         'Financial Forecasts & Analytics',
         'How does the Multi-Timeline Business Forecast work?',
         'Our forecast engine projects your margins, cash flow, and break-even targets across 1-week, 1-month, 6-month, and 1-year timelines. It uses your POS sales history or custom financial presets across Conservative, Balanced, and Optimistic market scenarios.',
-        'tenant',
+        'venture',
         11
     ),
     (
@@ -296,7 +296,7 @@ VALUES
         'Financial Forecasts & Analytics',
         'What is the Prescriptive Operational Co-Pilot?',
         'It provides actionable recommendations based on your actual POS data — such as suggesting opening hour expansions, discount strategies for high-margin items, or automated restock reminders.',
-        'tenant',
+        'venture',
         12
     );
 
@@ -318,7 +318,7 @@ VALUES
         'Operasional POS & Bisnis Non-Lapak',
         'Bisakah saya menggunakan Lapakita jika tidak menyewa lapak fisik dari platform?',
         'Ya! Bisnis rumahan, cloud kitchen, toko online, atau bisnis yang menyewa ruang di tempat lain dapat menggunakan penuh kasir POS, manajemen produk/inventaris, akun akses staf, dan marketplace supplier kami.',
-        'tenant',
+        'venture',
         1
     ),
     (
@@ -327,7 +327,7 @@ VALUES
         'Operasional POS & Bisnis Non-Lapak',
         'Bagaimana cara kerja akun akses kasir terbatas?',
         'Anda dapat membuat kredensial staf khusus untuk kasir Anda. Anggota staf dapat memproses pesanan pelanggan, mencetak resi, dan mencatat pembayaran tunai/QRIS, tetapi tidak dapat mengakses laporan keuntungan keuangan atau rincian biaya modal.',
-        'tenant',
+        'venture',
         2
     ),
     (
@@ -336,7 +336,7 @@ VALUES
         'Pencarian Lapak, Permanensi & Filter Target ROI',
         'Bagaimana cara kerja Tab Pencarian Permanensi Operasional?',
         'Anda dapat memfilter ruang berdasarkan 3 tingkat operasional: Permanen (ruko independen dengan akses 24/7 & spesifikasi fisik m2), Semi-Permanen (toko mall, food court, dan lapak pasar tradisional yang terikat jam operasional komplek induk), dan Temporer (booth bazaar jangka pendek, spot food truck, dan lapak PKL).',
-        'tenant',
+        'venture',
         3
     ),
     (
@@ -345,7 +345,7 @@ VALUES
         'Pencarian Lapak, Permanensi & Filter Target ROI',
         'Bagaimana cara kerja pencarian Landmark & Radius?',
         'Anda dapat mencari berdasarkan kota atau jalan, atau memasangkan landmark tertentu (seperti universitas, sekolah, atau komplek perkantoran) dengan jarak radius kustom (misal: dalam radius 3 km) untuk menemukan lapak terdekat.',
-        'tenant',
+        'venture',
         4
     ),
     (
@@ -354,7 +354,7 @@ VALUES
         'Pencarian Lapak, Permanensi & Filter Target ROI',
         'Apa itu filter Anggaran & Cocokkan Target ROI?',
         'Untuk lapak Permanen & Semi-Permanen, masukkan total modal, preset jenis bisnis, dan target bulan BEP untuk memfilter harga sewa yang layak secara matematis. Untuk spot Bazaar Temporer, masukkan Target Pendapatan Harian untuk menampilkan tarif harian/bulanan yang cocok dengan target penjualan Anda.',
-        'tenant',
+        'venture',
         5
     ),
     (
@@ -363,7 +363,7 @@ VALUES
         'Pencarian Lapak, Permanensi & Filter Target ROI',
         'Bisakah saya mengecek lapak secara langsung sebelum menandatangani sewa?',
         'Kami sangat menyarankan untuk mengunjungi lokasi secara langsung untuk memverifikasi fasilitas fisik, akses jalan, dan kondisi lingkungan sebelum mengajukan sewa atau menandatangani kontrak digital.',
-        'tenant',
+        'venture',
         6
     ),
     (
@@ -372,7 +372,7 @@ VALUES
         'Kontrak Sewa, Kunci & Deposit Jaminan',
         'Apa yang terjadi setelah pemilik menyetujui pengajuan sewa saya?',
         'Kontrak digital akan dibuat dengan tarif yang terkunci. Setelah Anda melakukan pembayaran sewa awal dan deposit jaminan melalui Payment Gateway pada atau sebelum tanggal mulai yang dipilih, masa sewa resmi aktif.',
-        'tenant',
+        'venture',
         7
     ),
     (
@@ -381,7 +381,7 @@ VALUES
         'Kontrak Sewa, Kunci & Deposit Jaminan',
         'Ke mana dana deposit jaminan saya disimpan?',
         'Deposit Anda disimpan secara aman di rekening Escrow Payment Gateway yang netral — bukan di rekening pribadi pemilik lapak. Deposit akan dikembalikan penuh ke rekening bank Anda saat masa sewa berakhir, selama tidak ada denda kunci atau kerusakan fisik properti.',
-        'tenant',
+        'venture',
         8
     ),
     (
@@ -390,7 +390,7 @@ VALUES
         'Kontrak Sewa, Kunci & Deposit Jaminan',
         'Bagaimana aturan sewa berlaku untuk Event Bazaar Temporer?',
         'Spot temporer tidak menggunakan jangka waktu sewa bulanan. Sebagai gantinya, event menentukan minimal hari sewa, hari operasional (misal: Setiap Hari vs Akhir Pekan Saja), persyaratan kehadiran (Wajib Penuh vs Fleksibel), dan kebijakan pembatalan yang jelas (Pro-Rata, Deposit Refundable, atau Non-Refundable).',
-        'tenant',
+        'venture',
         9
     ),
     (
@@ -398,8 +398,8 @@ VALUES
         'id',
         'Kontrak Sewa, Kunci & Deposit Jaminan',
         'Bagaimana jika kunci fisik saya hilang selama masa sewa?',
-        'Anda bebas menduplikasi kunci secara mandiri di tukang kunci lokal. Jika seluruh kunci hilang, pemilik akan mengganti silinder kunci; Anda hanya membayar biaya pembuatan kunci baru yang diduplikasi untuk penggunaan Anda.',
-        'tenant',
+        'Sebagai penyewa, Anda bebas menduplikasi kunci secara mandiri di tukang kunci lokal. Jika seluruh kunci hilang, pemilik akan mengganti silinder kunci; Anda hanya membayar biaya pembuatan kunci baru yang diduplikasi untuk penggunaan Anda.',
+        'venture',
         10
     ),
     (
@@ -408,7 +408,7 @@ VALUES
         'Proyeksi Keuangan & Analitik',
         'Bagaimana cara kerja Proyeksi Bisnis Multi-Timeline?',
         'Mesin proyeksi kami memprediksi margin, arus kas, dan target BEP Anda dalam timeline 1 minggu, 1 bulan, 6 bulan, dan 1 tahun. Mesin ini menggunakan riwayat penjualan POS atau preset keuangan kustom dalam skenario pasar Konservatif, Seimbang, dan Optimis.',
-        'tenant',
+        'venture',
         11
     ),
     (
@@ -417,7 +417,7 @@ VALUES
         'Proyeksi Keuangan & Analitik',
         'Apa itu Co-Pilot Operasional Preskriptif?',
         'Fitur ini memberikan rekomendasi aksi berdasarkan data transaksi POS nyata Anda — seperti menyarankan perluasan jam buka, strategi diskon untuk item ber-margin tinggi, atau pengingat otomatis untuk stok ulang barang.',
-        'tenant',
+        'venture',
         12
     );
 
@@ -450,7 +450,7 @@ VALUES
         'en',
         'Listing Stalls & Tenant Vetting',
         'Can I review applicants before accepting them?',
-        'Yes. When a tenant applies, you can inspect their profile rating, previous rental reviews, and proposed business category before clicking ''Approve'' or ''Reject''.',
+        'Yes. When a prospective tenant applies, you can inspect their profile rating, previous rental reviews, and proposed business category before clicking ''Approve'' or ''Reject''.',
         'owner',
         2
     ),
@@ -553,7 +553,7 @@ VALUES
         'id',
         'Pendaftaran Lapak & Seleksi Penyewa',
         'Bisakah saya meninjau profil pendaftar sebelum menyetujuinya?',
-        'Ya. Ketika penyewa mengajukan sewa, Anda dapat memeriksa rating profil mereka, ulasan sewa sebelumnya, dan kategori bisnis yang diajukan sebelum mengklik ''Setujui'' atau ''Tolak''.',
+        'Ya. Ketika calon penyewa mengajukan sewa, Anda dapat memeriksa rating profil mereka, ulasan sewa sebelumnya, dan kategori bisnis yang diajukan sebelum mengklik ''Setujui'' atau ''Tolak''.',
         'owner',
         2
     ),
@@ -649,8 +649,8 @@ VALUES
         gen_random_uuid (),
         'en',
         'Marketplace Matchmaking & Catalog Rules',
-        'How do tenant businesses find my products?',
-        'Lapakita automatically showcases your product catalog directly inside the procurement dashboard of active SME tenants whose business category matches your wholesale goods. No ad spend is required.',
+        'How do venture businesses find my products?',
+        'Lapakita automatically showcases your product catalog directly inside the procurement dashboard of active SME ventures whose business category matches your wholesale goods. No ad spend is required.',
         'supplier',
         1
     ),
@@ -668,7 +668,7 @@ VALUES
         'en',
         'Orders, Reorders & Delivery Disputes',
         'How does the 1-Click Reorder feature work?',
-        'Tenants who tag you as their ''Primary Supplier'' can trigger instant reorder requests directly from their POS inventory alerts, giving you predictable recurring orders.',
+        'Users who tag you as their ''Primary Supplier'' can trigger instant reorder requests directly from their POS inventory alerts, giving you predictable recurring orders.',
         'supplier',
         3
     ),
@@ -716,8 +716,8 @@ VALUES
         gen_random_uuid (),
         'id',
         'Pencocokan Marketplace & Aturan Katalog',
-        'Bagaimana bisnis penyewa menemukan produk saya?',
-        'Lapakita secara otomatis menampilkan katalog produk Anda secara langsung di dalam dashboard pengadaan milik penyewa UMKM aktif yang kategori bisnisnya cocok dengan barang grosir Anda. Tanpa perlu biaya iklan.',
+        'Bagaimana bisnis Venture menemukan produk saya?',
+        'Lapakita secara otomatis menampilkan katalog produk Anda secara langsung di dalam dashboard pengadaan milik Venture UMKM aktif yang kategori bisnisnya cocok dengan barang grosir Anda. Tanpa perlu biaya iklan.',
         'supplier',
         1
     ),
@@ -735,7 +735,7 @@ VALUES
         'id',
         'Pesanan, Pemesanan Ulang & Sengketa Pengiriman',
         'Bagaimana cara kerja fitur Pemesanan Ulang 1-Klik?',
-        'Penyewa yang menandai Anda sebagai ''Supplier Utama'' dapat memicu permintaan pemesanan ulang instan langsung dari peringatan inventaris POS mereka, memberikan Anda pesanan berulang yang terprediksi.',
+        'Pengguna yang menandai Anda sebagai ''Supplier Utama'' dapat memicu permintaan pemesanan ulang instan langsung dari peringatan inventaris POS mereka, memberikan Anda pesanan berulang yang terprediksi.',
         'supplier',
         3
     ),

@@ -181,7 +181,7 @@ INSERT INTO stalls (
     '["month", "quarter", "year"]'::jsonb, 6000000.00, 17000000.00, 65000000.00, 4000000.00,
     3, '["1", "15"]'::jsonb, 'Listrik PLN 4400 VA & PDAM.',
     '["power", "high-power", "water", "drainage", "parking", "toilet", "security"]'::jsonb,
-    '["Area parkir digunakan bersama tenant lain secara tertib."]'::jsonb,
+    '["Area parkir digunakan bersama venture lain secara tertib."]'::jsonb,
     '{"mainImage": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=800&fit=crop", "facilityImages": []}'::jsonb,
     4.8, 23, TRUE
 );
@@ -283,7 +283,7 @@ INSERT INTO stalls (
     -7.03810000, 110.33210000, 'https://maps.google.com/?q=-7.0381,110.3321', 'https://www.google.com/maps/embed?pb=!1m18...',
     '[{"categoryValue": "campus", "name": "Unika Soegijapranata BSB", "distanceKm": 0.8}]'::jsonb,
     '["month", "quarter", "year"]'::jsonb, 3800000.00, 10500000.00, 40000000.00, 2500000.00,
-    3, '["1", "15"]'::jsonb, 'Listrik & air ditanggung tenant.',
+    3, '["1", "15"]'::jsonb, 'Listrik & air ditanggung venture.',
     '["power", "water", "parking", "toilet", "security"]'::jsonb,
     '["Jagalah ketertiban area kawasan perumahan BSB."]'::jsonb,
     '{"mainImage": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=800&fit=crop", "facilityImages": []}'::jsonb,
@@ -1089,7 +1089,7 @@ INSERT INTO stalls (
     'everyday', 'mandatory_full', 'non_refundable',
     'Listrik 3500 VA colokan industri.',
     '["power", "high-power", "wifi", "parking", "trash-area", "security"]'::jsonb,
-    '["Kebersihan area sekitar armada menjadi tanggung jawab tenant."]'::jsonb,
+    '["Kebersihan area sekitar armada menjadi tanggung jawab venture."]'::jsonb,
     '{"mainImage": "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=1200&h=800&fit=crop", "facilityImages": []}'::jsonb,
     4.9, 28, TRUE
 );
