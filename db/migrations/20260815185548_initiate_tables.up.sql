@@ -499,7 +499,7 @@ CREATE TABLE pos_item_stocks (
 CREATE INDEX idx_pos_item_stocks_item_id ON pos_item_stocks(pos_item_id);
 CREATE INDEX idx_pos_item_stocks_stock_id ON pos_item_stocks(pos_stock_id);
 
--- 5. POS TRANSACTIONS: Transaksi Penjualan Kasir per Front
+-- 5. POS TRANSACTIONS: Header Transaksi Penjualan Kasir per Front
 CREATE TABLE pos_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
@@ -507,9 +507,12 @@ CREATE TABLE pos_transactions (
     staff_id UUID REFERENCES pos_staff_accounts(id) ON DELETE SET NULL,
     
     receipt_number VARCHAR(64) UNIQUE NOT NULL,
+    subtotal_amount NUMERIC(15, 2) NOT NULL,
+    discount_amount NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
     total_amount NUMERIC(15, 2) NOT NULL,
-    payment_method VARCHAR(32) NOT NULL,
-    items_json JSONB NOT NULL,
+    payment_method VARCHAR(32) NOT NULL,               -- 'cash', 'qris', 'transfer', 'debit', 'e_wallet'
+    status VARCHAR(32) NOT NULL DEFAULT 'completed',   -- 'completed', 'voided', 'refunded'
+    notes TEXT DEFAULT NULL,
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -517,7 +520,25 @@ CREATE TABLE pos_transactions (
 
 CREATE INDEX idx_pos_transactions_business_id ON pos_transactions(business_id);
 CREATE INDEX idx_pos_transactions_front_id ON pos_transactions(business_front_id);
-CREATE INDEX idx_pos_transactions_created_at ON pos_transactions(created_at);
+CREATE INDEX idx_pos_transactions_created_at ON pos_transactions(created_at DESC);
+
+-- 6. POS TRANSACTION ITEMS: Detail Baris Item per Transaksi (Relational + Snapshot Harga/HPP)
+CREATE TABLE pos_transaction_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pos_transaction_id UUID NOT NULL REFERENCES pos_transactions(id) ON DELETE CASCADE,
+    pos_item_id UUID REFERENCES pos_items(id) ON DELETE SET NULL, -- NULL jika item dihapus di kemudian hari
+    
+    item_name_snapshot VARCHAR(255) NOT NULL,          -- Nama produk saat dibeli
+    quantity INT NOT NULL CHECK (quantity > 0),
+    unit_price NUMERIC(15, 2) NOT NULL,                -- Harga satuan final (setelah diskon item jika ada)
+    unit_cost_snapshot NUMERIC(15, 2) NOT NULL DEFAULT 0.00, -- HPP satuan saat transaksi untuk laporan laba kotor
+    subtotal NUMERIC(15, 2) NOT NULL,                  -- quantity * unit_price
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pos_transaction_items_tx_id ON pos_transaction_items(pos_transaction_id);
+CREATE INDEX idx_pos_transaction_items_item_id ON pos_transaction_items(pos_item_id);
 
 -- =============================================================================
 -- 7. SUPPLIER B2B MARKETPLACE & CATALOG STOCK LEDGER
@@ -580,15 +601,14 @@ CREATE TABLE supplier_orders (
     shipping_fee NUMERIC(15, 2) NOT NULL DEFAULT 0.00,   -- Biaya ongkir
     total_amount NUMERIC(15, 2) NOT NULL,                -- subtotal + shipping_fee
     
-    -- Informasi Kurir & Pengiriman (Shipping Details)
+    -- Informasi Kurir & Pengiriman
     shipping_provider VARCHAR(64),                        -- e.g. "biteship", "lalamove", "manual"
     courier_company VARCHAR(32),                          -- e.g. "gosend", "lalamove", "jne"
     courier_type VARCHAR(32),                             -- e.g. "instant", "same_day", "cargo"
     tracking_number VARCHAR(128),                         -- Nomor resi / Waybill ID
     shipping_status VARCHAR(32) DEFAULT 'pending',        -- 'pending', 'allocated', 'picking_up', 'in_transit', 'delivered'
     
-    status VARCHAR(32) DEFAULT 'pending',                 -- Status Order: 'pending', 'paid', 'processing', 'shipped', 'completed', 'cancelled'
-    items_json JSONB NOT NULL,                            -- Array item katalog yang dibeli
+    status VARCHAR(32) DEFAULT 'pending',                 -- 'pending', 'paid', 'processing', 'shipped', 'completed', 'cancelled'
     digital_delivery_note_url TEXT,                       -- Surat Jalan Digital
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -599,6 +619,24 @@ CREATE TABLE supplier_orders (
 CREATE INDEX idx_supplier_orders_venture_user_id ON supplier_orders(venture_user_id);
 CREATE INDEX idx_supplier_orders_supplier_user_id ON supplier_orders(supplier_user_id);
 CREATE INDEX idx_supplier_orders_tracking ON supplier_orders(tracking_number);
+
+-- Detail Baris Pesanan B2B Supplier
+CREATE TABLE supplier_order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    supplier_order_id UUID NOT NULL REFERENCES supplier_orders(id) ON DELETE CASCADE,
+    supplier_catalog_id UUID REFERENCES supplier_catalogs(id) ON DELETE SET NULL,
+    
+    item_name_snapshot VARCHAR(255) NOT NULL,
+    unit_type_snapshot VARCHAR(32) NOT NULL,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    unit_price NUMERIC(15, 2) NOT NULL,                -- Harga per unit sesuai tier saat order
+    subtotal NUMERIC(15, 2) NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_supplier_order_items_order_id ON supplier_order_items(supplier_order_id);
+CREATE INDEX idx_supplier_order_items_catalog_id ON supplier_order_items(supplier_catalog_id);
 
 -- =============================================================================
 -- 8. NOTIFICATIONS & CMS

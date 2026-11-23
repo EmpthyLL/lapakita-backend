@@ -17,8 +17,9 @@ type Business struct {
 	UpdatedAt      time.Time      `gorm:"autoUpdateTime" db:"updated_at" json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index:idx_businesses_deleted_at" db:"deleted_at" json:"deleted_at,omitempty"`
 
-	User         *User         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
-	BusinessType *BusinessType `gorm:"foreignKey:BusinessTypeID;constraint:OnDelete:RESTRICT" json:"business_type,omitempty"`
+	User         *User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
+	BusinessType *BusinessType   `gorm:"foreignKey:BusinessTypeID;constraint:OnDelete:RESTRICT" json:"business_type,omitempty"`
+	Fronts       []BusinessFront `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE" json:"fronts,omitempty"`
 }
 
 func (Business) TableName() string {
