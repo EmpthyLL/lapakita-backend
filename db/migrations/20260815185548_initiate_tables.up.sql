@@ -399,10 +399,18 @@ CREATE TABLE pos_staff_accounts (
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     pin_code_hash VARCHAR(255) NOT NULL,
+    
+    -- Role & Granular Permissions (Tanpa tabel role terpisah)
+    role_name VARCHAR(100) NOT NULL DEFAULT 'Cashier', -- Bebas diisi / auto-fill dari preset (e.g. 'Cashier', 'Inventory Clerk', 'Store Supervisor')
+    permissions JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array hardcoded permission keys
+    assigned_front_ids JSONB NOT NULL DEFAULT '[]'::jsonb, -- Opsional: kosong = akses semua front, terisi = dikunci ke front/cabang tertentu
+    
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_pos_staff_business_id ON pos_staff_accounts(business_id);
 
 CREATE TABLE pos_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -419,13 +427,19 @@ CREATE TABLE pos_stocks (
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     business_front_id UUID REFERENCES business_fronts(id) ON DELETE CASCADE, -- NULL jika gudang pusat bisnis
     
-    name VARCHAR(255) NOT NULL,                        -- e.g. "Beras Pandan Wangi", "Kaos Hitam XL", "Cup 16oz"
+    name VARCHAR(255) NOT NULL,                        -- e.g. "Susu UHT 1L", "Paracetamol 500mg", "Cat Tembok 5kg", "Oli Mesin 1L"
     sku VARCHAR(64),
-    unit VARCHAR(32) NOT NULL DEFAULT 'pcs',           -- 'gram', 'ml', 'pcs', 'cm', 'box'
+    unit VARCHAR(32) NOT NULL DEFAULT 'pcs',           -- 'gram', 'ml', 'pcs', 'cm', 'box', 'liter'
     
     current_quantity NUMERIC(15, 3) NOT NULL DEFAULT 0,
     low_stock_threshold NUMERIC(15, 3) NOT NULL DEFAULT 5,
     cost_per_unit NUMERIC(15, 4) NOT NULL DEFAULT 0,   -- HPP rata-rata per 1 unit (untuk hitung modal item otomatis)
+    
+    -- Pelacakan Umur Simpan (Shelf Life)
+    has_shelf_life BOOLEAN NOT NULL DEFAULT FALSE,
+    default_shelf_life_days INT DEFAULT NULL,          -- Estimasi umur simpan standar dalam hari (opsional, bantu auto-fill saat restock)
+    shelf_life_alert_days INT NOT NULL DEFAULT 7,      -- Reminder H-berapa sebelum batas shelf life tercapai
+    nearest_shelf_life_end_date DATE DEFAULT NULL,     -- Tanggal batas shelf life terdekat untuk alert & analitik penjualan lambat
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -434,19 +448,24 @@ CREATE TABLE pos_stocks (
 
 CREATE INDEX idx_pos_stocks_business_id ON pos_stocks(business_id);
 CREATE INDEX idx_pos_stocks_front_id ON pos_stocks(business_front_id);
+CREATE INDEX idx_pos_stocks_shelf_life ON pos_stocks(business_id, nearest_shelf_life_end_date) WHERE has_shelf_life = TRUE;
 
--- 2. POS STOCK HISTORIES: Audit Trail Mutasi Stok (Masuk, Keluar, Terjual, Rusak/Expired, Opname)
+-- 2. POS STOCK HISTORIES: Audit Trail Mutasi Stok + Batch & Shelf Life
 CREATE TABLE pos_stock_histories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pos_stock_id UUID NOT NULL REFERENCES pos_stocks(id) ON DELETE CASCADE,
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     business_front_id UUID REFERENCES business_fronts(id) ON DELETE SET NULL,
     
-    movement_type VARCHAR(32) NOT NULL,                -- 'restock_in', 'supplier_order_in', 'sale_deduction', 'spoilage_out', 'adjustment'
+    movement_type VARCHAR(32) NOT NULL,                -- 'restock_in', 'supplier_order_in', 'sale_deduction', 'spoilage_out', 'shelf_life_expired_out', 'adjustment'
     quantity_change NUMERIC(15, 3) NOT NULL,           -- Positif (+) untuk masuk, Negatif (-) untuk keluar
     balance_before NUMERIC(15, 3) NOT NULL,
     balance_after NUMERIC(15, 3) NOT NULL,
     unit_cost_snapshot NUMERIC(15, 4) DEFAULT NULL,    -- Harga beli per unit saat restock
+    
+    -- Detail Batch & Batas Umur Simpan
+    batch_code VARCHAR(64) DEFAULT NULL,               -- Opsional: Kode batch / lot produksi
+    shelf_life_end_date DATE DEFAULT NULL,             -- Tanggal akhir shelf life untuk batch ini
     
     reference_type VARCHAR(32) DEFAULT NULL,           -- 'pos_transaction', 'supplier_order', 'manual'
     reference_id UUID DEFAULT NULL,                    -- ID dari pos_transactions atau supplier_orders
@@ -458,6 +477,7 @@ CREATE TABLE pos_stock_histories (
 
 CREATE INDEX idx_pos_stock_histories_stock_id ON pos_stock_histories(pos_stock_id);
 CREATE INDEX idx_pos_stock_histories_business_created ON pos_stock_histories(business_id, created_at DESC);
+CREATE INDEX idx_pos_stock_histories_shelf_life ON pos_stock_histories(business_id, shelf_life_end_date) WHERE shelf_life_end_date IS NOT NULL;
 
 -- 3. POS ITEMS: Produk Jual / Menu / Jasa (Apa yang dijual ke pembeli)
 CREATE TABLE pos_items (
@@ -543,7 +563,6 @@ CREATE INDEX idx_pos_transaction_items_item_id ON pos_transaction_items(pos_item
 -- =============================================================================
 -- 7. SUPPLIER B2B MARKETPLACE & CATALOG STOCK LEDGER
 -- =============================================================================
-
 CREATE TABLE supplier_catalogs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     supplier_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -557,6 +576,10 @@ CREATE TABLE supplier_catalogs (
     tiered_pricing JSONB,
     
     stock_quantity INT NOT NULL DEFAULT 0,             -- Stok tersedia di gudang Supplier
+    has_shelf_life BOOLEAN NOT NULL DEFAULT FALSE,
+    shelf_life_days INT DEFAULT NULL,                  -- Informasi estimasi umur simpan barang (dalam hari) untuk calon pembeli B2B
+    nearest_shelf_life_end_date DATE DEFAULT NULL,     -- Batas shelf life batch terdekat di gudang Supplier
+    
     is_available BOOLEAN DEFAULT TRUE,
     image_url TEXT,
     favorited_by_user_ids JSONB DEFAULT '[]'::jsonb,
@@ -574,10 +597,13 @@ CREATE TABLE supplier_stock_histories (
     supplier_catalog_id UUID NOT NULL REFERENCES supplier_catalogs(id) ON DELETE CASCADE,
     supplier_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    movement_type VARCHAR(32) NOT NULL,                -- 'restock_in', 'b2b_order_out', 'order_cancelled_in', 'spoilage_out', 'adjustment'
+    movement_type VARCHAR(32) NOT NULL,                -- 'restock_in', 'b2b_order_out', 'order_cancelled_in', 'spoilage_out', 'shelf_life_expired_out', 'adjustment'
     quantity_change INT NOT NULL,
     balance_before INT NOT NULL,
     balance_after INT NOT NULL,
+    
+    batch_code VARCHAR(64) DEFAULT NULL,
+    shelf_life_end_date DATE DEFAULT NULL,
     
     reference_order_id UUID DEFAULT NULL,              -- ID dari supplier_orders jika mutasi berasal dari transaksi B2B
     notes TEXT DEFAULT NULL,

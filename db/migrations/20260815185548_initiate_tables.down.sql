@@ -17,6 +17,8 @@ DROP TABLE IF EXISTS contact_inquiries CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 
 -- 4. Drop Supplier B2B Marketplace & Stock Ledger Tables
+DROP TABLE IF EXISTS supplier_order_items CASCADE;
+
 DROP TABLE IF EXISTS supplier_orders CASCADE;
 
 DROP TABLE IF EXISTS supplier_stock_histories CASCADE;
@@ -28,6 +30,8 @@ DROP TABLE IF EXISTS supplier_regulars CASCADE;
 DROP TABLE IF EXISTS supplier_profiles CASCADE;
 
 -- 5. Drop POS Cashier, Inventory Stocks & Stock Ledger Tables
+DROP TABLE IF EXISTS pos_transaction_items CASCADE;
+
 DROP TABLE IF EXISTS pos_transactions CASCADE;
 
 DROP TABLE IF EXISTS pos_item_stocks CASCADE;

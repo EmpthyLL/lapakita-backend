@@ -13,7 +13,7 @@ INSERT INTO business_types (
 ) VALUES
 
 -- =============================================================================
--- 1. F&B (FOOD & BEVERAGES)
+-- 1. F&B (FOOD & BEVERAGES) — 9 TYPES
 -- =============================================================================
 
 (
@@ -310,7 +310,7 @@ INSERT INTO business_types (
 ),
 
 -- =============================================================================
--- 2. RETAIL & COMMERCE
+-- 2. RETAIL & COMMERCE — 8 TYPES
 -- =============================================================================
 
 (
@@ -485,15 +485,207 @@ INSERT INTO business_types (
     }'::jsonb,
     '["campus", "office", "market", "transit-station"]'::jsonb
 ),
+(
+    gen_random_uuid(),
+    '{"en": "Building Materials, Hardware & Paint Store", "id": "Toko Bahan Bangunan, Perkakas & Cat"}'::jsonb,
+    '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
+    12,
+    75000000.00,
+    0.2500,
+    0.0900,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "recommendedSizeSqm": {"min": 35, "max": 120},
+            "recommendedFloors": {"min": 1, "max": 2},
+            "facilities": ["power", "high-power", "storage", "display-case", "toilet", "security", "cctv", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["traditional-market-shop"],
+            "allowedPlacements": ["semi-outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "defaultOpeningTime": "07:00",
+            "defaultClosingTime": "17:00",
+            "facilities": ["power", "storage", "security"]
+        }
+    }'::jsonb,
+    '["residential", "market", "gas-station"]'::jsonb
+),
+(
+    gen_random_uuid(),
+    '{"en": "Pet Shop, Pet Food & Grooming", "id": "Pet Shop, Pakan Hewan & Grooming"}'::jsonb,
+    '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
+    9,
+    30000000.00,
+    0.3500,
+    0.1200,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 18, "max": 50},
+            "recommendedFloors": {"min": 1, "max": 2},
+            "facilities": ["power", "water", "drainage", "ventilation", "air-conditioner", "display-case", "storage", "trash-area", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop", "traditional-market-shop"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "09:00",
+            "defaultClosingTime": "20:00",
+            "facilities": ["power", "water", "display-case", "storage", "trash-area"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth"],
+            "allowedPlacements": ["semi-outdoor", "outdoor"],
+            "defaultPlacement": "outdoor",
+            "registrationWindowDaysBefore": 5,
+            "typicalDurationDays": 3,
+            "facilities": ["power", "display-case", "trash-area"]
+        }
+    }'::jsonb,
+    '["residential", "market"]'::jsonb
+),
+(
+    gen_random_uuid(),
+    '{"en": "Agricultural Supplies, Seeds & Gardening", "id": "Toko Pertanian, Bibit & Perlengkapan Kebun"}'::jsonb,
+    '{"en": "Retail & Commerce", "id": "Ritel & Perdagangan"}'::jsonb,
+    7,
+    20000000.00,
+    0.3500,
+    0.1000,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway", "street-kiosk"],
+            "allowedPlacements": ["semi-outdoor", "outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "recommendedSizeSqm": {"min": 15, "max": 45},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "water", "drainage", "storage", "trash-area", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["traditional-market-shop", "open-market-stall"],
+            "allowedPlacements": ["semi-outdoor", "outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "defaultOpeningTime": "06:00",
+            "defaultClosingTime": "16:00",
+            "facilities": ["water", "storage", "trash-area"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth", "street-vendor-spot"],
+            "allowedPlacements": ["outdoor"],
+            "defaultPlacement": "outdoor",
+            "registrationWindowDaysBefore": 3,
+            "typicalDurationDays": 3,
+            "facilities": ["water", "trash-area"]
+        }
+    }'::jsonb,
+    '["market", "residential"]'::jsonb
+),
 
 -- =============================================================================
--- 3. SERVICES
+-- 3. HEALTHCARE, BEAUTY & WELLNESS — 4 TYPES
 -- =============================================================================
 
 (
     gen_random_uuid(),
+    '{"en": "Pharmacy, Drugstore & Medical Supplies", "id": "Apotek, Toko Obat & Alat Kesehatan"}'::jsonb,
+    '{"en": "Healthcare, Beauty & Wellness", "id": "Kesehatan, Kecantikan & Perawatan"}'::jsonb,
+    12,
+    65000000.00,
+    0.2800,
+    0.1000,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 20, "max": 60},
+            "recommendedFloors": {"min": 1, "max": 2},
+            "facilities": ["power", "water", "air-conditioner", "display-case", "storage", "seating", "toilet", "security", "cctv", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop", "traditional-market-shop"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "08:00",
+            "defaultClosingTime": "22:00",
+            "facilities": ["power", "air-conditioner", "display-case", "storage", "security", "cctv"]
+        }
+    }'::jsonb,
+    '["healthcare", "residential", "market", "office"]'::jsonb
+),
+(
+    gen_random_uuid(),
+    '{"en": "Medical Clinic, Optical & Wellness Practice", "id": "Klinik Pratama, Optik & Praktik Kesehatan"}'::jsonb,
+    '{"en": "Healthcare, Beauty & Wellness", "id": "Kesehatan, Kecantikan & Perawatan"}'::jsonb,
+    12,
+    55000000.00,
+    0.5500,
+    0.1400,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 25, "max": 70},
+            "recommendedFloors": {"min": 1, "max": 2},
+            "facilities": ["power", "high-power", "water", "air-conditioner", "reception", "seating", "toilet", "security", "wifi", "parking"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "10:00",
+            "defaultClosingTime": "21:00",
+            "facilities": ["power", "water", "air-conditioner", "reception", "seating", "toilet", "wifi"]
+        }
+    }'::jsonb,
+    '["residential", "healthcare", "office", "campus"]'::jsonb
+),
+(
+    gen_random_uuid(),
+    '{"en": "Cosmetics, Skincare & Personal Care", "id": "Kosmetik, Skincare & Perawatan Diri"}'::jsonb,
+    '{"en": "Healthcare, Beauty & Wellness", "id": "Kesehatan, Kecantikan & Perawatan"}'::jsonb,
+    8,
+    30000000.00,
+    0.4500,
+    0.1400,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "street-kiosk"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "recommendedSizeSqm": {"min": 12, "max": 35},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "air-conditioner", "display-case", "storage", "security", "cctv", "wifi"]
+        },
+        "semi-permanent": {
+            "allowedPropertyTypes": ["mall-shop", "mall-island", "traditional-market-shop"],
+            "allowedPlacements": ["indoor"],
+            "defaultPlacement": "indoor",
+            "defaultOpeningTime": "10:00",
+            "defaultClosingTime": "22:00",
+            "facilities": ["power", "air-conditioner", "display-case", "security"]
+        },
+        "temporary": {
+            "allowedPropertyTypes": ["bazaar-booth"],
+            "allowedPlacements": ["indoor", "semi-outdoor"],
+            "defaultPlacement": "indoor",
+            "registrationWindowDaysBefore": 5,
+            "typicalDurationDays": 3,
+            "facilities": ["power", "display-case"]
+        }
+    }'::jsonb,
+    '["campus", "office", "market", "residential"]'::jsonb
+),
+(
+    gen_random_uuid(),
     '{"en": "Beauty Salon, Barbershop & Spa", "id": "Salon Kecantikan, Barbershop & Spa"}'::jsonb,
-    '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
+    '{"en": "Healthcare, Beauty & Wellness", "id": "Kesehatan, Kecantikan & Perawatan"}'::jsonb,
     10,
     30000000.00,
     0.6000,
@@ -518,10 +710,15 @@ INSERT INTO business_types (
     }'::jsonb,
     '["residential", "office", "campus"]'::jsonb
 ),
+
+-- =============================================================================
+-- 4. SERVICES & AUTOMOTIVE — 4 TYPES
+-- =============================================================================
+
 (
     gen_random_uuid(),
     '{"en": "Service, Repair Shop & Laundry", "id": "Jasa Reparasi, Servis & Laundry"}'::jsonb,
-    '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
+    '{"en": "Services & Automotive", "id": "Jasa & Otomotif"}'::jsonb,
     8,
     20000000.00,
     0.5000,
@@ -548,8 +745,28 @@ INSERT INTO business_types (
 ),
 (
     gen_random_uuid(),
+    '{"en": "Automotive Workshop, Spare Parts & Wash", "id": "Bengkel Kendaraan, Suku Cadang & Cuci Steam"}'::jsonb,
+    '{"en": "Services & Automotive", "id": "Jasa & Otomotif"}'::jsonb,
+    10,
+    40000000.00,
+    0.4500,
+    0.1200,
+    '{
+        "permanent": {
+            "allowedPropertyTypes": ["shophouse", "garage-driveway"],
+            "allowedPlacements": ["semi-outdoor", "outdoor"],
+            "defaultPlacement": "semi-outdoor",
+            "recommendedSizeSqm": {"min": 25, "max": 80},
+            "recommendedFloors": {"min": 1, "max": 1},
+            "facilities": ["power", "high-power", "water", "drainage", "ventilation", "storage", "seating", "toilet", "trash-area", "parking"]
+        }
+    }'::jsonb,
+    '["gas-station", "residential", "office", "transit-bus"]'::jsonb
+),
+(
+    gen_random_uuid(),
     '{"en": "Professional Office & Agency", "id": "Kantor Profesional & Agensi"}'::jsonb,
-    '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
+    '{"en": "Services & Automotive", "id": "Jasa & Otomotif"}'::jsonb,
     12,
     45000000.00,
     0.5500,
@@ -577,7 +794,7 @@ INSERT INTO business_types (
 (
     gen_random_uuid(),
     '{"en": "Education & Studio Space", "id": "Studio Foto, Seni & Tempat Kursus"}'::jsonb,
-    '{"en": "Services", "id": "Jasa & Layanan"}'::jsonb,
+    '{"en": "Services & Automotive", "id": "Jasa & Otomotif"}'::jsonb,
     12,
     35000000.00,
     0.5000,
@@ -604,7 +821,7 @@ INSERT INTO business_types (
 ),
 
 -- =============================================================================
--- 4. CRAFTS, PRODUCTION & WORKSHOP
+-- 5. CRAFTS, PRODUCTION & WORKSHOP — 3 TYPES
 -- =============================================================================
 
 (
