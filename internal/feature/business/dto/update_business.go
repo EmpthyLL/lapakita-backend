@@ -6,11 +6,3 @@ type UpdateBusinessRequest struct {
 	Name           *string `json:"name" binding:"omitempty,min=2,max=255"`
 	LogoURL        *string `json:"logo_url" binding:"omitempty"`
 }
-
-type UpdateBusinessResponse struct {
-	ID             string  `json:"id"`
-	BusinessTypeID string  `json:"business_type_id"`
-	Name           string  `json:"name"`
-	LogoURL        *string `json:"logo_url,omitempty"`
-	UpdatedAt      string  `json:"updated_at"`
-}

@@ -11,7 +11,7 @@ import (
 	"lapakita-backend/pkg/api"
 )
 
-func (u *BusinessUsecase) Update(ctx context.Context, req dto.UpdateBusinessRequest) (*dto.UpdateBusinessResponse, error) {
+func (u *BusinessUsecase) Update(ctx context.Context, req dto.UpdateBusinessRequest) (*dto.ListBusinessItemResponse, error) {
 	businessUUID, err := api.DecodeRequest(req.ID)
 	if err != nil {
 		return nil, api.ErrInvalidID
@@ -58,11 +58,10 @@ func (u *BusinessUsecase) Update(ctx context.Context, req dto.UpdateBusinessRequ
 		return nil, err
 	}
 
-	return &dto.UpdateBusinessResponse{
-		ID:             api.EncodeResponse(business.ID),
-		BusinessTypeID: api.EncodeResponse(business.BusinessTypeID),
-		Name:           business.Name,
-		LogoURL:        business.LogoURL,
-		UpdatedAt:      business.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	return &dto.ListBusinessItemResponse{
+		ID:        api.EncodeResponse(business.ID),
+		Name:      business.Name,
+		LogoURL:   business.LogoURL,
+		CreatedAt: business.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

@@ -11,7 +11,7 @@ import (
 	"lapakita-backend/pkg/api"
 )
 
-func (u *BusinessUsecase) Create(ctx context.Context, req dto.CreateBusinessRequest) (*dto.CreateBusinessResponse, error) {
+func (u *BusinessUsecase) Create(ctx context.Context, req dto.CreateBusinessRequest) (*dto.ListBusinessItemResponse, error) {
 	businessTypeUUID, err := api.DecodeRequest(req.BusinessTypeID)
 	if err != nil {
 		return nil, api.ErrInvalidID
@@ -42,12 +42,10 @@ func (u *BusinessUsecase) Create(ctx context.Context, req dto.CreateBusinessRequ
 		return nil, err
 	}
 
-	return &dto.CreateBusinessResponse{
-		ID:             api.EncodeResponse(business.ID),
-		UserID:         api.EncodeResponse(business.UserID),
-		BusinessTypeID: api.EncodeResponse(business.BusinessTypeID),
-		Name:           business.Name,
-		LogoURL:        business.LogoURL,
-		CreatedAt:      business.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	return &dto.ListBusinessItemResponse{
+		ID:        api.EncodeResponse(business.ID),
+		Name:      business.Name,
+		LogoURL:   business.LogoURL,
+		CreatedAt: business.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

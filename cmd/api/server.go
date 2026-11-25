@@ -35,9 +35,12 @@ type Server struct {
 
 func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtService *jwt.JWTService) *Server {
 	r := gin.Default()
+	authMiddleware := middleware.JWTAuthMiddleware(jwtService)
+	corsMiddleware := middleware.CORSMiddleware(cfg.FrontendOrigin)
+	rateLimiterMiddleware := middleware.RateLimiterMiddleware(rate.Limit(5), 10)
 
-	r.Use(middleware.CORSMiddleware(cfg.FrontendOrigin))
-	r.Use(middleware.RateLimiterMiddleware(rate.Limit(5), 10))
+	r.Use(corsMiddleware)
+	r.Use(rateLimiterMiddleware)
 	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
 	r.GET("/health", func(c *gin.Context) {
@@ -62,7 +65,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 
 			// Protected Auth Endpoints (Requires Access Token)
 			protectedAuth := authGroup.Group("")
-			protectedAuth.Use(middleware.JWTAuthMiddleware(jwtService))
+			protectedAuth.Use(authMiddleware)
 			{
 				protectedAuth.PUT("/complete-profile", h.AuthHandler.CompleteProfile)
 			}
@@ -110,12 +113,21 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		// 5. BUSINESS ROUTES
 		// ---------------------------------------------------------------------
 		businessGroup := apiGroup.Group("/businesses")
-		businessGroup.Use(middleware.JWTAuthMiddleware(jwtService))
+		businessGroup.Use(authMiddleware)
 		{
 			businessGroup.GET("", h.BusinessHandler.List)
 			businessGroup.POST("", h.BusinessHandler.Create)
 			businessGroup.PUT("/:id", h.BusinessHandler.Update)
 			businessGroup.DELETE("/:id", h.BusinessHandler.Delete)
+
+			// Business Fronts
+			businessFrontGroup := businessGroup.Group("/front")
+			{
+				businessFrontGroup.POST("/:id", h.BusinessHandler.AddFront)
+				businessFrontGroup.GET("/:id", h.BusinessHandler.GetFronts)
+				businessFrontGroup.PATCH("/:front_id", h.BusinessHandler.UpdateFront)
+				businessFrontGroup.DELETE("/:front_id", h.BusinessHandler.DeleteFront)
+			}
 
 		}
 
@@ -131,7 +143,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 
 			// Protected Routes (Owner Only)
 			protectedStalls := stallGroup.Group("")
-			protectedStalls.Use(middleware.JWTAuthMiddleware(jwtService))
+			protectedStalls.Use(authMiddleware)
 			{
 				protectedStalls.GET("/my-stalls", h.StallHandler.GetByOwner)
 				protectedStalls.POST("", h.StallHandler.Create)
@@ -144,7 +156,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 		// 7. USER / SETTINGS ROUTES (Protected)
 		// ---------------------------------------------------------------------
 		userGroup := apiGroup.Group("/users")
-		userGroup.Use(middleware.JWTAuthMiddleware(jwtService))
+		userGroup.Use(authMiddleware)
 		{
 			// General Profile
 			profileGroup := userGroup.Group("/profile")
@@ -185,7 +197,7 @@ func NewServer(cfg *config.Config, logger *logger.Logger, h *Handlers, jwtServic
 
 			// Payout Methods
 			payoutMethodGroup := apiGroup.Group("/payment-method")
-			payoutMethodGroup.Use(middleware.JWTAuthMiddleware(jwtService))
+			payoutMethodGroup.Use(authMiddleware)
 			{
 				payoutMethodGroup.GET("", h.WalletHandler.GetPaymentMethods)
 				payoutMethodGroup.POST("", h.WalletHandler.CreatePaymentMethod)

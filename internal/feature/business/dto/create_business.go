@@ -8,12 +8,3 @@ type CreateBusinessRequest struct {
 	Name           string    `json:"name" binding:"required,min=2,max=255"`
 	LogoURL        *string   `json:"logo_url" binding:"omitempty,url"`
 }
-
-type CreateBusinessResponse struct {
-	ID             string  `json:"id"`
-	UserID         string  `json:"user_id"`
-	BusinessTypeID string  `json:"business_type_id"`
-	Name           string  `json:"name"`
-	LogoURL        *string `json:"logo_url,omitempty"`
-	CreatedAt      string  `json:"created_at"`
-}
